@@ -26,3 +26,7 @@ DATASETS = {
 
 DEFAULT_TIMEOUT_S = 30.0  # 单条查询的墙钟超时
 FLOAT_PRECISION = 6       # 浮点单元格比较时保留的小数位
+
+
+# API MODEL config
+API_CONCURRENCY = 10 # 并发的数量限制

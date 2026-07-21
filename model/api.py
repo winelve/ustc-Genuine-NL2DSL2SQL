@@ -21,6 +21,7 @@ from archer_eval.data import Sample
 from archer_eval.progress import Progress
 from model.base import SQLGenerator
 from model.prompts import build_ct3_prompt
+from config import API_CONCURRENCY
 
 # CT-3 prompt 是论文的 completion 式（以 "SELECT" 结尾）。发给 chat 接口时
 # 用这句要求模型输出完整语句，而不是回一段解释或只续写后半句。
@@ -41,7 +42,7 @@ class APIModel(SQLGenerator):
     key_env: str       # 密钥所在环境变量的名字
 
     temperature = 0.0
-    concurrency = 5    # 同时在飞的请求数，触发限流就在子类调小
+    concurrency = API_CONCURRENCY    # 同时在飞的请求数，触发限流就在子类调小
 
     def __init__(self) -> None:
         from openai import OpenAI  # 懒导入：没装 openai 也不影响其他模型
