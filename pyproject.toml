@@ -8,6 +8,10 @@ version = "0.1.0"
 description = "Archer text-to-SQL reproduction: generation + VA/EX evaluation"
 requires-python = ">=3.11"
 
+dependencies = [
+    "openai>=1.0",
+]
+
 [project.optional-dependencies]
 dev = ["pytest"]
 

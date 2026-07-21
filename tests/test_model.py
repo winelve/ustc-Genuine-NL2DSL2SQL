@@ -6,6 +6,7 @@ import config
 from archer_eval.data import load_dataset
 from archer_eval.evaluate import evaluate, find_db_file
 from model import MODELS
+from model.api import extract_sql
 from model.base import SQLGenerator
 from model.example import FirstTableBaseline
 
@@ -19,6 +20,15 @@ def test_registry_names_match_classes():
     for name, cls in MODELS.items():
         assert issubclass(cls, SQLGenerator)
         assert cls.name == name
+
+
+def test_api_model_without_key_fails_loudly(monkeypatch):
+    pytest.importorskip("openai")
+    from model.api import DeepSeekChat
+
+    monkeypatch.delenv(DeepSeekChat.key_env, raising=False)
+    with pytest.raises(RuntimeError, match=DeepSeekChat.key_env):
+        DeepSeekChat()
 
 
 @requires_db
@@ -45,3 +55,17 @@ def test_predict_all_survives_a_failing_sample():
     samples = load_dataset(config.DATASETS["en_dev"])[:2]
     preds = Broken().predict_all(samples, [None, None], progress=False)
     assert preds == ["", ""]
+
+
+@pytest.mark.parametrize(
+    "reply, expected",
+    [
+        ("SELECT name FROM singer", "SELECT name FROM singer"),
+        ("```sql\nSELECT name FROM singer\n```", "SELECT name FROM singer"),
+        ("```\nSELECT name FROM singer\n```", "SELECT name FROM singer"),
+        ("  SELECT name FROM singer\n", "SELECT name FROM singer"),
+        ("", ""),
+    ],
+)
+def test_extract_sql(reply, expected):
+    assert extract_sql(reply) == expected

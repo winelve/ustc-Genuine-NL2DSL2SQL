@@ -52,6 +52,17 @@ class MyModel(SQLGenerator):
 约定：返回纯 SQL（无解释文字/markdown 栅栏）；单条失败返回 `""` 而非抛异常；
 需要批量并发时覆写 `predict_all`。写完后在 `model/__init__.py` 的 `MODELS` 注册。
 
+API 模型继承 `model/api.py` 的 `APIModel`（OpenAI 兼容 `/chat/completions`），
+填类属性后在 `MODELS` 注册，运行命令与本地模型相同：
+
+```python
+class Qwen(APIModel):        # model/api.py 里加子类，再在 MODELS 注册
+    name = "qwen-plus"       # 注册名 = --model 用的名字 = 预测文件名前缀
+    base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model = "qwen-plus"      # 请求体里的模型名
+    key_env = "DASHSCOPE_API_KEY"   # 密钥所在环境变量
+```
+
 ### 3.3 评测报告（阶段二的输出）
 
 每次评测写两个文件到 `results/`（实现在 `archer_eval/report.py`）：

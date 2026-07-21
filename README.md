@@ -14,6 +14,18 @@
 .venv\Scripts\python.exe -m pytest -q                                    # 跑测试
 ```
 
+API 模型：先 `pip install -e .[api]`，设好密钥环境变量（模型名单见
+`model/__init__.py` 的 `MODELS`）：
+
+```powershell
+$env:DEEPSEEK_API_KEY = "sk-..."
+.venv\Scripts\python.exe -m model --model deepseek-v4-flash --data en_dev --limit 5         # 只生成
+.venv\Scripts\python.exe -m model --model deepseek-v4-flash --data en_dev --limit 5 --eval  # 生成并评测
+```
+
+带 `--limit` 的预测文件不满足全量对齐（docs §3.1），只能像上面这样随生成一起评测；
+独立评测器 `python -m archer_eval --data en_dev --pred predictions/xxx.json` 只接受全量文件。
+
 评测结果看 `results/<名>.md`（人读版：总分 + 分组表 + 每条错误样本的对比）。
 
 ## 目录
