@@ -1,0 +1,21 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# SQLite 数据库不进 git：soccer_1.sqlite 有 300MB，超过 GitHub 单文件 100MB 上限。
+# 用 data/database.zip 或 scripts/check_databases.py 提示的 Spider 来源恢复。
+database/
+
+# 原始压缩包
+*.zip
+
+# 评测生成的报告（可随时重新生成；想留存某次结果就 git add -f）
+results/
+
+# 编辑器/系统杂项
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store

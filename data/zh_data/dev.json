@@ -1,0 +1,730 @@
+[
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name , Age + ( SELECT Song_release_year FROM singer WHERE Song_Name = \"Gentleman\" ) - strftime ( \"%Y\" , \"now\" ) AS target_age FROM singer",
+        "question": "列出每个歌手的名字以及其在歌曲“Gentleman”发布的时候的年龄？",
+        "reasoning_type": "- + C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name , Age + ( SELECT Song_release_year FROM singer WHERE Song_Name = \"Gentleman\" ) - strftime ( \"%Y\" , \"now\" ) AS target_age FROM singer",
+        "question": "给出每个歌手的名字，以及在歌曲“Gentleman”发布的时候，每个人的年龄分别是多少？",
+        "reasoning_type": "- + C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name , Age + 2001 - strftime ( \"%Y\" , \"now\" ) AS target_age FROM singer",
+        "question": "假如“Gentleman”这首歌是21世纪的第一年发布的，列出每个歌手的名字以及其在歌曲“Gentleman”发布的时候的年龄？",
+        "reasoning_type": "- + C H",
+        "commonsense_knowledge": "21st century began on 1 January 2001. Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name , Age + 2001 - strftime ( \"%Y\" , \"now\" ) AS target_age FROM singer",
+        "question": "假设“Gentleman”这首歌发布于21世纪的第一年，那么在歌曲“Gentleman”发布的时候，每个歌手的年龄分别是多少？同时给出他们的名字。",
+        "reasoning_type": "- + C H",
+        "commonsense_knowledge": "21st century began on 1 January 2001. Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name , C.Age + ( A.Year - strftime ( \"%Y\" , \"now\" ) ) AS age_at_concert FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.Theme = \"Free choice\"",
+        "question": "主题为“Free choice”的音乐会的参演歌手的名字分别是什么？他们当时多少岁？",
+        "reasoning_type": "- + C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name , C.Age + ( A.Year - strftime ( \"%Y\" , \"now\" ) ) AS age_at_concert FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.Theme = \"Free choice\"",
+        "question": "返回主题为“Free choice”的音乐会的参演歌手的姓名和参演时的年龄。",
+        "reasoning_type": "- + C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name , C.Age + ( ( SELECT Year FROM concert WHERE Theme = \"Free choice\" ) - strftime ( \"%Y\" , \"now\" ) ) AS age_at_concert FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.Theme = \"Free choice\" OR strftime ( \"%Y\" , \"now\" ) - C.Age < 1985 GROUP BY C.Name",
+        "question": "假如1985年前出生的歌手都参加过主题为“Free choice”的音乐会，主题为“Free choice”的音乐会的参演歌手参演时多少岁？他们的名字分别是什么？",
+        "reasoning_type": "- + C H",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name , C.Age + ( ( SELECT Year FROM concert WHERE Theme = \"Free choice\" ) - strftime ( \"%Y\" , \"now\" ) ) AS age_at_concert FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.Theme = \"Free choice\" OR strftime ( \"%Y\" , \"now\" ) - C.Age < 1985 GROUP BY C.Name",
+        "question": "假如所有出生于1985年以前的歌手都是主题为“Free choice”的音乐会的参演歌手，那么主题为“Free choice”的音乐会的参演歌手当时分别多少岁？他们的名字分别是什么？",
+        "reasoning_type": "- + C H",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT strftime ( \"%Y\" , \"now\" ) - MIN ( Year ) AS years FROM concert",
+        "question": "最早的一次音乐会距今多少年了？",
+        "reasoning_type": "- C",
+        "commonsense_knowledge": "The time duration is calculated by substracting the start time from the end time."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT strftime ( \"%Y\" , \"now\" ) - MIN ( Year ) AS years FROM concert",
+        "question": "多少年以前举行了最早的音乐会？",
+        "reasoning_type": "- C",
+        "commonsense_knowledge": "The time duration is calculated by substracting the start time from the end time."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT strftime ( \"%Y\" , \"now\" ) - MIN ( Year ) AS years FROM ( SELECt Year - 3 AS Year FROM concert WHERE Theme = \"Wide Awake\" UNION ALL SELECT Year FROM concert WHERE Theme != \"Wide Awake\" )",
+        "question": "假如主题为“Wide Awake”的音乐会提前三年举办，最早的一次音乐会距今多少年了？",
+        "reasoning_type": "- C H",
+        "commonsense_knowledge": "The time duration is calculated by substracting the start time from the end time."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT strftime ( \"%Y\" , \"now\" ) - MIN ( Year ) AS years FROM ( SELECt Year - 3 AS Year FROM concert WHERE Theme = \"Wide Awake\" UNION ALL SELECT Year FROM concert WHERE Theme != \"Wide Awake\" )",
+        "question": "假如主题为“Wide Awake”的音乐会的举办时间提前三年，那么多少年以前举行了最早的音乐会？",
+        "reasoning_type": "- C H",
+        "commonsense_knowledge": "The time duration is calculated by substracting the start time from the end time."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name , A.Year - strftime ( \"%Y\" , \"now\" ) + C.Age + 20 AS target_age FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.concert_Name = \"Home Visits\"",
+        "question": "“Home Visits”音乐会20周年的时候，它的参演歌手多少岁了？同时给出参演歌手的名字。",
+        "reasoning_type": "- + C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name , A.Year - strftime ( \"%Y\" , \"now\" ) + C.Age + 20 AS target_age FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.concert_Name = \"Home Visits\"",
+        "question": "返回“Home Visits”音乐会20周年的时候它的参演歌手的年纪，同时给出参演歌手的名字。",
+        "reasoning_type": "- + C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name , ( SELECT Year FROM concert WHERE concert_Name = \"Home Visits\" ) - strftime ( \"%Y\" , \"now\" ) + C.Age + 20 AS target_age FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.concert_Name = \"Home Visits\" OR B.Singer_ID IN ( SELECT C.Singer_ID FROM concert A JOIN stadium B ON A.Stadium_ID = B.Stadium_ID JOIN singer_in_concert C ON A.concert_ID = C.concert_ID WHERE B.Name = \"Stark's Park\" ) GROUP BY B.Singer_ID",
+        "question": "假如参加过在斯塔克公园举行的音乐会的歌手全都参加过“Home Visits”音乐会，“Home Visits”音乐会20周年的时候，它的参演歌手都多少岁了？同时给出他们的名字。",
+        "reasoning_type": "- + C H",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name , ( SELECT Year FROM concert WHERE concert_Name = \"Home Visits\" ) - strftime ( \"%Y\" , \"now\" ) + C.Age + 20 AS target_age FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.concert_Name = \"Home Visits\" OR B.Singer_ID IN ( SELECT C.Singer_ID FROM concert A JOIN stadium B ON A.Stadium_ID = B.Stadium_ID JOIN singer_in_concert C ON A.concert_ID = C.concert_ID WHERE B.Name = \"Stark's Park\" ) GROUP BY B.Singer_ID",
+        "question": "假设所有参演过在斯塔克公园的组织的音乐会也都参加过“Home Visits”音乐会，返回“Home Visits”音乐会20周年的时候它的参演歌手的姓名和年纪。",
+        "reasoning_type": "- + C H",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Capacity * 20 + ( SELECT Capacity * 5.5 FROM stadium WHERE Name = \"Hampden Park\" ) AS total FROM stadium WHERE Name = \"Balmoor\"",
+        "question": "巴尔穆尔场馆票价一张20美元，汉普登公园场馆票价一张5.5美元。满座的时候，巴尔穆尔场馆和汉普登公园场馆卖票一共能挣多少钱？",
+        "reasoning_type": "+ * C",
+        "commonsense_knowledge": "Total price is calculated by multiplying quantity to unit price."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Capacity * 20 + ( SELECT Capacity * 5.5 FROM stadium WHERE Name = \"Hampden Park\" ) AS total FROM stadium WHERE Name = \"Balmoor\"",
+        "question": "巴尔穆尔场馆的票价为20美元一张，汉普登公园场馆的票价为5.5美元一张。假设两个场馆都满座的话，它们的票房总收入是多少？",
+        "reasoning_type": "+ * C",
+        "commonsense_knowledge": "Total price is calculated by multiplying quantity to unit price."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Capacity * 20 + 2 * Capacity * 5.5 AS total FROM stadium WHERE Name = \"Balmoor\"",
+        "question": "巴尔穆尔场馆票价一张20美元，汉普登公园场馆票价一张5.5美元。假如汉普登公园场馆的容量是巴尔穆尔场馆的两倍，满座的时候，巴尔穆尔场馆和汉普登公园场馆卖票一共能挣多少钱？",
+        "reasoning_type": "+ * C H",
+        "commonsense_knowledge": "Total price is calculated by multiplying quantity to unit price."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Capacity * 20 + 2 * Capacity * 5.5 AS total FROM stadium WHERE Name = \"Balmoor\"",
+        "question": "巴尔穆尔场馆的票价为20美元一张，汉普登公园场馆的票价为5.5美元一张。假设汉普登公园场馆的容量是巴尔穆尔场馆的两倍且两个场馆都满座的话，它们的票房总收入是多少？",
+        "reasoning_type": "+ * C H",
+        "commonsense_knowledge": "Total price is calculated by multiplying quantity to unit price."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT p1 + p2 AS cost FROM ( SELECT 355 * ( COUNT ( * ) ) AS p1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND strftime ( \"%Y\" , \"now\" ) - C.Age < 1980 ) JOIN ( SELECT 228 * ( COUNT ( * ) ) AS p2 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND strftime ( \"%Y\" , \"now\" ) - C.Age >= 1980 )",
+        "question": "1980年前出生的歌手出演一场音乐会薪酬355美元，1980年及以后出生的歌手出演一场音乐会薪酬228美元。在萨默塞特公园场馆举办的音乐会给歌手付薪酬一共花了多少钱？",
+        "reasoning_type": "- + * C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT p1 + p2 AS cost FROM ( SELECT 355 * ( COUNT ( * ) ) AS p1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND strftime ( \"%Y\" , \"now\" ) - C.Age < 1980 ) JOIN ( SELECT 228 * ( COUNT ( * ) ) AS p2 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND strftime ( \"%Y\" , \"now\" ) - C.Age >= 1980 )",
+        "question": "对于1980年前出生的歌手，薪酬是355美元一场演出；而对于1980年及以后出生的歌手，薪酬是228美元一场演出。计算一下目前在萨默塞特公园场馆举办的音乐会总共花费了多少用于支付歌手的薪酬。",
+        "reasoning_type": "- + * C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT p1 + p2 AS cost FROM ( SELECT 355 * ( COUNT ( * ) ) AS p1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN ( SELECT Singer_ID , Name , strftime ( \"%Y\" , \"now\" ) - Age AS birth_year FROM singer WHERE Name != \"Justin Brown\" UNION ALL SELECT Singer_ID , Name , ( SELECT strftime ( \"%Y\" , \"now\" ) - Age FROM singer WHERE Name = \"John Nizinik\" ) - 3 AS birth_year FROM singer WHERE Name = \"Justin Brown\" ) C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.birth_year < 1980 ) JOIN ( SELECT 228 * ( COUNT ( * ) ) AS p2 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN ( SELECT Singer_ID , Name , strftime ( \"%Y\" , \"now\" ) - Age AS birth_year FROM singer WHERE Name != \"Justin Brown\" UNION ALL SELECT Singer_ID , Name , ( SELECT strftime ( \"%Y\" , \"now\" ) - Age FROM singer WHERE Name = \"John Nizinik\" ) - 3 AS birth_year FROM singer WHERE Name = \"Justin Brown\" ) C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.birth_year >= 1980 )",
+        "question": "1980年前出生的歌手出演一场音乐会薪酬355美元，1980年及以后出生的歌手出演一场音乐会薪酬228美元。假如贾斯汀·布朗比约翰·尼西尼克大3岁，在萨默塞特公园场馆举办的音乐会给歌手付薪酬一共花了多少？",
+        "reasoning_type": "- + * C H",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT p1 + p2 AS cost FROM ( SELECT 355 * ( COUNT ( * ) ) AS p1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN ( SELECT Singer_ID , Name , strftime ( \"%Y\" , \"now\" ) - Age AS birth_year FROM singer WHERE Name != \"Justin Brown\" UNION ALL SELECT Singer_ID , Name , ( SELECT strftime ( \"%Y\" , \"now\" ) - Age FROM singer WHERE Name = \"John Nizinik\" ) - 3 AS birth_year FROM singer WHERE Name = \"Justin Brown\" ) C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.birth_year < 1980 ) JOIN ( SELECT 228 * ( COUNT ( * ) ) AS p2 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN ( SELECT Singer_ID , Name , strftime ( \"%Y\" , \"now\" ) - Age AS birth_year FROM singer WHERE Name != \"Justin Brown\" UNION ALL SELECT Singer_ID , Name , ( SELECT strftime ( \"%Y\" , \"now\" ) - Age FROM singer WHERE Name = \"John Nizinik\" ) - 3 AS birth_year FROM singer WHERE Name = \"Justin Brown\" ) C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.birth_year >= 1980 )",
+        "question": "对于1980年前出生的歌手，薪酬是355美元一场演出；而对于1980年及以后出生的歌手，薪酬是228美元一场演出。假设贾斯汀·布朗比约翰·尼西尼克大3岁，计算一下目前在萨默塞特公园场馆举办的音乐会总共花费了多少用于支付歌手的薪酬。",
+        "reasoning_type": "- + * C H",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT * FROM ( SELECT Name AS highest_name FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_highest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) ) JOIN ( SELECT Name AS lowest_name FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_lowest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) )",
+        "question": "平均入座率最低和最高的场馆分别是哪个，它们分别开过几场音乐会？",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT * FROM ( SELECT Name AS highest_name FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_highest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) ) JOIN ( SELECT Name AS lowest_name FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_lowest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) )",
+        "question": "请告诉我平均入座率最低和最高的场馆的名字以及它们各自举办过的音乐会数量。",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT * FROM ( SELECT Name AS highest_name FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_highest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) ) JOIN ( SELECT Name AS lowest_name FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_lowest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) )",
+        "question": "假如盖菲尔德公园场馆的容量是汉普登公园场馆的十分之一，平均入座率最低和最高的场馆分别是哪个，它们分别开过几场音乐会？",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT * FROM ( SELECT Name AS highest_name FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_highest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) ) JOIN ( SELECT Name AS lowest_name FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_lowest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) )",
+        "question": "假如盖菲尔德公园场馆的容量是汉普登公园场馆的十分之一，请告诉我平均入座率最低和最高的场馆的名字以及它们各自举办过的音乐会数量。",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT t1.concert_ID, t1.concert_Name, 100.0 * n_female / n AS female_proportion FROM (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.Is_male = \"F\" GROUP BY A.concert_ID UNION ALL SELECT A.concert_ID, A.concert_Name, 0 AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND A.concert_ID NOT IN (SELECT A.concert_ID FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.Is_male = \"F\" GROUP BY A.concert_ID) GROUP BY A.concert_ID) t1 JOIN (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" GROUP BY A.concert_ID) t2 ON t1.concert_ID = t2.concert_ID",
+        "question": "在萨默塞特公园场馆举办的每个音乐会的ID和名字分别是什么？每场音乐会中有百分之多少的歌手是女歌手？",
+        "reasoning_type": "+ * /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT t1.concert_ID, t1.concert_Name, 100.0 * n_female / n AS female_proportion FROM (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.Is_male = \"F\" GROUP BY A.concert_ID UNION ALL SELECT A.concert_ID, A.concert_Name, 0 AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND A.concert_ID NOT IN (SELECT A.concert_ID FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.Is_male = \"F\" GROUP BY A.concert_ID) GROUP BY A.concert_ID) t1 JOIN (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" GROUP BY A.concert_ID) t2 ON t1.concert_ID = t2.concert_ID",
+        "question": "列出在萨默塞特公园场馆举办的每场音乐会的ID和名字，以及其中女歌手在歌手中的百分比。",
+        "reasoning_type": "+ * /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT t1.concert_ID, t1.concert_Name, 100.0 * n_female / n AS female_proportion FROM (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND C.Is_male = \"F\" GROUP BY A.concert_ID UNION ALL SELECT A.concert_ID, A.concert_Name, 0 AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND A.concert_ID NOT IN (SELECT A.concert_ID FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND C.Is_male = \"F\" GROUP BY A.concert_ID) GROUP BY A.concert_ID) t1 JOIN (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") GROUP BY A.concert_ID) t2 ON t1.concert_ID = t2.concert_ID",
+        "question": "假如“Week 2”音乐会在萨默塞特公园场馆举办，在萨默塞特公园场馆举办的每个音乐会的ID和名字是什么，其中有百分之多少的歌手是女歌手？",
+        "reasoning_type": "+ * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT t1.concert_ID, t1.concert_Name, 100.0 * n_female / n AS female_proportion FROM (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND C.Is_male = \"F\" GROUP BY A.concert_ID UNION ALL SELECT A.concert_ID, A.concert_Name, 0 AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND A.concert_ID NOT IN (SELECT A.concert_ID FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND C.Is_male = \"F\" GROUP BY A.concert_ID) GROUP BY A.concert_ID) t1 JOIN (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") GROUP BY A.concert_ID) t2 ON t1.concert_ID = t2.concert_ID",
+        "question": "假如“Week 2”音乐会的举办场地是萨默塞特公园场馆，列出在萨默塞特公园场馆举办的每场音乐会的ID，姓名，以及女歌手在歌手中的百分比。",
+        "reasoning_type": "+ * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT 100.0 * COUNT ( * ) / ( SELECT COUNT ( * ) FROM concert ) AS percent FROM concert WHERE Stadium_ID IN ( SELECT Stadium_ID FROM stadium ORDER BY 100.0 * Average / Capacity DESC LIMIT 3 )",
+        "question": "总共有百分之多少的音乐会是在平均入座率前三的场馆举办的？",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT 100.0 * COUNT ( * ) / ( SELECT COUNT ( * ) FROM concert ) AS percent FROM concert WHERE Stadium_ID IN ( SELECT Stadium_ID FROM stadium ORDER BY 100.0 * Average / Capacity DESC LIMIT 3 )",
+        "question": "计算一下在平均入座率前三的场馆举办的音乐会数量占所有音乐会数量的百分比。",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT 100.0 * COUNT ( * ) / ( SELECT COUNT ( * ) FROM concert ) AS percent FROM ( SELECT Stadium_ID FROM stadium WHERE Name = \"Glebe Park\" UNION ALL SELECT Stadium_ID FROM concert WHERE Theme != \"Bleeding Love\" ) WHERE Stadium_ID IN ( SELECT Stadium_ID FROM stadium ORDER BY 100.0 * Average / Capacity DESC LIMIT 3 )",
+        "question": "假如主题为“Bleeding Love”的音乐会在格里公园举办，总共有百分之多少的音乐会是在平均入座率前三的场馆举办的？",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT 100.0 * COUNT ( * ) / ( SELECT COUNT ( * ) FROM concert ) AS percent FROM ( SELECT Stadium_ID FROM stadium WHERE Name = \"Glebe Park\" UNION ALL SELECT Stadium_ID FROM concert WHERE Theme != \"Bleeding Love\" ) WHERE Stadium_ID IN ( SELECT Stadium_ID FROM stadium ORDER BY 100.0 * Average / Capacity DESC LIMIT 3 )",
+        "question": "假设主题为“Bleeding Love”的音乐会的举办场地是格里公园，计算一下在平均入座率前三的场馆举办的音乐会数量占所有音乐会数量的百分比。",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID GROUP BY C.Stadium_ID HAVING COUNT ( DISTINCT ( B.Singer_ID ) ) >= 3 * ( SELECT COUNT ( DISTINCT ( B.Singer_ID ) ) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Glebe Park\" )",
+        "question": "哪个场馆去演唱过的歌手数量不少于去格里公园场馆唱过的歌手数量的三倍？",
+        "reasoning_type": "*",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID GROUP BY C.Stadium_ID HAVING COUNT ( DISTINCT ( B.Singer_ID ) ) >= 3 * ( SELECT COUNT ( DISTINCT ( B.Singer_ID ) ) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Glebe Park\" )",
+        "question": "列出去演唱过的歌手数量不少于去格里公园场馆唱过的歌手数量的三倍的场馆。",
+        "reasoning_type": "*",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM ( SELECT C.Stadium_ID , B.Singer_ID , C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID UNION ALL SELECT ( SELECT Stadium_ID FROM stadium WHERE Name = \"Balmoor\" ) , B.Singer_ID , C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Somerset Park\" ) GROUP BY Stadium_ID HAVING COUNT ( DISTINCT ( Singer_ID ) ) >= 3 * ( SELECT COUNT ( DISTINCT ( B.Singer_ID ) ) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Glebe Park\" )",
+        "question": "假如去过萨默塞特公园场馆演唱的歌手都去过巴尔穆尔场馆，哪个场馆去演唱过歌手数量不少于格里公园场馆的三倍？列出这些场馆的名字。",
+        "reasoning_type": "* H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM ( SELECT C.Stadium_ID , B.Singer_ID , C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID UNION ALL SELECT ( SELECT Stadium_ID FROM stadium WHERE Name = \"Balmoor\" ) , B.Singer_ID , C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Somerset Park\" ) GROUP BY Stadium_ID HAVING COUNT ( DISTINCT ( Singer_ID ) ) >= 3 * ( SELECT COUNT ( DISTINCT ( B.Singer_ID ) ) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Glebe Park\" )",
+        "question": "假如所有去萨默塞特公园场馆演唱过的歌手也都去过巴尔穆尔场馆，列出去演唱过的歌手数量不少于去格里公园场馆唱过的歌手数量的三倍的场馆的名字。",
+        "reasoning_type": "* H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM stadium WHERE 100.0 * Highest / Capacity > 2 * ( SELECT 100.0 * Highest / Capacity FROM stadium WHERE Name = \"Balmoor\" )",
+        "question": "哪个场馆的最高入座率比巴尔穆尔场馆的最高入座率两倍还多？列出这些场馆的名字。",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM stadium WHERE 100.0 * Highest / Capacity > 2 * ( SELECT 100.0 * Highest / Capacity FROM stadium WHERE Name = \"Balmoor\" )",
+        "question": "列出最高入座率比巴尔穆尔场馆的最高入座率两倍还高的场馆的名字。",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM stadium WHERE 100.0 * Highest / Capacity > 2 * ( SELECT 100.0 * Highest / 5600 FROM stadium WHERE Name = \"Balmoor\" )",
+        "question": "假如巴尔穆尔场馆的容量是5600，哪个场馆的最高入座率比巴尔穆尔场馆的最高入座率两倍还多？列出这些场馆的名字。",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM stadium WHERE 100.0 * Highest / Capacity > 2 * ( SELECT 100.0 * Highest / 5600 FROM stadium WHERE Name = \"Balmoor\" )",
+        "question": "假设巴尔穆尔场馆最多只能容下5600人，列出最高入座率比巴尔穆尔场馆的最高入座率两倍还高的场馆的名字。",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "Attendance rate is calculated by divding attendance amount by the capacity of the stadium."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT A.concert_ID, A.concert_Name, 1.0 * COUNT (DISTINCT (B.Singer_ID)) / (SELECT COUNT (DISTINCT (B.Singer_ID)) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" ) AS times FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Year > 2012 GROUP BY A.concert_ID HAVING COUNT (DISTINCT (B.Singer_ID)) > (SELECT COUNT (DISTINCT (B.Singer_ID)) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" )",
+        "question": "哪场2012年后举办的音乐会的歌手数量比“Happy Tonight”主题音乐会歌手数量多，是它的多少倍？同时给出音乐会的ID和全名。",
+        "reasoning_type": "* /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT A.concert_ID, A.concert_Name, 1.0 * COUNT (DISTINCT (B.Singer_ID)) / (SELECT COUNT (DISTINCT (B.Singer_ID)) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" ) AS times FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Year > 2012 GROUP BY A.concert_ID HAVING COUNT (DISTINCT (B.Singer_ID)) > (SELECT COUNT (DISTINCT (B.Singer_ID)) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" )",
+        "question": "举办于2012年以后的音乐会中，哪场音乐会的参演歌手比“Happy Tonight”主题音乐会歌手多，是它的多少倍？同时给出音乐会的ID和全名。",
+        "reasoning_type": "* /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT A.concert_ID, A.concert_Name, 1.0 * (COUNT (DISTINCT (B.Singer_ID)) + 1) / (SELECT COUNT (DISTINCT (B.Singer_ID)) + 1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) ) AS times FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Year > 2012 AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) GROUP BY A.concert_ID HAVING (COUNT (DISTINCT (B.Singer_ID)) + 1) > (SELECT COUNT (DISTINCT (B.Singer_ID)) + 1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) )",
+        "question": "假如每场音乐会都有歌手乔·夏普，哪场2012年后举办的音乐会的歌手数量比“Happy Tonight”主题音乐会歌手数量多，是它的多少倍？同时给出这些音乐会的ID和全名。",
+        "reasoning_type": "+ * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT A.concert_ID, A.concert_Name, 1.0 * (COUNT (DISTINCT (B.Singer_ID)) + 1) / (SELECT COUNT (DISTINCT (B.Singer_ID)) + 1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) ) AS times FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Year > 2012 AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) GROUP BY A.concert_ID HAVING (COUNT (DISTINCT (B.Singer_ID)) + 1) > (SELECT COUNT (DISTINCT (B.Singer_ID)) + 1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) )",
+        "question": "假如乔·夏普参演了每一场音乐会，举办于2012年以后的音乐会中，哪场音乐会的参演歌手比“Happy Tonight”主题音乐会歌手多，是它的多少倍？同时给出这些音乐会的ID和全名。",
+        "reasoning_type": "+ * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM singer WHERE ( SELECT Song_release_year FROM singer WHERE Song_Name = \"Love\" ) - ( strftime ( \"%Y\" , \"now\" ) - Age ) > 2 * ( SELECT Age - ( strftime ( \"%Y\" , \"now\" ) - Song_release_year ) FROM singer WHERE Song_Name = \"Love\" )",
+        "question": "“Love”这首歌发布的时候哪些歌手的年龄比这首歌的演唱者的两倍还大？列出这些歌手的名字。",
+        "reasoning_type": "- * C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM singer WHERE ( SELECT Song_release_year FROM singer WHERE Song_Name = \"Love\" ) - ( strftime ( \"%Y\" , \"now\" ) - Age ) > 2 * ( SELECT Age - ( strftime ( \"%Y\" , \"now\" ) - Song_release_year ) FROM singer WHERE Song_Name = \"Love\" )",
+        "question": "列出“Love”这首歌发布的时候年龄比这首歌的演唱者的两倍还大的歌手的名字。",
+        "reasoning_type": "- * C",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM singer WHERE 2010 - ( strftime ( \"%Y\" , \"now\" ) - Age ) > 2 * ( SELECT Age - ( strftime ( \"%Y\" , \"now\" ) - 2010 ) FROM singer WHERE Song_Name = \"Love\" )",
+        "question": "假如“Love”发布于2010年，“Love”这首歌发布的时候哪些歌手的年龄比这首歌的演唱者的两倍还大？列出这些歌手的名字。",
+        "reasoning_type": "- * C H",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "concert_singer",
+        "query": "SELECT Name FROM singer WHERE 2010 - ( strftime ( \"%Y\" , \"now\" ) - Age ) > 2 * ( SELECT Age - ( strftime ( \"%Y\" , \"now\" ) - 2010 ) FROM singer WHERE Song_Name = \"Love\" )",
+        "question": "假如“Love”发布于2010年，列出“Love”这首歌发布的时候年龄比这首歌的演唱者的两倍还大的歌手的名字。",
+        "reasoning_type": "- * C H",
+        "commonsense_knowledge": "Age is calculated by substracting date of birth from a given date."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 1",
+        "question": "人均国民生产总值最高的国家在哪个大洲？",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 1",
+        "question": "给出人均国民生产总值最高的国家所在的大洲的名字。",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM (SELECT \"1982268.0\" AS GNP, Population, Continent FROM country WHERE name = (SELECT A.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE B.name = \"Korla\" ) UNION ALL SELECT GNP, Population, Continent FROM country WHERE name != (SELECT A.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE B.name = \"Korla\" ) ) ORDER BY 1.0 * GNP / Population DESC LIMIT 1",
+        "question": "假如库尔勒市所在的国家国民生产总值为1982268，人均国民生产总值最高的国家在哪个大洲？",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM (SELECT \"1982268.0\" AS GNP, Population, Continent FROM country WHERE name = (SELECT A.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE B.name = \"Korla\" ) UNION ALL SELECT GNP, Population, Continent FROM country WHERE name != (SELECT A.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE B.name = \"Korla\" ) ) ORDER BY 1.0 * GNP / Population DESC LIMIT 1",
+        "question": "如果库尔勒市所在的国家国民生产总值为1982268，给出人均国民生产总值最高的国家所在的大洲的名字。",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE IndepYear > 1979 ORDER BY 1.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+        "question": "1979年后独立的国家中，哪个国家的国民生产总值增长率最高？",
+        "reasoning_type": "- * /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE IndepYear > 1979 ORDER BY 1.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+        "question": "独立日期在1979年之后的国家中，国民生产总值增长率最高的国家是哪个？",
+        "reasoning_type": "- * /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT name FROM ( SELECT name , GNP + 1000000 AS GNP , GNPOld , IndepYear FROM country WHERE Continent = \"Oceania\" UNION ALL SELECT name , GNP , GNPOld , IndepYear FROM country WHERE Continent != \"Oceania\" ) WHERE IndepYear > 1979 ORDER BY 1.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+        "question": "1979年后独立的国家中，哪个国家的国民生产总值增长率最高假如大洋洲所有国家现在的国民生产总值增加1000000？",
+        "reasoning_type": "+ - * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT name FROM ( SELECT name , GNP + 1000000 AS GNP , GNPOld , IndepYear FROM country WHERE Continent = \"Oceania\" UNION ALL SELECT name , GNP , GNPOld , IndepYear FROM country WHERE Continent != \"Oceania\" ) WHERE IndepYear > 1979 ORDER BY 1.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+        "question": "假设大洋洲所有国家现在的国民生产总值增加1000000，给出在1979年之后独立的国家中，所有国民生产总值增长率最高的国家名字。",
+        "reasoning_type": "+ - * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name , ( 100.0 * Population / SurfaceArea ) / ( SELECT MIN ( 100.0 * Population / SurfaceArea ) FROM country WHERE 100.0 * Population / SurfaceArea > 0 ) AS times FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT * , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"English\" ) ORDER BY 100.0 * Population / SurfaceArea DESC LIMIT 1",
+        "question": "哪个绝大多数人说英语的国家的人口密度最高，是人口密度最低的国家的多少倍？",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "The density of population is the ratio between the numbers of people to the size of land."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name , ( 100.0 * Population / SurfaceArea ) / ( SELECT MIN ( 100.0 * Population / SurfaceArea ) FROM country WHERE 100.0 * Population / SurfaceArea > 0 ) AS times FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT * , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"English\" ) ORDER BY 100.0 * Population / SurfaceArea DESC LIMIT 1",
+        "question": "在使用人数占比最高的语言为英语的国家中，人口密度最高的国家是哪个？它的人口密度是人口密度最低的国家的多少倍？",
+        "reasoning_type": "* / C",
+        "commonsense_knowledge": "The density of population is the ratio between the numbers of people to the size of land."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name , ( 100.0 * Population / SurfaceArea ) / ( SELECT MIN ( 100.0 * Population / SurfaceArea ) FROM country WHERE 100.0 * Population / SurfaceArea > 0 ) AS times FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT * , MAX ( Percentage ) FROM countrylanguage A JOIN country B ON A.CountryCode = B.Code WHERE B.name != \"Ireland\" GROUP BY A.CountryCode ) WHERE Language = \"English\" ) ORDER BY 100.0 * Population / SurfaceArea DESC LIMIT 1",
+        "question": "假如爱尔兰没有一个人说英语，哪个绝大多数人说英语的国家的人口密度最高，是人口密度最低的国家的多少倍？",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "The density of population is the ratio between the numbers of people to the size of land."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name , ( 100.0 * Population / SurfaceArea ) / ( SELECT MIN ( 100.0 * Population / SurfaceArea ) FROM country WHERE 100.0 * Population / SurfaceArea > 0 ) AS times FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT * , MAX ( Percentage ) FROM countrylanguage A JOIN country B ON A.CountryCode = B.Code WHERE B.name != \"Ireland\" GROUP BY A.CountryCode ) WHERE Language = \"English\" ) ORDER BY 100.0 * Population / SurfaceArea DESC LIMIT 1",
+        "question": "假设爱尔兰没有说英语的人，那么在使用人数占比最高的语言为英语的国家中，人口密度最高的国家是哪个？它的人口密度是人口密度最低的国家的多少倍？",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "The density of population is the ratio between the numbers of people to the size of land."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM countrylanguage WHERE Language = \"Arabic\" AND IsOfficial = \"T\" ) ORDER BY 100.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+        "question": "阿拉伯语不是官方语言的国家中，哪个国家的国民生产总值的增长幅度最大？",
+        "reasoning_type": "- * /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM countrylanguage WHERE Language = \"Arabic\" AND IsOfficial = \"T\" ) ORDER BY 100.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+        "question": "所有不以阿拉伯语为官方语言的国家中，国民生产总值增长幅度最大的国家的名字是什么？",
+        "reasoning_type": "- * /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM ( SELECT Name , Code , GNP , GNPOld + 9999.0 AS GNPOld FROM country WHERE Continent = \"South America\" UNION ALL SELECT Name , Code , GNP , GNPOld FROM country WHERE Continent != \"South America\" ) WHERE Code NOT IN ( SELECT CountryCode FROM countrylanguage WHERE Language = \"Arabic\" AND IsOfficial = \"T\" ) ORDER BY 100.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+        "question": "假如南美洲所有国家过去的国民生产总值增加9999，在阿拉伯语不是官方语言的国家中，哪个国家的国民生产总值的增长幅度最大？",
+        "reasoning_type": "- + * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM ( SELECT Name , Code , GNP , GNPOld + 9999.0 AS GNPOld FROM country WHERE Continent = \"South America\" UNION ALL SELECT Name , Code , GNP , GNPOld FROM country WHERE Continent != \"South America\" ) WHERE Code NOT IN ( SELECT CountryCode FROM countrylanguage WHERE Language = \"Arabic\" AND IsOfficial = \"T\" ) ORDER BY 100.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+        "question": "如果所有位于南美洲的国家的过去的国民生产总值增加9999，在所有不以阿拉伯语为官方语言的国家中，国民生产总值增长幅度最大的国家的名字是什么？",
+        "reasoning_type": "- + * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT B.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE A.Continent = \"North America\" AND B.Population >= 2 * ( SELECT SUM ( Population ) FROM city WHERE District = \"Kang-won\" )",
+        "question": "北美洲哪个城市的人口数量至少是江原道行政区的两倍？",
+        "reasoning_type": "*",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT B.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE A.Continent = \"North America\" AND B.Population >= 2 * ( SELECT SUM ( Population ) FROM city WHERE District = \"Kang-won\" )",
+        "question": "列出位于北美洲的人口数量至少是江原道行政区的两倍的所有城市名字。",
+        "reasoning_type": "*",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT DISTINCT ( name ) FROM ( SELECT B.name , B.Population * ( 1 + 0.01 ) AS Population FROM country A JOIN city B ON A.Code = B.CountryCode JOIN countrylanguage C ON A.Code = C.CountryCode WHERE A.Continent = \"North America\" AND C.Language = \"English\" AND C.IsOfficial = \"T\" UNION ALL SELECT B.name , B.Population FROM country A JOIN city B ON A.Code = B.CountryCode JOIN countrylanguage C ON A.Code = C.CountryCode WHERE A.Continent = \"North America\" AND NOT ( C.Language = \"English\" AND C.IsOfficial = \"T\" ) ) WHERE Population >= 2 * ( SELECT SUM ( Population ) FROM city WHERE District = \"Kang-won\" )",
+        "question": "假如北美洲以英语为官方语言的国家的城市人口增加1%，北美洲哪个城市的人口数量至少是江原道行政区的两倍？",
+        "reasoning_type": "* + H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT DISTINCT ( name ) FROM ( SELECT B.name , B.Population * ( 1 + 0.01 ) AS Population FROM country A JOIN city B ON A.Code = B.CountryCode JOIN countrylanguage C ON A.Code = C.CountryCode WHERE A.Continent = \"North America\" AND C.Language = \"English\" AND C.IsOfficial = \"T\" UNION ALL SELECT B.name , B.Population FROM country A JOIN city B ON A.Code = B.CountryCode JOIN countrylanguage C ON A.Code = C.CountryCode WHERE A.Continent = \"North America\" AND NOT ( C.Language = \"English\" AND C.IsOfficial = \"T\" ) ) WHERE Population >= 2 * ( SELECT SUM ( Population ) FROM city WHERE District = \"Kang-won\" )",
+        "question": "假如以英语为官方语言的北美洲国家的城市人口增加1%，列出位于北美洲的人口数量至少是江原道行政区的两倍的所有城市名字。",
+        "reasoning_type": "* + H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM country GROUP BY Continent HAVING 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) > 1.5 * ( SELECT 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) FROM country WHERE Continent = \"Africa\" )",
+        "question": "哪个大洲的国民生产总值增长率至少是非洲的1.5倍？",
+        "reasoning_type": "- * /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM country GROUP BY Continent HAVING 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) > 1.5 * ( SELECT 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) FROM country WHERE Continent = \"Africa\" )",
+        "question": "列出所有国民生产总值增长率至少是非洲的1.5倍的大洲的名字。",
+        "reasoning_type": "- * /",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM ( SELECT Code , GNP * ( 1 + 0.005 ) AS GNP , GNPOld , Continent FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Czech\" ) UNION ALL SELECT Code , GNP , GNPOld , Continent FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Czech\" ) ) GROUP BY Continent HAVING 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) > 1.5 * ( SELECT 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) FROM country WHERE Continent = \"Africa\" )",
+        "question": "假如绝大多数人说捷克语的国家现在的国民生产总值增加0.5%，哪个大洲的国民生产总值增长率至少是非洲的1.5倍？",
+        "reasoning_type": "+ - * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM ( SELECT Code , GNP * ( 1 + 0.005 ) AS GNP , GNPOld , Continent FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Czech\" ) UNION ALL SELECT Code , GNP , GNPOld , Continent FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Czech\" ) ) GROUP BY Continent HAVING 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) > 1.5 * ( SELECT 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) FROM country WHERE Continent = \"Africa\" )",
+        "question": "如果使用人数比例最高的语言是捷克语的国家现在的国民生产总值增加0.5%，列出所有国民生产总值增长率至少是非洲的1.5倍的大洲的名字。",
+        "reasoning_type": "+ - * / H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE LifeExpectancy >= 1.5 * ( SELECT LifeExpectancy FROM country WHERE name = \"Zambia\" )",
+        "question": "哪个国家的人口预期寿命不低于赞比亚的1.5倍？",
+        "reasoning_type": "*",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE LifeExpectancy >= 1.5 * ( SELECT LifeExpectancy FROM country WHERE name = \"Zambia\" )",
+        "question": "列出所有人口预期寿命不低于赞比亚的1.5倍的国家名字。",
+        "reasoning_type": "*",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM ( SELECT Name , 90 AS LifeExpectancy FROM country WHERE Code IN ( SELECT Code FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 20 ) UNION ALL SELECT Name , LifeExpectancy FROM country WHERE Code NOT IN ( SELECT Code FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 20 ) ) WHERE LifeExpectancy >= 1.5 * ( SELECT LifeExpectancy FROM country WHERE name = \"Zambia\" )",
+        "question": "假如人均国民生产总值是全球前20的国家的人口预期寿命都是90，哪个国家的人口预期寿命不低于赞比亚的1.5倍？",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM ( SELECT Name , 90 AS LifeExpectancy FROM country WHERE Code IN ( SELECT Code FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 20 ) UNION ALL SELECT Name , LifeExpectancy FROM country WHERE Code NOT IN ( SELECT Code FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 20 ) ) WHERE LifeExpectancy >= 1.5 * ( SELECT LifeExpectancy FROM country WHERE name = \"Zambia\" )",
+        "question": "假如人均国民生产总值排名全球前20的国家的人口预期寿命都是90，列出所有人口预期寿命不低于赞比亚的1.5倍的国家名字。",
+        "reasoning_type": "* / C H",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Dutch\" ) ORDER BY GNPOld - GNP DESC LIMIT 1",
+        "question": "荷兰语不是最主要语言的国家中，哪个国家的国民生产总值的减少量最大？",
+        "reasoning_type": "-",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Dutch\" ) ORDER BY GNPOld - GNP DESC LIMIT 1",
+        "question": "在所有不以荷兰语为最主要语言的国家中，哪个国家的国民生产总值降低幅度最大？",
+        "reasoning_type": "-",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Dutch\" UNION SELECT Code FROM country WHERE name = \"Aruba\" ) ORDER BY GNPOld - GNP DESC LIMIT 1",
+        "question": "假如阿鲁巴岛所有人都说荷兰语，荷兰语不是最主要语言的国家中，哪个国家的国民生产总值的减少量最大？",
+        "reasoning_type": "- H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Dutch\" UNION SELECT Code FROM country WHERE name = \"Aruba\" ) ORDER BY GNPOld - GNP DESC LIMIT 1",
+        "question": "假如荷兰语事阿鲁巴岛唯一一种使用的语言，那么在所有不以荷兰语为最主要语言的国家中，哪个国家的国民生产总值降低幅度最大？",
+        "reasoning_type": "- H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT COUNT ( * ) - ( SELECT COUNT ( * ) FROM country WHERE GNP < GNPOld AND Continent = \"South America\" ) AS diff FROM country WHERE GNP < GNPOld AND Continent = \"North America\"",
+        "question": "北美洲洲国民生产总值呈下降趋势的国家比南美洲多多少？",
+        "reasoning_type": "-",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT COUNT ( * ) - ( SELECT COUNT ( * ) FROM country WHERE GNP < GNPOld AND Continent = \"South America\" ) AS diff FROM country WHERE GNP < GNPOld AND Continent = \"North America\"",
+        "question": "位于北美洲的国家中，国民生产总值呈下降趋势的国家比南美洲多多少？",
+        "reasoning_type": "-",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT COUNT ( * ) - ( SELECT COUNT ( * ) FROM country WHERE GNP < GNPOld AND Continent = \"South America\" ) AS diff FROM ( SELECT Name , GNP * ( 1 + 0.02 ) AS GNP , GNPOld , Continent FROM country WHERE Continent = \"North America\" AND Code IN ( SELECT Code FROM country WHERE Continent = \"North America\" ORDER BY Population DESC LIMIT 2 ) UNION ALL SELECT Name , GNP , GNPOld , Continent FROM country WHERE Continent = \"North America\" AND Code NOT IN ( SELECT Code FROM country WHERE Continent = \"North America\" ORDER BY Population DESC LIMIT 2 ) ) WHERE GNP < GNPOld AND Continent = \"North America\"",
+        "question": "假如北美洲人口最多的前两个国家当前的国民生产总值增加2%，北美洲洲国民生产总值呈下降趋势的国家比南美洲多多少？",
+        "reasoning_type": "+ - * H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT COUNT ( * ) - ( SELECT COUNT ( * ) FROM country WHERE GNP < GNPOld AND Continent = \"South America\" ) AS diff FROM ( SELECT Name , GNP * ( 1 + 0.02 ) AS GNP , GNPOld , Continent FROM country WHERE Continent = \"North America\" AND Code IN ( SELECT Code FROM country WHERE Continent = \"North America\" ORDER BY Population DESC LIMIT 2 ) UNION ALL SELECT Name , GNP , GNPOld , Continent FROM country WHERE Continent = \"North America\" AND Code NOT IN ( SELECT Code FROM country WHERE Continent = \"North America\" ORDER BY Population DESC LIMIT 2 ) ) WHERE GNP < GNPOld AND Continent = \"North America\"",
+        "question": "假如北美洲人口数量排名最高的两个国家的当前的国民生产总值增加2%，那么在位于北美洲的国家中，国民生产总值呈下降趋势的国家比南美洲多多少？",
+        "reasoning_type": "+ - * H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM country GROUP BY Continent HAVING 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) >= ( SELECT 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) FROM country WHERE Continent = \"Europe\" ) + 0.02",
+        "question": "哪个大洲的人均国民生产总值增长率比欧洲高至少两个点？",
+        "reasoning_type": "+ - * / C",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM country GROUP BY Continent HAVING 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) >= ( SELECT 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) FROM country WHERE Continent = \"Europe\" ) + 0.02",
+        "question": "列出所有人均国民生产总值增长率比欧洲高至少两个百分点的大洲。",
+        "reasoning_type": "+ - * / C",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM ( SELECT name , Continent , GNP * ( 1 - 0.02 ) AS GNP , Population , GNPOld FROM country WHERE Code IN ( SELECT Code FROM country ORDER BY LifeExpectancy DESC LIMIT 3 ) UNION ALL SELECT name , Continent , GNP , Population , GNPOld FROM country WHERE Code NOT IN ( SELECT Code FROM country ORDER BY LifeExpectancy DESC LIMIT 3 ) ) GROUP BY Continent HAVING 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) >= ( SELECT 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) FROM country WHERE Continent = \"Europe\" ) + 0.02",
+        "question": "假如人口预期寿命最长的前3个国家国民生产总值减少2%，哪个大洲的人均国民生产总值增长率比欧洲高至少两个点？",
+        "reasoning_type": "+ - * / C H",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Continent FROM ( SELECT name , Continent , GNP * ( 1 - 0.02 ) AS GNP , Population , GNPOld FROM country WHERE Code IN ( SELECT Code FROM country ORDER BY LifeExpectancy DESC LIMIT 3 ) UNION ALL SELECT name , Continent , GNP , Population , GNPOld FROM country WHERE Code NOT IN ( SELECT Code FROM country ORDER BY LifeExpectancy DESC LIMIT 3 ) ) GROUP BY Continent HAVING 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) >= ( SELECT 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) FROM country WHERE Continent = \"Europe\" ) + 0.02",
+        "question": "假设人口预期寿命位列前3的国家国民生产总值减少2%，列出所有人均国民生产总值增长率比欧洲高至少两个百分点的大洲。",
+        "reasoning_type": "+ - * / C H",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT name , GNPOld , GNP , GNP + ( GNP - GNPOld ) AS GNPFuture FROM country WHERE Continent = \"Asia\"",
+        "question": "如果增长幅度保持不变，列出亚洲每个国家的名字、过去的国民生产总值、现在的国民生产总值，并预估一下未来的国民生产总值。",
+        "reasoning_type": "+ -",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT name , GNPOld , GNP , GNP + ( GNP - GNPOld ) AS GNPFuture FROM country WHERE Continent = \"Asia\"",
+        "question": "假设国民生产总值增长幅度保持恒定，列出每个位于亚洲的国家的名字、过去的国民生产总值、现在的国民生产总值，和预期的未来的国民生产总值。",
+        "reasoning_type": "+ -",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT name , GNPOld , GNP , GNP + ( GNP - GNPOld ) AS GNPFuture FROM ( SELECT name , GNPOld , 1000000.0 AS GNP , Continent FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Chinese\" ) UNION ALL SELECT name , GNPOld , GNP , Continent FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Chinese\" ) ) WHERE Continent = \"Asia\"",
+        "question": "如果增长幅度保持不变且以中文为主要语言的国家现在的国民生产总值是1000000.0，列出亚洲每个国家的名字、过去的国民生产总值、现在的国民生产总值，并预估一下未来的国民生产总值？",
+        "reasoning_type": "+ - H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT name , GNPOld , GNP , GNP + ( GNP - GNPOld ) AS GNPFuture FROM ( SELECT name , GNPOld , 1000000.0 AS GNP , Continent FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Chinese\" ) UNION ALL SELECT name , GNPOld , GNP , Continent FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Chinese\" ) ) WHERE Continent = \"Asia\"",
+        "question": "假设以中文为主要语言的国家现在的国民生产总值是1000000.0，且所有国家国民生产总值增长幅度保持恒定，列出每个位于亚洲的国家的名字、过去的国民生产总值、现在的国民生产总值，和预期的未来的国民生产总值。",
+        "reasoning_type": "+ - H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Population * ( 1 + 0.004 ) AS population_in_1year FROM country WHERE name = \"United Kingdom\"",
+        "question": "英国的人口年增长率是0.4%，1年后英国的人口数量是多少？",
+        "reasoning_type": "+ *",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Population * ( 1 + 0.004 ) AS population_in_1year FROM country WHERE name = \"United Kingdom\"",
+        "question": "列出1年之后英国的人口数量，已知英国的人口年增长率是0.4%。",
+        "reasoning_type": "+ *",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Population * ( 1 + 0.004 ) AS population_in_1year FROM ( SELECT Continent , name , 103000 AS Population FROM country WHERE Continent = \"Europe\" AND LifeExpectancy > 75 UNION SELECT Continent , name , Population FROM country WHERE Continent = \"Europe\" AND LifeExpectancy <= 75 ) WHERE name = \"United Kingdom\"",
+        "question": "假如欧洲人口预期寿命大于75的国家的人口数量为103000，英国的人口年增长率是0.4%，1年后英国的人口数量是多少？",
+        "reasoning_type": "+ * H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT Population * ( 1 + 0.004 ) AS population_in_1year FROM ( SELECT Continent , name , 103000 AS Population FROM country WHERE Continent = \"Europe\" AND LifeExpectancy > 75 UNION SELECT Continent , name , Population FROM country WHERE Continent = \"Europe\" AND LifeExpectancy <= 75 ) WHERE name = \"United Kingdom\"",
+        "question": "假设位于欧洲且人口预期寿命大于75的国家的人口数量为103000，请列出1年之后英国的人口数量，已知英国的人口年增长率是0.4%。",
+        "reasoning_type": "+ * H",
+        "commonsense_knowledge": ""
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT CAST ( IndepYear + LifeExpectancy AS INT ) AS death_year FROM country WHERE name = \"Zambia\"",
+        "question": "按照赞比亚的预期寿命，出生于赞比亚独立那年的人的预期死亡年份是哪年？",
+        "reasoning_type": "+ C",
+        "commonsense_knowledge": "Age is calculated by subtracting date of birth from a given date."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT CAST ( IndepYear + LifeExpectancy AS INT ) AS death_year FROM country WHERE name = \"Zambia\"",
+        "question": "假设一个赞比亚人出生于赞比亚独立的那一年，请根据赞比亚的预期寿命预测这个人的预期死亡年份。",
+        "reasoning_type": "+ C",
+        "commonsense_knowledge": "Age is calculated by subtracting date of birth from a given date."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT CAST ( IndepYear + LifeExpectancy AS INT ) AS death_year FROM ( SELECT name , IndepYear , LifeExpectancy + 10 AS LifeExpectancy FROM country WHERE 1.0 * GNP / Population > ( SELECT 1.0 * SUM ( GNP ) / SUM ( Population ) FROM country WHERE Continent = \"Europe\" ) UNION ALL SELECT name , IndepYear , LifeExpectancy FROM country WHERE NOT ( 1.0 * GNP / Population > ( SELECT 1.0 * SUM ( GNP ) / SUM ( Population ) FROM country WHERE Continent = \"Europe\" ) ) ) WHERE name = \"Zambia\"",
+        "question": "假如人均国民生产总值大于欧洲所有国家的平均人均国民生产总值的国家的人口预期寿命增加10年，按照赞比亚的预期寿命，出生于赞比亚独立那年的人的预期死亡年份是哪年？",
+        "reasoning_type": "+ * / C H",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population.  Age is calculated by subtracting date of birth from a given date."
+    },
+    {
+        "db_id": "world_1",
+        "query": "SELECT CAST ( IndepYear + LifeExpectancy AS INT ) AS death_year FROM ( SELECT name , IndepYear , LifeExpectancy + 10 AS LifeExpectancy FROM country WHERE 1.0 * GNP / Population > ( SELECT 1.0 * SUM ( GNP ) / SUM ( Population ) FROM country WHERE Continent = \"Europe\" ) UNION ALL SELECT name , IndepYear , LifeExpectancy FROM country WHERE NOT ( 1.0 * GNP / Population > ( SELECT 1.0 * SUM ( GNP ) / SUM ( Population ) FROM country WHERE Continent = \"Europe\" ) ) ) WHERE name = \"Zambia\"",
+        "question": "假如人均国民生产总值大于欧洲所有国家的平均人均国民生产总值的国家的人口预期寿命增加10年，那么如果一个赞比亚人出生于赞比亚独立的那一年，请根据赞比亚的预期寿命预测这个人的预期死亡年份。",
+        "reasoning_type": "+ * / C H",
+        "commonsense_knowledge": "GNP per capita is computed by dividing the GNP by the population.  Age is calculated by subtracting date of birth from a given date."
+    }
+]

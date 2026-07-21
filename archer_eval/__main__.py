@@ -1,0 +1,74 @@
+"""CLI entry point.
+
+Evaluate predictions (dataset can be a shorthand or a path):
+    python -m archer_eval --data en_dev --pred predictions/my_model_en_dev.json
+
+Sanity check (gold as prediction; expects VA=1.0, EX=1.0):
+    python -m archer_eval --data en_dev --gold-as-pred
+"""
+
+from __future__ import annotations
+
+import argparse
+from datetime import datetime
+from pathlib import Path
+
+from archer_eval import config
+from archer_eval.data import load_dataset, load_predictions
+from archer_eval.evaluate import evaluate
+from archer_eval.report import write_report
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="archer_eval", description="Archer VA/EX evaluation")
+    parser.add_argument(
+        "--data", required=True,
+        help=f"dataset: one of {', '.join(config.DATASETS)} or a JSON file path",
+    )
+    parser.add_argument("--pred", help="prediction JSON aligned with the dataset")
+    parser.add_argument("--gold-as-pred", action="store_true", help="evaluate gold SQL against itself")
+    parser.add_argument("--db-dir", default=config.DB_DIR, help="root directory of SQLite databases")
+    parser.add_argument("--out-dir", default=config.RESULTS_DIR, help="directory for reports")
+    parser.add_argument("--timeout", type=float, default=config.DEFAULT_TIMEOUT_S,
+                        help="per-query timeout in seconds")
+    args = parser.parse_args()
+
+    if bool(args.pred) == args.gold_as_pred:
+        parser.error("provide exactly one of --pred or --gold-as-pred")
+
+    data_path = config.resolve_dataset(args.data)
+    samples = load_dataset(data_path)
+    if args.gold_as_pred:
+        predictions = [s.query for s in samples]
+        pred_name = "gold"
+    else:
+        predictions = load_predictions(args.pred, expected_len=len(samples))
+        pred_name = Path(args.pred).stem
+
+    report = evaluate(samples, predictions, args.db_dir, timeout_s=args.timeout, progress=True)
+    report = {
+        "meta": {
+            "data": str(data_path),
+            "predictions": args.pred or "gold-as-pred",
+            "db_dir": str(args.db_dir),
+            "timeout_s": args.timeout,
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+        },
+        **report,
+    }
+
+    alias = args.data if args.data in config.DATASETS else data_path.stem
+    name = f"{alias}_{pred_name}"
+    json_path, md_path = write_report(report, samples, predictions, args.out_dir, name)
+
+    s = report["summary"]
+    print(f"\nDataset: {data_path}  ({s['n']} samples)")
+    print(f"VA = {s['VA']:.2%}   EX = {s['EX']:.2%}")
+    print("\nPer database:")
+    for db, m in report["by_db"].items():
+        print(f"  {db:<35} n={m['n']:<4} VA={m['VA']:.2%}  EX={m['EX']:.2%}")
+    print(f"\n报告已写入:\n  {json_path}   (完整数据)\n  {md_path}   (可读摘要+错误明细)")
+
+
+if __name__ == "__main__":
+    main()
