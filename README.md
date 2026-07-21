@@ -1,4 +1,4 @@
-# Archer Text-to-SQL 复现
+# Genuine NL2DSL2SQL 复现
 
 基于论文 *Archer: A Human-Labeled Text-to-SQL Dataset with Arithmetic, Commonsense and Hypothetical Reasoning* (EACL 2024)。两段式结构：**`model/` 生成 SQL → `archer_eval/` 评测 VA/EX**（指标严格按论文附录 B 的 Algorithm 1 实现）。
 
