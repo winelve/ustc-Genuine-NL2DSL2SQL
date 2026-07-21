@@ -10,13 +10,12 @@ Sanity check (gold as prediction; expects VA=1.0, EX=1.0):
 from __future__ import annotations
 
 import argparse
-from datetime import datetime
 from pathlib import Path
 
 from archer_eval import config
 from archer_eval.data import load_dataset, load_predictions
 from archer_eval.evaluate import evaluate
-from archer_eval.report import write_report
+from archer_eval.report import make_meta, write_report
 
 
 def main() -> None:
@@ -47,13 +46,7 @@ def main() -> None:
 
     report = evaluate(samples, predictions, args.db_dir, timeout_s=args.timeout, progress=True)
     report = {
-        "meta": {
-            "data": str(data_path),
-            "predictions": args.pred or "gold-as-pred",
-            "db_dir": str(args.db_dir),
-            "timeout_s": args.timeout,
-            "timestamp": datetime.now().isoformat(timespec="seconds"),
-        },
+        "meta": make_meta(data_path, args.pred or "gold-as-pred", args.db_dir, args.timeout),
         **report,
     }
 

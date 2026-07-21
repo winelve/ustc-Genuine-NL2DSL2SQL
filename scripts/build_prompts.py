@@ -1,74 +1,23 @@
-"""CT-3 prompt construction (paper Appendix A) — generation-side utility.
-
-The evaluation package does not depend on this. Use it when running an LLM
-baseline: build one prompt per sample, send to the model, collect the SQL
-answers into predictions/<name>.json, then evaluate with `python -m archer_eval`.
+"""CT-3 prompt 预览/导出脚本（实现在 model/prompts.py）。
 
 Usage:
-    python scripts/build_prompts.py --data en_dev --index 0          # print one prompt
-    python scripts/build_prompts.py --data en_dev --out prompts.json # dump all prompts
+    python scripts/build_prompts.py --data en_dev --index 0          # 打印一条 prompt
+    python scripts/build_prompts.py --data en_dev --out prompts.json # 导出全部 prompt
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import sqlite3
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from archer_eval import config
-from archer_eval.data import Sample, load_dataset
+from archer_eval.data import load_dataset
 from archer_eval.evaluate import find_db_file
-
-
-def schema_with_rows(db_path: str | Path, n_rows: int = 3) -> str:
-    """CREATE TABLE statements, each followed by a /* 3 example rows */ block."""
-    conn = sqlite3.connect(f"file:{Path(db_path).as_posix()}?mode=ro", uri=True)
-    conn.text_factory = lambda b: b.decode("utf-8", errors="replace")
-    parts = []
-    try:
-        tables = conn.execute(
-            "SELECT name, sql FROM sqlite_master "
-            "WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY rowid"
-        ).fetchall()
-        for name, create_sql in tables:
-            cur = conn.execute(f'SELECT * FROM "{name}" LIMIT {n_rows}')
-            col_names = [d[0] for d in cur.description]
-            rows = cur.fetchall()
-            lines = [
-                f"/* {n_rows} example rows:",
-                f"SELECT * FROM {name} LIMIT {n_rows};",
-                "\t".join(col_names),
-            ]
-            lines += ["\t".join("" if v is None else str(v) for v in row) for row in rows]
-            lines.append("*/")
-            parts.append(f"{create_sql.strip()}\n" + "\n".join(lines))
-    finally:
-        conn.close()
-    return "\n\n".join(parts)
-
-
-def build_ct3_prompt(
-    sample: Sample,
-    db_path: str | Path,
-    with_knowledge: bool = False,
-    cot: bool = False,
-) -> str:
-    question = sample.question
-    if with_knowledge and sample.commonsense_knowledge:
-        question = f"{sample.commonsense_knowledge} {question}"
-
-    prompt = (
-        f"{schema_with_rows(db_path)}\n\n"
-        "-- Using valid SQLite, answer the following questions for the tables provided above.\n"
-        f"-- {question}\n"
-    )
-    if cot:
-        prompt += "-- Let's think step by step.\n"
-    return prompt + "SELECT"
+from model.prompts import build_ct3_prompt
 
 
 def main() -> None:

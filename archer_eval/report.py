@@ -8,9 +8,21 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 from archer_eval.data import Sample
+
+
+def make_meta(data, predictions, db_dir, timeout_s: float) -> dict:
+    """Standard `meta` block for a report."""
+    return {
+        "data": str(data),
+        "predictions": str(predictions),
+        "db_dir": str(db_dir),
+        "timeout_s": timeout_s,
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+    }
 
 
 def _pct(x: float) -> str:
