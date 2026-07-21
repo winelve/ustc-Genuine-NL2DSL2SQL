@@ -15,6 +15,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 
 from archer_eval.data import Sample
+from archer_eval.progress import Progress
 
 
 class SQLGenerator(ABC):
@@ -28,13 +29,13 @@ class SQLGenerator(ABC):
         self, samples: list[Sample], db_paths: list[Path], progress: bool = True
     ) -> list[str]:
         """默认逐条调用 predict；需要批量/并发调 API 的模型可覆写。"""
+        bar = Progress(len(samples), "generate", enabled=progress)
         preds = []
         for i, (sample, db_path) in enumerate(zip(samples, db_paths)):
             try:
                 preds.append(self.predict(sample, db_path))
             except Exception as e:
-                print(f"  sample {i} failed: {type(e).__name__}: {e}")
+                bar.write(f"  sample {i} failed: {type(e).__name__}: {e}")
                 preds.append("")
-            if progress and (i + 1) % 20 == 0:
-                print(f"  {i + 1}/{len(samples)}")
+            bar.step()
         return preds

@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from archer_eval.data import Sample
+from archer_eval.progress import Progress
 from model.base import SQLGenerator
 from model.prompts import build_ct3_prompt
 
@@ -67,20 +68,22 @@ class APIModel(SQLGenerator):
     ) -> list[str]:
         """并发发请求；结果保持输入顺序，单条失败记空串（同基类约定）。"""
 
-        def one(indexed: tuple[int, tuple[Sample, Path]]) -> str:
+        def one(indexed: tuple[int, tuple[Sample, Path]]) -> tuple[str, str | None]:
             i, (sample, db_path) = indexed
             try:
-                return self.predict(sample, db_path)
+                return self.predict(sample, db_path), None
             except Exception as e:
-                print(f"  sample {i} failed: {type(e).__name__}: {e}")
-                return ""
+                # 失败消息带回主线程统一打印，工作线程不碰终端
+                return "", f"  sample {i} failed: {type(e).__name__}: {e}"
 
+        bar = Progress(len(samples), "generate", enabled=progress)
         preds = []
         with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
-            for sql in pool.map(one, enumerate(zip(samples, db_paths))):
+            for sql, error in pool.map(one, enumerate(zip(samples, db_paths))):
+                if error:
+                    bar.write(error)
                 preds.append(sql)
-                if progress and len(preds) % 20 == 0:
-                    print(f"  {len(preds)}/{len(samples)}")
+                bar.step()
         return preds
 
 

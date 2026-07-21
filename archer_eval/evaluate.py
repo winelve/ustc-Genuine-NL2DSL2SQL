@@ -8,6 +8,7 @@ from pathlib import Path
 from archer_eval.data import Sample
 from archer_eval.execution import execute_sql
 from archer_eval.metrics import execution_match
+from archer_eval.progress import Progress
 
 
 @dataclass
@@ -75,11 +76,11 @@ def evaluate(
     if len(samples) != len(predictions):
         raise ValueError(f"{len(samples)} samples but {len(predictions)} predictions")
 
+    bar = Progress(len(samples), "evaluate", enabled=progress)
     results: list[SampleResult] = []
     for i, (sample, pred_sql) in enumerate(zip(samples, predictions)):
         results.append(evaluate_sample(sample, pred_sql, db_dir, index=i, timeout_s=timeout_s))
-        if progress and (i + 1) % 20 == 0:
-            print(f"  evaluated {i + 1}/{len(samples)}")
+        bar.step()
 
     def breakdown(key_fn) -> dict:
         groups: dict[str, list[SampleResult]] = {}
