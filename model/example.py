@@ -8,10 +8,10 @@
 
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 
 from archer_eval.data import Sample
+from archer_eval.execution import connect_ro
 from model.base import SQLGenerator
 
 
@@ -23,7 +23,7 @@ class FirstTableBaseline(SQLGenerator):
 
     def _first_table(self, db_path: Path) -> str:
         if db_path not in self._cache:
-            conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+            conn = connect_ro(db_path)
             try:
                 row = conn.execute(
                     "SELECT name FROM sqlite_master "

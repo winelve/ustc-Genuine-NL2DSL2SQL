@@ -21,7 +21,7 @@
 ## 2. 铁律（改代码前先读）
 
 1. **依赖单向**：`model` 可以 import `archer_eval`；`archer_eval` **永远不准** import `model`。评测器必须能独立评测任何来源的预测文件。
-2. **路径只写在一处**：所有目录路径、数据集简写、超时、精度都在 `archer_eval/config.py`。任何文件不得硬编码路径；临时改动用 CLI 参数。
+2. **路径只写在一处**：所有目录路径、数据集简写、超时、精度都在根目录 `config.py`（两个包都依赖它，它不依赖任何人）。任何文件不得硬编码路径；临时改动用 CLI 参数。模型/实验专属参数不在全局 config 预留字段，等实现出现时随模型走（构造参数或 `configs/*.toml`）；密钥只走环境变量。
 3. **两段只通过预测文件通信**：模型不许直接调评测内部函数改结果；评测不关心 SQL 是谁生成的。
 4. **数据库是只读的**：一律用 `mode=ro` 打开（参照 `execution.py`）。任何人不得写 `database/`。
 5. **提交前测试必须全绿**：`.venv\Scripts\python.exe -m pytest tests -q`。新增功能带新增测试。
@@ -62,7 +62,8 @@ class MyModel(SQLGenerator):
 ### 3.4 Python API（跳过 CLI 自己写脚本时用）
 
 ```python
-from archer_eval import config, load_dataset, load_predictions, evaluate, write_report
+import config
+from archer_eval import load_dataset, load_predictions, evaluate, write_report
 
 samples = load_dataset(config.DATASETS["en_dev"])
 preds   = load_predictions("predictions/xxx.json", expected_len=len(samples))
@@ -78,18 +79,20 @@ write_report(report, samples, preds, config.RESULTS_DIR, "my_run")
 | `python -m archer_eval --data en_dev --pred predictions/x.json` | 评测一份已有的预测文件 |
 | `python -m archer_eval --data en_dev --gold-as-pred` | 自检：gold 当预测，应得 VA=EX=100% |
 | `python scripts/check_databases.py` | 检查数据集引用的库是否齐全可读 |
-| `python scripts/build_prompts.py --data en_dev --index 0` | 预览/导出 CT-3 prompt |
-| `python -m pytest tests -q` | 跑全部测试 |
+| `python -m model.prompts --data en_dev --index 0` | 预览/导出 CT-3 prompt |
+| `python -m pytest -q` | 跑全部测试 |
 
 `--data` 都支持简写 `en_train / en_dev / zh_train / zh_dev` 或文件路径。
+首次使用先执行 `pip install -e .`（把 config 和两个包装成可导入模块）。
 （命令前缀 `.venv\Scripts\python.exe`，或先激活虚拟环境。）
 
 ## 5. 目录职责速查
 
 | 目录 | 职责 | 依赖 |
 |---|---|---|
-| `archer_eval/` | 阶段二·评测（config → data/execution → metrics → evaluate → report → cli） | 无外部依赖 |
-| `model/` | 阶段一·生成（base 接口 → prompts → 各模型实现 → runner） | archer_eval |
+| `config.py` | 全局配置（根目录单文件） | 无 |
+| `archer_eval/` | 阶段二·评测（data/execution → metrics → evaluate → report → cli） | config |
+| `model/` | 阶段一·生成（base 接口 → prompts → 各模型实现 → runner） | config, archer_eval |
 | `scripts/` | 独立小工具，不被任何包 import | 两个包都可用 |
 | `tests/` | pytest；test_metrics（算法）、test_end_to_end（评测全流程）、test_model（生成接口） | — |
 | `data/` `database/` | 输入数据（database 不进 git） | — |

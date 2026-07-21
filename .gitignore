@@ -3,6 +3,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+*.egg-info/
 
 # SQLite 数据库不进 git：soccer_1.sqlite 有 300MB，超过 GitHub 单文件 100MB 上限。
 # 用 data/database.zip 或 scripts/check_databases.py 提示的 Spider 来源恢复。

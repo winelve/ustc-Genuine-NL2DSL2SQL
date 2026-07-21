@@ -1,7 +1,7 @@
 """CLI entry point.
 
 Evaluate predictions (dataset can be a shorthand or a path):
-    python -m archer_eval --data en_dev --pred predictions/my_model_en_dev.json
+    python -m archer_eval --data en_dev --pred predictions/first_table_en_dev.json
 
 Sanity check (gold as prediction; expects VA=1.0, EX=1.0):
     python -m archer_eval --data en_dev --gold-as-pred
@@ -12,10 +12,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from archer_eval import config
+import config
 from archer_eval.data import load_dataset, load_predictions
 from archer_eval.evaluate import evaluate
-from archer_eval.report import make_meta, write_report
+from archer_eval.report import make_meta, report_name, write_report
 
 
 def main() -> None:
@@ -51,16 +51,15 @@ def main() -> None:
     }
 
     alias = args.data if args.data in config.DATASETS else data_path.stem
-    name = f"{alias}_{pred_name}"
+    name = report_name(alias, pred_name)
     json_path, md_path = write_report(report, samples, predictions, args.out_dir, name)
 
     s = report["summary"]
-    print(f"\nDataset: {data_path}  ({s['n']} samples)")
-    print(f"VA = {s['VA']:.2%}   EX = {s['EX']:.2%}")
-    print("\nPer database:")
+    print(f"\n{alias}: {s['n']} samples  VA {s['VA']:.2%}  EX {s['EX']:.2%}")
     for db, m in report["by_db"].items():
-        print(f"  {db:<35} n={m['n']:<4} VA={m['VA']:.2%}  EX={m['EX']:.2%}")
-    print(f"\n报告已写入:\n  {json_path}   (完整数据)\n  {md_path}   (可读摘要+错误明细)")
+        print(f"  {db:<35} n={m['n']:<4} VA {m['VA']:.2%}  EX {m['EX']:.2%}")
+    print(f"wrote {json_path}")
+    print(f"wrote {md_path}")
 
 
 if __name__ == "__main__":

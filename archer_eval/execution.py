@@ -1,6 +1,5 @@
 """SQL execution against SQLite databases.
 
-Safety properties:
 - Databases are opened read-only (mode=ro), so destructive predicted SQL
   (DROP/DELETE/UPDATE) fails instead of corrupting the data.
 - A wall-clock timeout aborts runaway queries via sqlite's progress handler.
@@ -13,6 +12,15 @@ import sqlite3
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from config import DEFAULT_TIMEOUT_S
+
+
+def connect_ro(db_path: str | Path, timeout_s: float = DEFAULT_TIMEOUT_S) -> sqlite3.Connection:
+    """Read-only connection with tolerant text decoding."""
+    conn = sqlite3.connect(f"file:{Path(db_path).as_posix()}?mode=ro", uri=True, timeout=timeout_s)
+    conn.text_factory = lambda b: b.decode("utf-8", errors="replace")
+    return conn
 
 
 @dataclass
@@ -27,18 +35,18 @@ class ExecutionResult:
         return len(self.rows)
 
 
-def execute_sql(db_path: str | Path, sql: str, timeout_s: float = 30.0) -> ExecutionResult:
+def execute_sql(
+    db_path: str | Path, sql: str, timeout_s: float = DEFAULT_TIMEOUT_S
+) -> ExecutionResult:
     db_path = Path(db_path)
     if not db_path.exists():
         return ExecutionResult(ok=False, error=f"database not found: {db_path}")
 
-    uri = f"file:{db_path.as_posix()}?mode=ro"
     try:
-        conn = sqlite3.connect(uri, uri=True, timeout=timeout_s)
+        conn = connect_ro(db_path, timeout_s)
     except sqlite3.Error as e:
         return ExecutionResult(ok=False, error=f"{type(e).__name__}: {e}")
 
-    conn.text_factory = lambda b: b.decode("utf-8", errors="replace")
     deadline = time.monotonic() + timeout_s
     conn.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 100_000)
 

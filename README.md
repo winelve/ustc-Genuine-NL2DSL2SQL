@@ -7,10 +7,11 @@
 ## 快速开始
 
 ```powershell
+.venv\Scripts\python.exe -m pip install -e .                             # 首次：安装为可导入包
 .venv\Scripts\python.exe scripts\check_databases.py                      # 数据库齐全性检查
 .venv\Scripts\python.exe -m archer_eval --data en_dev --gold-as-pred     # 评测器自检（应满分）
 .venv\Scripts\python.exe -m model --model first_table --data en_dev --eval  # 跑示例模型全流程
-.venv\Scripts\python.exe -m pytest tests -q                              # 跑测试
+.venv\Scripts\python.exe -m pytest -q                                    # 跑测试
 ```
 
 评测结果看 `results/<名>.md`（人读版：总分 + 分组表 + 每条错误样本的对比）。
@@ -18,13 +19,14 @@
 ## 目录
 
 ```
+├── config.py        # 全局配置：路径、数据集简写、超时、精度
 ├── data/            # Archer 数据集（en/zh 的 train/dev）
 ├── database/        # SQLite 库（不进 git；database/<db_id>/<db_id>.sqlite）
 ├── model/           # 阶段一：模型接口(base.py)、CT-3 prompt、示例基线、runner
-├── archer_eval/     # 阶段二：VA/EX 评测框架（全局配置在 archer_eval/config.py）
+├── archer_eval/     # 阶段二：VA/EX 评测框架
 ├── predictions/     # 两段的接口：模型生成的 SQL（格式见其中 README）
 ├── results/         # 评测报告（不进 git，可再生）
-├── scripts/         # 独立工具：数据库检查、prompt 预览
+├── scripts/         # 独立工具：数据库检查
 └── tests/           # pytest
 ```
 

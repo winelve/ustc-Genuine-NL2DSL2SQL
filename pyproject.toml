@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "archer-repro"
+version = "0.1.0"
+description = "Archer text-to-SQL reproduction: generation + VA/EX evaluation"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["archer_eval", "model"]
+py-modules = ["config"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

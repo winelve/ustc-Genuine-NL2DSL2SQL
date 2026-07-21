@@ -1,8 +1,8 @@
 """Report output: one evaluation run -> <name>.json + <name>.md in results/.
 
-- <name>.json : full machine-readable report (for scripts / further analysis)
-- <name>.md   : human-readable summary — metric tables plus every failed
-                sample with its question, gold SQL and predicted SQL
+- <name>.json : full machine-readable report
+- <name>.md   : summary tables plus every failed sample with its
+                question, gold SQL and predicted SQL
 """
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ from archer_eval.data import Sample
 
 
 def make_meta(data, predictions, db_dir, timeout_s: float) -> dict:
-    """Standard `meta` block for a report."""
     return {
         "data": str(data),
         "predictions": str(predictions),
@@ -25,12 +24,24 @@ def make_meta(data, predictions, db_dir, timeout_s: float) -> dict:
     }
 
 
+def report_name(dataset_alias: str, pred_name: str) -> str:
+    """Unified results file naming: <dataset>_<pred>.
+
+    A prediction name that already ends with the dataset alias
+    (e.g. first_table_en_dev) is stripped to avoid en_dev_first_table_en_dev.
+    """
+    suffix = f"_{dataset_alias}"
+    if pred_name.endswith(suffix):
+        pred_name = pred_name[: -len(suffix)]
+    return f"{dataset_alias}_{pred_name}"
+
+
 def _pct(x: float) -> str:
     return f"{x:.2%}"
 
 
 def _metric_table(groups: dict[str, dict]) -> list[str]:
-    lines = ["| 组 | 样本数 | VA | EX |", "|---|---|---|---|"]
+    lines = ["| 分组 | n | VA | EX |", "|---|---|---|---|"]
     for name, m in groups.items():
         lines.append(f"| {name} | {m['n']} | {_pct(m['VA'])} | {_pct(m['EX'])} |")
     return lines
@@ -40,12 +51,12 @@ def render_markdown(report: dict, samples: list[Sample], predictions: list[str])
     meta = report["meta"]
     s = report["summary"]
     lines = [
-        f"# 评测报告：{meta['predictions']} on {meta['data']}",
+        f"# {Path(meta['predictions']).name} on {Path(meta['data']).name}",
         "",
-        f"- 时间：{meta['timestamp']}",
-        f"- 样本数：{s['n']}",
-        f"- **VA（可执行率）：{_pct(s['VA'])}**（{s['n_valid']}/{s['n']} 条预测 SQL 成功执行）",
-        f"- **EX（执行准确率）：{_pct(s['EX'])}**（{s['n_match']}/{s['n']} 条结果与 gold 一致）",
+        f"- 时间: {meta['timestamp']}",
+        f"- 样本: {s['n']}",
+        f"- VA: {_pct(s['VA'])} ({s['n_valid']}/{s['n']} 可执行)",
+        f"- EX: {_pct(s['EX'])} ({s['n_match']}/{s['n']} 结果正确)",
         "",
         "## 按数据库",
         "",
@@ -57,20 +68,20 @@ def render_markdown(report: dict, samples: list[Sample], predictions: list[str])
     ]
 
     failures = [r for r in report["samples"] if not r["match"]]
-    lines += ["", f"## 错误样本（{len(failures)} 条）", ""]
+    lines += ["", f"## 错误样本 ({len(failures)})", ""]
     for r in failures:
         sample = samples[r["index"]]
         reason = (
-            f"执行失败：{r['pred_error']}" if not r["valid"]
-            else f"gold 执行失败：{r['gold_error']}" if r["gold_error"]
-            else "结果与 gold 不一致"
+            f"执行失败: {r['pred_error']}" if not r["valid"]
+            else f"gold 执行失败: {r['gold_error']}" if r["gold_error"]
+            else "结果不一致"
         )
         lines += [
-            f"### #{r['index']}  [{r['db_id']}]  {reason}",
+            f"### #{r['index']} {r['db_id']} — {reason}",
             "",
-            f"- 问题：{sample.question}",
-            f"- gold：`{sample.query}`",
-            f"- 预测：`{predictions[r['index']]}`",
+            f"- 问题: {sample.question}",
+            f"- gold: `{sample.query}`",
+            f"- 预测: `{predictions[r['index']]}`",
             "",
         ]
     return "\n".join(lines) + "\n"

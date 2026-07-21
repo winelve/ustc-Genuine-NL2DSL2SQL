@@ -1,18 +1,18 @@
 """Tests for the generation-side interface (model package)."""
 
-import sys
-from pathlib import Path
+import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from archer_eval import config
+import config
 from archer_eval.data import load_dataset
 from archer_eval.evaluate import evaluate, find_db_file
 from model import MODELS
 from model.base import SQLGenerator
 from model.example import FirstTableBaseline
 
-ROOT = Path(__file__).resolve().parents[1]
+requires_db = pytest.mark.skipif(
+    not config.DB_DIR.exists(),
+    reason="database/ missing: unzip data/database.zip or restore from Spider (see README)",
+)
 
 
 def test_registry_names_match_classes():
@@ -21,6 +21,7 @@ def test_registry_names_match_classes():
         assert cls.name == name
 
 
+@requires_db
 def test_example_model_end_to_end():
     samples = load_dataset(config.DATASETS["en_dev"])[:4]
     db_paths = [find_db_file(config.DB_DIR, s.db_id) for s in samples]

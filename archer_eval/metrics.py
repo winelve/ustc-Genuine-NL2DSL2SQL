@@ -16,7 +16,8 @@ from __future__ import annotations
 
 from collections import Counter
 
-from archer_eval.config import FLOAT_PRECISION
+from config import FLOAT_PRECISION
+
 from archer_eval.execution import ExecutionResult
 
 
