@@ -14,7 +14,7 @@ import argparse
 import json
 
 import config
-from archer_eval.data import load_dataset
+from archer_eval.data import load_dataset, resolve_dataset
 from archer_eval.evaluate import evaluate, find_db_file
 from archer_eval.report import make_meta, report_name, write_report
 from model import MODELS
@@ -30,7 +30,7 @@ def main() -> None:
     parser.add_argument("--eval", action="store_true", help="evaluate right after generating")
     args = parser.parse_args()
 
-    data_path = config.resolve_dataset(args.data)
+    data_path = resolve_dataset(args.data)
     samples = load_dataset(data_path)
     if args.limit:
         samples = samples[: args.limit]

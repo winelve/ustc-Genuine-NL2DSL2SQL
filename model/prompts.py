@@ -66,7 +66,7 @@ def _main() -> None:
     import json
 
     import config
-    from archer_eval.data import load_dataset
+    from archer_eval.data import load_dataset, resolve_dataset
     from archer_eval.evaluate import find_db_file
 
     parser = argparse.ArgumentParser(description="Preview or export CT-3 prompts")
@@ -78,7 +78,7 @@ def _main() -> None:
     parser.add_argument("--cot", action="store_true")
     args = parser.parse_args()
 
-    samples = load_dataset(config.resolve_dataset(args.data))
+    samples = load_dataset(resolve_dataset(args.data))
 
     if args.index is not None:
         s = samples[args.index]

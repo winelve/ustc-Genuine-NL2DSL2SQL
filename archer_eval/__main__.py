@@ -13,7 +13,7 @@ import argparse
 from pathlib import Path
 
 import config
-from archer_eval.data import load_dataset, load_predictions
+from archer_eval.data import load_dataset, load_predictions, resolve_dataset
 from archer_eval.evaluate import evaluate
 from archer_eval.report import make_meta, report_name, write_report
 
@@ -35,7 +35,7 @@ def main() -> None:
     if bool(args.pred) == args.gold_as_pred:
         parser.error("provide exactly one of --pred or --gold-as-pred")
 
-    data_path = config.resolve_dataset(args.data)
+    data_path = resolve_dataset(args.data)
     samples = load_dataset(data_path)
     if args.gold_as_pred:
         predictions = [s.query for s in samples]

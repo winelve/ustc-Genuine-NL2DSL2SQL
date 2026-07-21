@@ -15,6 +15,15 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from config import DATASETS
+
+
+def resolve_dataset(name_or_path: str | Path) -> Path:
+    """接受数据集简写（en_dev 等）或文件路径。"""
+    if name_or_path in DATASETS:
+        return DATASETS[name_or_path]
+    return Path(name_or_path)
+
 
 @dataclass
 class Sample:

@@ -26,10 +26,3 @@ DATASETS = {
 
 DEFAULT_TIMEOUT_S = 30.0  # 单条查询的墙钟超时
 FLOAT_PRECISION = 6       # 浮点单元格比较时保留的小数位
-
-
-def resolve_dataset(name_or_path: str) -> Path:
-    """接受简写（en_dev）或文件路径。"""
-    if name_or_path in DATASETS:
-        return DATASETS[name_or_path]
-    return Path(name_or_path)
