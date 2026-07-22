@@ -5,7 +5,7 @@ import sqlite3
 import pytest
 
 from archer_eval.execution import ExecutionResult, execute_sql
-from archer_eval.metrics import execution_match, has_outermost_order_by
+from archer_eval.metrics import execution_match, has_outermost_order_by, result_similarity
 
 
 def res(rows, n_cols=None):
@@ -72,6 +72,50 @@ class TestExecutionMatch:
 
     def test_empty_results_match(self):
         assert execution_match(res([], 1), res([], 1), NO_ORDER)
+
+
+class TestResultSimilarity:
+    def test_identical(self):
+        assert result_similarity(res([(1, "a"), (2, "b")]), res([(1, "a"), (2, "b")])) == (1.0, 1.0)
+
+    def test_permutations_are_free(self):
+        assert result_similarity(res([("a", 1), ("b", 2)]), res([(1, "a"), (2, "b")])) == (1.0, 1.0)
+
+    def test_nothing_in_common(self):
+        assert result_similarity(res([(1,)]), res([(2,)])) == (0.0, 0.0)
+
+    def test_partial_row_overlap(self):
+        row_sim, _ = result_similarity(res([(1,), (2,)]), res([(1,), (3,)]))
+        assert row_sim == pytest.approx(1 / 3, abs=1e-4)  # 1 shared row out of 3
+
+    def test_extra_row_lowers_score_without_a_shape_special_case(self):
+        row_sim, col_sim = result_similarity(res([(1,), (2,), (3,)]), res([(1,), (2,)]))
+        assert row_sim == pytest.approx(2 / 3, abs=1e-4)
+        assert col_sim == 0.0  # the single column differs as a whole
+
+    def test_float_tolerance(self):
+        assert result_similarity(res([(0.30000000000000004,)]), res([(0.3,)])) == (1.0, 1.0)
+
+    def test_failed_execution_scores_zero(self):
+        bad = ExecutionResult(ok=False, error="syntax error")
+        assert result_similarity(bad, res([(1,)])) == (0.0, 0.0)
+
+    def test_empty_results_are_identical(self):
+        assert result_similarity(res([], 1), res([], 1)) == (1.0, 1.0)
+
+    @pytest.mark.parametrize(
+        "pred, gold, gold_sql",
+        [
+            (res([(1, "a"), (2, "b")]), res([(1, "a"), (2, "b")]), NO_ORDER),
+            (res([(2, "b"), (1, "a")]), res([(1, "a"), (2, "b")]), NO_ORDER),
+            (res([("a", 1), ("b", 2)]), res([(1, "a"), (2, "b")]), NO_ORDER),
+            (res([("a", 1), ("b", 2)]), res([(1, "a"), (2, "b")]), WITH_ORDER),
+        ],
+    )
+    def test_a_match_always_scores_one(self, pred, gold, gold_sql):
+        """相似度与 Algorithm 1 同源：判 match 的一定满分。"""
+        assert execution_match(pred, gold, gold_sql)
+        assert result_similarity(pred, gold) == (1.0, 1.0)
 
 
 class TestExecuteSql:

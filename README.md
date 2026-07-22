@@ -26,7 +26,8 @@ $env:DEEPSEEK_API_KEY = "sk-..."
 带 `--limit` 的预测文件不满足全量对齐（docs §3.1），只能像上面这样随生成一起评测；
 独立评测器 `python -m archer_eval --data en_dev --pred predictions/xxx.json` 只接受全量文件。
 
-评测结果看 `results/<名>.md`（人读版：总分 + 分组表 + 每条错误样本的对比）。
+评测结果看 `results/<名>.json`：总分 + 分组表，外加逐题记录（题面、考察类型、
+gold/预测 SQL、是否正确、相似度）。
 
 ## 目录
 

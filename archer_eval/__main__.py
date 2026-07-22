@@ -52,14 +52,13 @@ def main() -> None:
 
     alias = args.data if args.data in config.DATASETS else data_path.stem
     name = report_name(alias, pred_name)
-    json_path, md_path = write_report(report, samples, predictions, args.out_dir, name)
+    json_path = write_report(report, args.out_dir, name)
 
     s = report["summary"]
-    print(f"\n{alias}: {s['n']} samples  VA {s['VA']:.2%}  EX {s['EX']:.2%}")
+    print(f"\n{alias}: {s['n']} samples  VA {s['VA']:.2%}  EX {s['EX']:.2%}  SIM {s['SIM']:.2%}")
     for db, m in report["by_db"].items():
-        print(f"  {db:<35} n={m['n']:<4} VA {m['VA']:.2%}  EX {m['EX']:.2%}")
+        print(f"  {db:<35} n={m['n']:<4} VA {m['VA']:.2%}  EX {m['EX']:.2%}  SIM {m['SIM']:.2%}")
     print(f"wrote {json_path}")
-    print(f"wrote {md_path}")
 
 
 if __name__ == "__main__":

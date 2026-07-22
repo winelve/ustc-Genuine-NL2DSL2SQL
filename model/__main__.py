@@ -50,13 +50,9 @@ def main() -> None:
         report = evaluate(samples, predictions, config.DB_DIR, progress=True)
         report = {"meta": make_meta(data_path, out, config.DB_DIR, config.DEFAULT_TIMEOUT_S), **report}
         s = report["summary"]
-        json_path, md_path = write_report(
-            report, samples, predictions, config.RESULTS_DIR,
-            report_name(alias, generator.name),
-        )
-        print(f"VA {s['VA']:.2%}  EX {s['EX']:.2%}")
+        json_path = write_report(report, config.RESULTS_DIR, report_name(alias, generator.name))
+        print(f"VA {s['VA']:.2%}  EX {s['EX']:.2%}  SIM {s['SIM']:.2%}")
         print(f"wrote {json_path}")
-        print(f"wrote {md_path}")
 
 
 if __name__ == "__main__":

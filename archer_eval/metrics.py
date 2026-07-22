@@ -10,6 +10,9 @@ against the same database:
    (row order is fixed by ORDER BY, but column order may be permuted)
 5. otherwise                        -> compare element frequencies of every
    row and every column (tolerates both row and column permutations)
+
+`result_similarity` turns that pass/fail verdict into a [0, 1] score, so a
+near-miss can be told apart from a wholly wrong answer in the report.
 """
 
 from __future__ import annotations
@@ -34,6 +37,17 @@ def _norm_rows(rows: list[tuple]) -> list[tuple]:
 
 def _columns(rows: list[tuple], n_cols: int) -> list[tuple]:
     return [tuple(row[i] for row in rows) for i in range(n_cols)]
+
+
+def _signature(vectors: list[tuple]) -> Counter:
+    """Multiset of per-vector element frequencies — blind to element order."""
+    return Counter(frozenset(Counter(vec).items()) for vec in vectors)
+
+
+def _jaccard(a: Counter, b: Counter) -> float:
+    """Multiset Jaccard: |a & b| / |a | b|; two empty multisets count as equal."""
+    union = sum((a | b).values())
+    return sum((a & b).values()) / union if union else 1.0
 
 
 def has_outermost_order_by(sql: str) -> bool:
@@ -92,11 +106,32 @@ def execution_match(pred: ExecutionResult, gold: ExecutionResult, gold_sql: str)
         gold_cols = Counter(_columns(gold_rows, gold.n_cols))
         return pred_cols == gold_cols
 
-    def freq_signature(vectors: list[tuple]) -> Counter:
-        return Counter(frozenset(Counter(vec).items()) for vec in vectors)
-
-    rows_match = freq_signature(pred_rows) == freq_signature(gold_rows)
-    cols_match = freq_signature(_columns(pred_rows, pred.n_cols)) == freq_signature(
+    rows_match = _signature(pred_rows) == _signature(gold_rows)
+    cols_match = _signature(_columns(pred_rows, pred.n_cols)) == _signature(
         _columns(gold_rows, gold.n_cols)
     )
     return rows_match and cols_match
+
+
+def result_similarity(pred: ExecutionResult, gold: ExecutionResult) -> tuple[float, float]:
+    """How close pred's result set is to gold's, as (row_sim, col_sim) in [0, 1].
+
+    Continuous counterpart of `execution_match`, built on the same frequency
+    signatures, so the two agree: a match always scores 1.0 on both. The
+    converse holds except when gold has an outermost ORDER BY — that branch
+    compares exact columns, which is stricter than the signature.
+
+    Either side failing to execute scores 0.0; differing shapes need no special
+    case, the Jaccard drops on its own.
+    """
+    if not pred.ok or not gold.ok:
+        return 0.0, 0.0
+
+    pred_rows = _norm_rows(pred.rows)
+    gold_rows = _norm_rows(gold.rows)
+    row_sim = _jaccard(_signature(pred_rows), _signature(gold_rows))
+    col_sim = _jaccard(
+        _signature(_columns(pred_rows, pred.n_cols)),
+        _signature(_columns(gold_rows, gold.n_cols)),
+    )
+    return round(row_sim, 4), round(col_sim, 4)

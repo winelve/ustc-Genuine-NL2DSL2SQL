@@ -14,7 +14,7 @@
                             │  唯一接口：预测文件（见 §3）
 ┌─ 阶段二 · 评测（archer_eval/ 包）──────────▼───────────────┐
 │  predictions/xxx.json + database/ ─→ VA/EX (Algorithm 1)  │
-│                        ─→ results/<名>.json + <名>.md     │
+│                        ─→ results/<名>.json               │
 └───────────────────────────────────────────────────────────┘
 ```
 
@@ -65,10 +65,22 @@ class Qwen(APIModel):        # model/api.py 里加子类，再在 MODELS 注册
 
 ### 3.3 评测报告（阶段二的输出）
 
-每次评测写两个文件到 `results/`（实现在 `archer_eval/report.py`）：
-- `<数据集>_<模型名>.json`：`meta` / `summary`(n, n_valid, n_match, VA, EX) /
-  `by_db` / `by_reasoning_type`(A, A+C, A+H, A+C+H) / `samples`(逐条 valid/match/error)
-- `<数据集>_<模型名>.md`：人读的摘要 + 全部错误样本（原题、gold SQL、预测 SQL、失败原因）
+每次评测写一个文件 `results/<数据集>_<模型名>.json`（实现在 `archer_eval/report.py`）。
+报告自描述，落盘就是一次 json dump：
+
+- 概览：`meta` / `summary`(n, n_valid, n_match, VA, EX, SIM) /
+  `by_db` / `by_reasoning_type`(A, A+C, A+H, A+C+H)，分组表都带 VA/EX/SIM
+- 逐题：`samples`，与数据集同序，每条含
+  `index` `db_id` `question` `reasoning_type`（原始细标签，如 `- + C H`）
+  `gold_sql` `pred_sql` `valid` `match` `similarity` `sim_row` `sim_col`
+  `pred_shape` `gold_shape`（`[行数, 列数]`）`pred_error` `gold_error`
+
+**SIM（相似度）**：`metrics.py` 的 `result_similarity()`，与 Algorithm 1 同源——
+行、列各取"每个向量的元素频次"签名，两侧签名多重集求 Jaccard，取平均。
+判 match 的必为 1.0；预测执行失败记 0.0；行列数不同时 Jaccard 自然下降，无需特判。
+用途是把"差一行"和"完全跑偏"区分开，不参与论文指标。
+
+预测执行失败时不会再跑 gold（省一次执行），此时 `gold_shape` 为 `null`。
 
 ### 3.4 Python API（跳过 CLI 自己写脚本时用）
 
@@ -79,7 +91,7 @@ from archer_eval import load_dataset, load_predictions, evaluate, write_report
 samples = load_dataset(config.DATASETS["en_dev"])
 preds   = load_predictions("predictions/xxx.json", expected_len=len(samples))
 report  = evaluate(samples, preds, config.DB_DIR)      # 纯函数，不落盘
-write_report(report, samples, preds, config.RESULTS_DIR, "my_run")
+write_report(report, config.RESULTS_DIR, "my_run")
 ```
 
 ## 4. 可用工具一览
