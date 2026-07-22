@@ -41,11 +41,28 @@ def schema_with_rows(db_path: str | Path, n_rows: int = 3) -> str:
     return "\n\n".join(parts)
 
 
+# reasoning_type 的标注是封闭的 6 个 token，翻成人话当提示词。
+_REASONING_TOKENS = {
+    "-": "subtraction", "+": "addition", "*": "multiplication",
+    "/": "division", "C": "commonsense", "H": "hypothetical",
+}
+
+
+def describe_reasoning_type(reasoning_type: str) -> str:
+    """把 '- + C H' 翻成一句自然语言提示；空标签或全未知 token 返回空串。"""
+    words = [_REASONING_TOKENS[t] for t in reasoning_type.split() if t in _REASONING_TOKENS]
+    if not words:
+        return ""
+    listed = words[0] if len(words) == 1 else ", ".join(words[:-1]) + ", and " + words[-1]
+    return f"this question involves {listed} reasoning."
+
+
 def build_ct3_prompt(
     sample: Sample,
     db_path: str | Path,
     with_knowledge: bool = False,
     cot: bool = False,
+    with_reasoning_type: bool = False,
 ) -> str:
     question = sample.question
     if with_knowledge and sample.commonsense_knowledge:
@@ -56,6 +73,10 @@ def build_ct3_prompt(
         "-- Using valid SQLite, answer the following questions for the tables provided above.\n"
         f"-- {question}\n"
     )
+    if with_reasoning_type:
+        hint = describe_reasoning_type(sample.reasoning_type)
+        if hint:
+            prompt += f"-- Hint: {hint}\n"
     if cot:
         prompt += "-- Let's think step by step.\n"
     return prompt + "SELECT"
@@ -76,6 +97,7 @@ def _main() -> None:
     parser.add_argument("--out", help="write all prompts to this JSON file")
     parser.add_argument("--with-knowledge", action="store_true")
     parser.add_argument("--cot", action="store_true")
+    parser.add_argument("--with-reasoning-type", action="store_true")
     args = parser.parse_args()
 
     samples = load_dataset(resolve_dataset(args.data))
@@ -83,14 +105,15 @@ def _main() -> None:
     if args.index is not None:
         s = samples[args.index]
         print(build_ct3_prompt(s, find_db_file(config.DB_DIR, s.db_id),
-                               args.with_knowledge, args.cot))
+                               args.with_knowledge, args.cot, args.with_reasoning_type))
         return
 
     if not args.out:
         parser.error("provide --index N or --out FILE")
 
     prompts = [
-        build_ct3_prompt(s, find_db_file(config.DB_DIR, s.db_id), args.with_knowledge, args.cot)
+        build_ct3_prompt(s, find_db_file(config.DB_DIR, s.db_id),
+                         args.with_knowledge, args.cot, args.with_reasoning_type)
         for s in samples
     ]
     Path(args.out).write_text(json.dumps(prompts, ensure_ascii=False, indent=1), encoding="utf-8")
