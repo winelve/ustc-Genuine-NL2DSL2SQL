@@ -12,12 +12,26 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 import config
 from archer_eval.data import load_dataset, resolve_dataset
 from archer_eval.evaluate import evaluate, find_db_file
 from archer_eval.report import make_meta, report_name, write_report
 from model import MODELS
+
+
+def write_trace(traces, predictions_path: Path) -> Path | None:
+    """把模型自报的调试记录写成预测文件旁的 .trace.json；没有就什么都不做。
+
+    钩子约定：模型实例暴露 trace_records（与预测同序的 dict 列表）即可，
+    评测器不感知这个文件（两段仍只通过预测文件通信）。
+    """
+    if not traces:
+        return None
+    trace_path = predictions_path.with_name(predictions_path.stem + ".trace.json")
+    trace_path.write_text(json.dumps(traces, ensure_ascii=False, indent=1), encoding="utf-8")
+    return trace_path
 
 
 def main() -> None:
@@ -45,6 +59,10 @@ def main() -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(predictions, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"wrote {out}")
+
+    trace_path = write_trace(getattr(generator, "trace_records", None), out)
+    if trace_path:
+        print(f"wrote {trace_path}")
 
     if args.eval:
         report = evaluate(samples, predictions, config.DB_DIR, progress=True)

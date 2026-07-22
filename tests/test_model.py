@@ -24,6 +24,45 @@ def test_registry_names_match_classes():
         assert cls.name == name
 
 
+def test_chat_endpoint_without_key_fails_loudly(monkeypatch):
+    pytest.importorskip("openai")
+    from model.llm import ChatEndpoint
+
+    monkeypatch.delenv("FAKE_KEY_ENV", raising=False)
+    with pytest.raises(RuntimeError, match="FAKE_KEY_ENV"):
+        ChatEndpoint(base_url="http://x", model="m", key_env="FAKE_KEY_ENV")
+
+
+def test_chat_endpoint_sends_messages_and_params(monkeypatch):
+    pytest.importorskip("openai")
+    from model.llm import ChatEndpoint
+
+    monkeypatch.setenv("FAKE_KEY_ENV", "sk-test")
+    endpoint = ChatEndpoint(
+        base_url="http://x", model="m", key_env="FAKE_KEY_ENV",
+        request_params={"temperature": 0.0, "extra_body": {"a": 1}},
+    )
+
+    seen: dict = {}
+
+    def create(**kwargs):
+        seen.update(kwargs)
+        message = SimpleNamespace(content="hello")
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+
+    endpoint._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=create))
+    )
+    assert endpoint.chat("sys", "usr", temperature=0.7) == "hello"
+    assert seen["model"] == "m"
+    assert seen["messages"] == [
+        {"role": "system", "content": "sys"},
+        {"role": "user", "content": "usr"},
+    ]
+    assert seen["temperature"] == 0.7  # 单次调用的覆盖参数优先于 request_params
+    assert seen["extra_body"] == {"a": 1}
+
+
 def test_api_model_without_key_fails_loudly(monkeypatch):
     pytest.importorskip("openai")
     from model.api import DeepSeekFlash
@@ -45,7 +84,7 @@ def _params_sent_by(cls, monkeypatch) -> dict:
         message = SimpleNamespace(content="SELECT 1")
         return SimpleNamespace(choices=[SimpleNamespace(message=message)])
 
-    generator._client = SimpleNamespace(
+    generator._endpoint._client = SimpleNamespace(
         chat=SimpleNamespace(completions=SimpleNamespace(create=create))
     )
     sample = load_dataset(config.DATASETS["en_dev"])[0]

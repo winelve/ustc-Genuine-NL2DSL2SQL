@@ -36,6 +36,7 @@ gold/预测 SQL、是否正确、相似度）。
 ├── data/            # Archer 数据集（en/zh 的 train/dev）
 ├── database/        # SQLite 库（不进 git；database/<db_id>/<db_id>.sqlite）
 ├── model/           # 阶段一：模型接口(base.py)、CT-3 prompt、示例基线、runner
+│   └── pipeline/    #   plansql：planner→SQL→执行投票 的多阶段 pipeline（提示词在 prompts/*.md）
 ├── archer_eval/     # 阶段二：VA/EX 评测框架
 ├── predictions/     # 两段的接口：模型生成的 SQL（格式见其中 README）
 ├── results/         # 评测报告（不进 git，可再生）

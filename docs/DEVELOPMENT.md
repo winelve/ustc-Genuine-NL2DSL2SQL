@@ -52,6 +52,10 @@ class MyModel(SQLGenerator):
 约定：返回纯 SQL（无解释文字/markdown 栅栏）；单条失败返回 `""` 而非抛异常；
 需要批量并发时覆写 `predict_all`。写完后在 `model/__init__.py` 的 `MODELS` 注册。
 
+多阶段模型可选暴露 `trace_records`（predict_all 后与预测同序的 dict 列表），
+runner 会把它写成预测文件旁的 `<模型名>_<数据集>.trace.json` 调试记录；
+评测器不感知这个文件，两段仍只通过预测文件通信。参考 `model/pipeline/plansql.py`。
+
 API 模型继承 `model/api.py` 的 `APIModel`（OpenAI 兼容 `/chat/completions`），
 填类属性后在 `MODELS` 注册，运行命令与本地模型相同：
 
@@ -103,6 +107,7 @@ write_report(report, config.RESULTS_DIR, "my_run")
 | `python -m archer_eval --data en_dev --gold-as-pred` | 自检：gold 当预测，应得 VA=EX=100% |
 | `python scripts/check_databases.py` | 检查数据集引用的库是否齐全可读 |
 | `python -m model.prompts --data en_dev --index 0` | 预览/导出 CT-3 prompt |
+| `python -m model.pipeline --data en_dev --preview 0` | 预览 plansql 发给 planner/sqlgen 的完整消息 |
 | `python -m pytest -q` | 跑全部测试 |
 
 `--data` 都支持简写 `en_train / en_dev / zh_train / zh_dev` 或文件路径。
@@ -115,7 +120,8 @@ write_report(report, config.RESULTS_DIR, "my_run")
 |---|---|---|
 | `config.py` | 全局配置（根目录单文件） | 无 |
 | `archer_eval/` | 阶段二·评测（data/execution → metrics → evaluate → report → cli） | config |
-| `model/` | 阶段一·生成（base 接口 → prompts → 各模型实现 → runner） | config, archer_eval |
+| `model/` | 阶段一·生成（base 接口 → prompts → 各模型实现 → runner；llm.py 是公用 ChatEndpoint） | config, archer_eval |
+| `model/pipeline/` | plansql 多阶段生成（stages + prompts/*.md 模板；设计见 docs/design/） | model, archer_eval |
 | `scripts/` | 独立小工具，不被任何包 import | 两个包都可用 |
 | `tests/` | pytest；test_metrics（算法）、test_end_to_end（评测全流程）、test_model（生成接口） | — |
 | `data/` `database/` | 输入数据（database 不进 git） | — |

@@ -15,7 +15,6 @@ temperature、思考开关等请求参数放在类属性 request_params 里，�
 
 from __future__ import annotations
 
-import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -23,6 +22,7 @@ from pathlib import Path
 from archer_eval.data import Sample
 from archer_eval.progress import Progress
 from model.base import SQLGenerator
+from model.llm import ChatEndpoint
 from model.prompts import build_ct3_prompt
 from config import API_CONCURRENCY
 
@@ -51,25 +51,17 @@ class APIModel(SQLGenerator):
     request_params: dict = {"temperature": 0.0}
 
     def __init__(self) -> None:
-        from openai import OpenAI  # 懒导入：没装 openai 也不影响其他模型
-
-        key = os.environ.get(self.key_env)
-        if not key:
-            raise RuntimeError(f"模型 {self.name} 缺少环境变量 {self.key_env}")
-        # SDK 自带限流/超时重试（默认 2 次），不另写重试逻辑
-        self._client = OpenAI(api_key=key, base_url=self.base_url)
+        # 客户端封装统一在 model/llm.py 的 ChatEndpoint，pipeline 与此共用
+        self._endpoint = ChatEndpoint(
+            base_url=self.base_url,
+            model=self.model,
+            key_env=self.key_env,
+            request_params=self.request_params,
+        )
 
     def predict(self, sample: Sample, db_path: Path) -> str:
-        response = self._client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": build_ct3_prompt(sample, db_path)},
-            ],
-            **self.request_params,
-        )
-        # 思维链在 message.reasoning_content，与 content 同级；这里只要最终答案
-        return extract_sql(response.choices[0].message.content or "")
+        reply = self._endpoint.chat(SYSTEM_PROMPT, build_ct3_prompt(sample, db_path))
+        return extract_sql(reply)
 
     def predict_all(
         self, samples: list[Sample], db_paths: list[Path], progress: bool = True

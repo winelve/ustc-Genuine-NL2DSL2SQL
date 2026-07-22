@@ -16,8 +16,11 @@ dependencies = [
 dev = ["pytest"]
 
 [tool.setuptools]
-packages = ["archer_eval", "model"]
+packages = ["archer_eval", "model", "model.pipeline", "model.pipeline.stages"]
 py-modules = ["config"]
+
+[tool.setuptools.package-data]
+"model.pipeline" = ["prompts/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
