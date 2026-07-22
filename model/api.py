@@ -8,6 +8,9 @@
     python -m model --model deepseek-v4-flash --data en_dev --limit 5 --eval
 
 本地部署（vLLM / Ollama）只要暴露 OpenAI 兼容接口，base_url 指向本机即可。
+
+temperature、思考开关等请求参数放在类属性 request_params 里，随请求原样发出，
+同样随模型走；DeepSeek 思考模式的取舍见 DeepSeekFlash / DeepSeekFlashThinking。
 """
 
 from __future__ import annotations
@@ -41,8 +44,11 @@ class APIModel(SQLGenerator):
     model: str         # 请求体里的模型名（name 是注册名，两者可不同）
     key_env: str       # 密钥所在环境变量的名字
 
-    temperature = 0.0
     concurrency = API_CONCURRENCY    # 同时在飞的请求数，触发限流就在子类调小
+
+    # 除 model / messages 外要发的全部请求参数，所见即所发，子类整体覆盖（不合并）；
+    # 厂商扩展字段（如 DeepSeek 的 thinking）包在 "extra_body" 里。默认贪心解码。
+    request_params: dict = {"temperature": 0.0}
 
     def __init__(self) -> None:
         from openai import OpenAI  # 懒导入：没装 openai 也不影响其他模型
@@ -56,12 +62,13 @@ class APIModel(SQLGenerator):
     def predict(self, sample: Sample, db_path: Path) -> str:
         response = self._client.chat.completions.create(
             model=self.model,
-            temperature=self.temperature,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": build_ct3_prompt(sample, db_path)},
             ],
+            **self.request_params,
         )
+        # 思维链在 message.reasoning_content，与 content 同级；这里只要最终答案
         return extract_sql(response.choices[0].message.content or "")
 
     def predict_all(
@@ -88,15 +95,42 @@ class APIModel(SQLGenerator):
         return preds
 
 
-class GPT4oMini(APIModel):
-    name = "gpt-4o-mini"
-    base_url = "https://api.openai.com/v1"
-    model = "gpt-4o-mini"
-    key_env = "OPENAI_API_KEY"
-
-
-class DeepSeekChat(APIModel):
+class DeepSeekFlash(APIModel):
     name = "deepseek-v4-flash"
     base_url = "https://api.deepseek.com/v1"
     model = "deepseek-v4-flash"
     key_env = "DEEPSEEK_API_KEY"
+
+    # DeepSeek 服务端默认开思考，而思考模式会静默忽略 temperature 等采样参数
+    # （文档《思考模式》）。主线要可复现的贪心解码，所以必须显式关掉思考。
+    request_params = {
+        "temperature": 0.0,
+        "extra_body": {"thinking": {"type": "disabled"}},
+    }
+
+
+class DeepSeekFlashThinking(DeepSeekFlash):
+    """开思考的对照组。单独注册名 = 单独的预测/结果文件，和主线互不覆盖。"""
+
+    name = "deepseek-v4-flash-thinking"
+
+    # 开思考后采样参数一律失效，结果不可复现，且更慢更贵。不发 temperature，
+    # 免得看起来像在生效。思考强度服务端默认 high，要更强加顶层参数
+    # reasoning_effort="max"（low/medium 会被映射回 high，没有真正的低档）。
+    request_params = {"extra_body": {"thinking": {"type": "enabled"}}}
+
+
+class DeepSeekPro(APIModel):
+    name = "deepseek-v4-pro"
+    base_url = "https://api.deepseek.com/v1"
+    model = "deepseek-v4-pro"
+    key_env = "DEEPSEEK_API_KEY"
+    request_params = {
+        "temperature": 0.0,
+        "extra_body": {"thinking": {"type": "disabled"}},
+    }
+    
+    
+class DeepSeekProThinking(DeepSeekPro):
+    name = "deepseek-v4-pro-thinking"
+    request_params = {"extra_body": {"thinking": {"type": "enabled"}}}

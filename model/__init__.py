@@ -7,15 +7,17 @@
   3. python -m model --model <name> --data en_dev --eval
 """
 
-from model.api import DeepSeekChat, GPT4oMini
+from model.api import DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro, DeepSeekProThinking
 from model.base import SQLGenerator
 from model.example import FirstTableBaseline
 
 # 注册表：--model 参数用的名字 -> 模型类
 MODELS: dict[str, type[SQLGenerator]] = {
     FirstTableBaseline.name: FirstTableBaseline,
-    # GPT4oMini.name: GPT4oMini,
-    DeepSeekChat.name: DeepSeekChat,
+    DeepSeekFlash.name: DeepSeekFlash,
+    DeepSeekFlashThinking.name: DeepSeekFlashThinking,
+    DeepSeekPro.name: DeepSeekPro,
+    DeepSeekProThinking.name: DeepSeekProThinking,
 }
 
 __all__ = ["SQLGenerator", "MODELS"]

@@ -1,5 +1,7 @@
 """Tests for the generation-side interface (model package)."""
 
+from types import SimpleNamespace
+
 import pytest
 
 import config
@@ -24,11 +26,55 @@ def test_registry_names_match_classes():
 
 def test_api_model_without_key_fails_loudly(monkeypatch):
     pytest.importorskip("openai")
-    from model.api import DeepSeekChat
+    from model.api import DeepSeekFlash
 
-    monkeypatch.delenv(DeepSeekChat.key_env, raising=False)
-    with pytest.raises(RuntimeError, match=DeepSeekChat.key_env):
-        DeepSeekChat()
+    monkeypatch.delenv(DeepSeekFlash.key_env, raising=False)
+    with pytest.raises(RuntimeError, match=DeepSeekFlash.key_env):
+        DeepSeekFlash()
+
+
+def _params_sent_by(cls, monkeypatch) -> dict:
+    """跑一次 predict()，返回 chat.completions.create 实际收到的关键字参数。"""
+    monkeypatch.setenv(cls.key_env, "sk-test")
+    generator = cls()
+
+    seen: dict = {}
+
+    def create(**kwargs):
+        seen.update(kwargs)
+        message = SimpleNamespace(content="SELECT 1")
+        return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+
+    generator._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=create))
+    )
+    sample = load_dataset(config.DATASETS["en_dev"])[0]
+    db_path = find_db_file(config.DB_DIR, sample.db_id)
+    assert generator.predict(sample, db_path) == "SELECT 1"
+    return seen
+
+
+@requires_db
+def test_flash_requests_greedy_decoding_with_thinking_off(monkeypatch):
+    pytest.importorskip("openai")
+    from model.api import DeepSeekFlash
+
+    sent = _params_sent_by(DeepSeekFlash, monkeypatch)
+    assert sent["model"] == "deepseek-v4-flash"
+    assert sent["temperature"] == 0.0
+    # DeepSeek 服务端默认开思考，开着时 temperature 被静默忽略——必须显式关掉
+    assert sent["extra_body"] == {"thinking": {"type": "disabled"}}
+
+
+@requires_db
+def test_thinking_variant_omits_sampling_params(monkeypatch):
+    pytest.importorskip("openai")
+    from model.api import DeepSeekFlashThinking
+
+    sent = _params_sent_by(DeepSeekFlashThinking, monkeypatch)
+    assert sent["extra_body"] == {"thinking": {"type": "enabled"}}
+    # 思考模式下采样参数不生效，发出去只会造成"结果可复现"的假象
+    assert "temperature" not in sent
 
 
 @requires_db
