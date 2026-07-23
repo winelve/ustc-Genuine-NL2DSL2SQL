@@ -10,7 +10,7 @@
 from model.api import DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro, DeepSeekProThinking
 from model.base import SQLGenerator
 from model.example import FirstTableBaseline
-from model.pipeline.plansql import DSLSQLPro, PlanSQLPro
+from model.pipeline.plansql import DSLSQLPro, M3A, M3B, M3C, PlanSQLPro
 
 # 注册表：--model 参数用的名字 -> 模型类
 MODELS: dict[str, type[SQLGenerator]] = {
@@ -21,6 +21,9 @@ MODELS: dict[str, type[SQLGenerator]] = {
     DeepSeekProThinking.name: DeepSeekProThinking,
     PlanSQLPro.name: PlanSQLPro,
     DSLSQLPro.name: DSLSQLPro,
+    M3A.name: M3A,
+    M3B.name: M3B,
+    M3C.name: M3C,
 }
 
 __all__ = ["SQLGenerator", "MODELS"]

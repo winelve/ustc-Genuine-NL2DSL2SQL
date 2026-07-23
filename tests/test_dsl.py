@@ -348,13 +348,15 @@ def test_validate_aggregates_and_passes_good_output(toy_db):
     from model.pipeline.dsl import load_schema_info, parse_output, validate
 
     out, _ = parse_output(GOOD_JSON)
-    assert validate(out, load_schema_info(toy_db), toy_db) == []
+    assert validate(out, load_schema_info(toy_db), toy_db,
+                    question="", profile_ids=set()) == []
 
     out, _ = parse_output(
         '{"sql": "SELECT_BROKEN((", "declarations": {'
         '"time_context": {"displaced": false}, '
         '"outputs": [{"name": "x", "source": "column", "column": "singer.Name"}]}}')
-    issues = validate(out, load_schema_info(toy_db), toy_db)
+    issues = validate(out, load_schema_info(toy_db), toy_db,
+                      question="", profile_ids=set())
     assert issues and "解析" in issues[0]      # SQL 解析失败单独成 issue
 
 
@@ -477,3 +479,259 @@ def test_dslsql_end_to_end_with_repair(monkeypatch, tmp_path):
     assert checks["passed"] is True and len(checks["rounds"]) == 2
     assert checks["rounds"][0]["issues"]      # 第一轮的失败项进了 trace
     json.dumps(trace)                          # trace 必须可直接落盘
+
+
+# ---------------------------------------------------------- M3 库画像 / considered
+
+def _decl_with_considered(considered):
+    return {
+        "time_context": {"displaced": False, "reference": ""},
+        "outputs": [{"name": "n", "source": "column", "column": "singer.Name",
+                     "expr": "", "anchors": {}}],
+        "assumptions": [],
+        "considered": considered,
+    }
+
+
+def _validate_considered(toy_db, considered, profile_ids={"P1"}):
+    from model.pipeline.dsl import DslOutput, load_schema_info, validate
+
+    out = DslOutput.model_validate(
+        {"sql": "SELECT Name FROM singer",
+         "declarations": _decl_with_considered(considered)})
+    return validate(out, load_schema_info(toy_db), toy_db,
+                    question="q", profile_ids=profile_ids)
+
+
+def test_render_profile_numbers_items():
+    from model.pipeline.dsl import render_profile
+
+    assert render_profile(["甲", "乙"]) == "P1. 甲\nP2. 乙"
+
+
+def test_render_profile_empty_is_explicit():
+    from model.pipeline.dsl import render_profile
+
+    assert render_profile([]) == "(none for this database)"
+
+
+def test_profile_ids_match_render_numbering():
+    """两处编号必须同源，否则 C5a 会要求一个 prompt 里不存在的编号。"""
+    from model.pipeline.dsl import profile_ids_for, render_profile
+
+    items = ["a", "b", "c"]
+    rendered = render_profile(items)
+    assert all(f"{pid}. " in rendered for pid in profile_ids_for(items))
+
+
+def test_c5a_missing_disposition_is_reported(toy_db):
+    issues = _validate_considered(toy_db, [])
+    assert any("P1" in i and "表态" in i for i in issues), issues
+
+
+def test_c5a_unused_requires_note(toy_db):
+    issues = _validate_considered(
+        toy_db, [{"item": "P1", "used": False, "note": ""}])
+    assert any("P1" in i and "理由" in i for i in issues), issues
+
+
+def test_c5a_passes_when_all_disposed(toy_db):
+    issues = _validate_considered(
+        toy_db, [{"item": "P1", "used": False, "note": "本题不涉及年龄换算"}])
+    assert not [i for i in issues if "P1" in i], issues
+
+
+def test_c5a_used_true_needs_no_note(toy_db):
+    issues = _validate_considered(
+        toy_db, [{"item": "P1", "used": True, "note": ""}])
+    assert not [i for i in issues if "P1" in i], issues
+
+
+def test_c5a_silent_when_profile_empty(toy_db):
+    """画像为空（M3-a 或无事实的库）时，considered 不该被要求。"""
+    assert _validate_considered(toy_db, [], profile_ids=set()) == []
+
+
+# ---------------------------------------------------------- C6 比率线索
+
+# toy_db 只有 singer 一张表，测不出"同表兄弟数值列"；C6 打真库（只读）
+def _concert_db():
+    from pathlib import Path
+
+    return (Path(__file__).resolve().parents[1] / "database" /
+            "concert_singer" / "concert_singer.sqlite")
+
+
+def test_c6_hints_unused_sibling_numeric_column():
+    """题面问 rate、SQL 里没有除法 -> 提示同表还有 Capacity。"""
+    from model.pipeline.dsl import _c6_ratio_hint
+
+    issues = _c6_ratio_hint(
+        _tree("SELECT Name, Average FROM stadium ORDER BY Average DESC"),
+        "Which stadium has the highest average attendance rate?", _concert_db())
+    assert any("Capacity" in i for i in issues), issues
+
+
+def test_c6_silent_when_any_division_present():
+    """SQL 里已经做了除法 -> 模型已经在算比率，闭嘴。
+
+    这是 dev #26/#27 的形态：比率算对了（只是输出形态错），
+    若在这里还报一条就是白烧一轮修复去改一个已经对的答案。
+    """
+    from model.pipeline.dsl import _c6_ratio_hint
+
+    assert not _c6_ratio_hint(
+        _tree("SELECT Name, Average / Capacity AS r FROM stadium"),
+        "Which stadium has the highest average attendance rate?", _concert_db())
+
+
+def test_c6_silent_without_ratio_word():
+    """题面没有比率词 -> 不打扰（避免把普通取值题逼成比率题）。"""
+    from model.pipeline.dsl import _c6_ratio_hint
+
+    assert not _c6_ratio_hint(
+        _tree("SELECT Name, Average FROM stadium"),
+        "List the name and average attendance of each stadium.", _concert_db())
+
+
+def test_c6_average_alone_is_not_a_ratio_word():
+    """'average' 不算比率词——库里恰好有名为 Average 的列，宽进必炸。"""
+    from model.pipeline.dsl import _RATIO_WORDS
+
+    assert not _RATIO_WORDS.search("What is the average attendance?")
+    assert _RATIO_WORDS.search("What is the average attendance rate?")
+
+
+def test_c6_silent_when_question_supplies_the_ratio():
+    """题面已给百分数字面量 -> 比率是输入不是待求量，别提示。
+
+    dev #96/#97/#99（"annual growth rate ... is 0.4%"）本来判对；
+    不加这道闸门它们会被触发，白烧一轮修复去改一个已经对的答案。
+    """
+    from model.pipeline.dsl import _c6_ratio_hint
+
+    assert not _c6_ratio_hint(
+        _tree("SELECT Population * 1.004 AS p FROM country WHERE Name = 'UK'"),
+        "The annual population growth rate in the UK is 0.4%. "
+        "What is the population one year later?",
+        _concert_db())
+
+
+def test_c6_ratio_words_match_plural():
+    """dev #24/#25 问的是 'attendance rates'——漏了复数就打不中设计靶子。"""
+    from model.pipeline.dsl import _RATIO_WORDS
+
+    assert _RATIO_WORDS.search("the lowest and highest average attendance rates")
+    assert _RATIO_WORDS.search("the highest attendance rate")
+
+
+# ---------------------------------------------------------- C5b 锚一致
+
+def _decl_anchor(kind, expr, ref=""):
+    return {
+        "time_context": {"displaced": True, "reference": "2001"},
+        "outputs": [{"name": "a", "source": "derived", "column": "",
+                     "expr": expr,
+                     "anchors": {"Age": {"kind": kind, "ref": ref}}}],
+        "assumptions": [], "considered": [],
+    }
+
+
+def _validate_anchor(toy_db, sql, kind, expr, ref="", question="q"):
+    from model.pipeline.dsl import DslOutput, load_schema_info, validate
+
+    out = DslOutput.model_validate(
+        {"sql": sql, "declarations": _decl_anchor(kind, expr, ref)})
+    # C5b 属 M3-c 的建议级检查，默认关；测它就得显式打开
+    return validate(out, load_schema_info(toy_db), toy_db,
+                    question=question, profile_ids=set(), extra_checks=True)
+
+
+def test_anchor_now_requires_now_in_sql(toy_db):
+    """声明锚在当前、SQL 里却没有 'now' -> 自相矛盾。"""
+    issues = _validate_anchor(
+        toy_db, "SELECT Age + 5 AS a FROM singer", "now", "Age + 5")
+    assert any("now" in i and "Age" in i for i in issues), issues
+
+
+def test_anchor_now_satisfied_by_strftime(toy_db):
+    sql = "SELECT Age + 2001 - strftime('%Y','now') AS a FROM singer"
+    issues = _validate_anchor(
+        toy_db, sql, "now", "Age + 2001 - strftime('%Y','now')")
+    assert not [i for i in issues if "kind=now" in i], issues
+
+
+def test_anchor_ref_says_current_but_kind_is_not_now(toy_db):
+    """dev #3 的真实形态：ref 写 'current age…' 却挑了别的 kind。
+
+    没有这一条，模型只要把锚写成 literal 就能绕过 C5b，枚举就白做了。
+    """
+    issues = _validate_anchor(
+        toy_db, "SELECT Age - 3 AS a FROM singer", "literal", "Age - 3",
+        ref="current age of the singer as stored in the database")
+    assert any("kind" in i and "Age" in i for i in issues), issues
+
+
+def test_anchor_plain_string_degrades_to_literal():
+    """anchors 写成裸字符串时按 literal 收下，不整轮作废。"""
+    from model.pipeline.dsl import OutputDecl
+
+    d = OutputDecl.model_validate(
+        {"name": "a", "source": "derived", "column": "", "expr": "Age",
+         "anchors": {"Age": "age at song release"}})
+    assert d.anchors["Age"].kind == "literal"
+    assert d.anchors["Age"].ref == "age at song release"
+
+
+def test_anchor_rejects_unknown_kind():
+    from model.pipeline.dsl import parse_output
+
+    out, err = parse_output(
+        '{"sql": "SELECT Age FROM singer", "declarations": {'
+        '"time_context": {"displaced": false}, '
+        '"outputs": [{"name": "a", "source": "derived", "expr": "Age", '
+        '"anchors": {"Age": {"kind": "vibes", "ref": ""}}}]}}')
+    assert out is None and "kind" in err
+
+
+def test_c5b_silent_when_question_is_not_time_displaced(toy_db):
+    """displaced=false 时"存的是当前值"是无害陈述，没有换算可以算错。
+
+    去掉这道闸门实测会炸：train 上触发从 3 条涨到 119 条，其中 80 条打在
+    本来判对的题上（"current age as stored" 是正确声明的常见措辞）。
+    """
+    from model.pipeline.dsl import DslOutput, load_schema_info, validate
+
+    out = DslOutput.model_validate({
+        "sql": "SELECT Age AS a FROM singer",
+        "declarations": {
+            "time_context": {"displaced": False, "reference": ""},
+            "outputs": [{"name": "a", "source": "derived", "column": "",
+                         "expr": "Age",
+                         "anchors": {"Age": {"kind": "now", "ref": "current age"}}}],
+            "assumptions": [], "considered": []}})
+    issues = validate(out, load_schema_info(toy_db), toy_db,
+                      question="q", profile_ids=set(), extra_checks=True)
+    assert not [i for i in issues if "now" in i], issues
+
+
+def test_c5b_silent_when_question_gives_the_rate(toy_db):
+    """题面已给出百分数（"growth rate is 0.4%"）时不触发。
+
+    dev 的三条误报（#96/#97/#99）全是这一形态：时间位移由给定比率表达
+    （Population * 1.004），SQL 里合法地没有任何日期函数。C6 对同一形态
+    早有 _GIVEN_RATIO 闸门，C5b 抄齐。
+    """
+    issues = _validate_anchor(
+        toy_db, "SELECT Age * 1.004 AS a FROM singer", "now", "Age * 1.004",
+        question="The annual growth rate is 0.4%. What will the value be in a year?")
+    assert not [i for i in issues if "now" in i], issues
+
+
+def test_extra_checks_default_off_keeps_m2_baseline_behaviour():
+    """C5b/C6 默认关——基线（三开关全 False）的校验集合不含建议级检查。"""
+    import inspect
+
+    from model.pipeline.dsl import validate
+
+    assert inspect.signature(validate).parameters["extra_checks"].default is False

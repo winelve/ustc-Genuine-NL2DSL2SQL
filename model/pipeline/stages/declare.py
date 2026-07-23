@@ -10,21 +10,33 @@ from __future__ import annotations
 
 from model.llm import ChatEndpoint
 from model.pipeline.context import Candidate, PipelineContext
-from model.pipeline.dsl import load_schema_info, parse_output, validate
+from model.pipeline.dsl import (load_schema_info, parse_output,
+                                profile_ids_for, render_profile, validate)
+from model.pipeline.profile import build_profile
 from model.pipeline.templates import load_template, render
 
 
 class DeclareStage:
-    def __init__(self, endpoint: ChatEndpoint, max_repairs: int = 2) -> None:
+    def __init__(self, endpoint: ChatEndpoint, max_repairs: int = 2, *,
+                 use_profile: bool = False, force_considered: bool = False,
+                 extra_checks: bool = False) -> None:
         self.endpoint = endpoint
         self.max_repairs = max_repairs
+        # 三个开关默认关 = M3 系的对照基线；M3 各档在 plansql.py 里显式打开。
+        # 注意基线与跑出 44.2 的 M2 并非同一套 dslgen 提示词（见 plansql.DSLSQL）。
+        self.use_profile = use_profile
+        self.force_considered = force_considered
+        self.extra_checks = extra_checks
 
     def run(self, ctx: PipelineContext) -> None:
         schema_info = load_schema_info(ctx.db_path)
+        items = build_profile(ctx.db_path) if self.use_profile else []
+        profile_ids = profile_ids_for(items) if self.force_considered else set()
         system = load_template("dslgen.system")
         for plan in ctx.plans:
             user = render("dslgen.user", schema=ctx.schema,
-                          question=ctx.question, plan=plan)
+                          question=ctx.question, plan=plan,
+                          profile=render_profile(items))
             messages = [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -36,7 +48,10 @@ class DeclareStage:
                 if out is None:
                     issues = [parse_error]
                 else:
-                    issues = validate(out, schema_info, ctx.db_path)
+                    issues = validate(out, schema_info, ctx.db_path,
+                                      question=ctx.question,
+                                      profile_ids=profile_ids,
+                                      extra_checks=self.extra_checks)
                     sql, declarations = out.sql, out.declarations.model_dump()
                 rounds.append({
                     "sql": out.sql if out else None,

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import re
 import sqlite3
 from pathlib import Path
 from typing import Annotated, Literal
@@ -17,6 +18,8 @@ from typing import Annotated, Literal
 import sqlglot
 from pydantic import BaseModel, BeforeValidator, Field, ValidationError, field_validator, model_validator
 from sqlglot import exp
+
+from model.pipeline.profile import numeric_columns
 
 
 # ---------------------------------------------------------------- 声明表结构
@@ -35,12 +38,35 @@ class TimeContext(BaseModel):
     reference: BlankableText = ""
 
 
+class Anchor(BaseModel):
+    """存量列的参照系。枚举化的意义是**可证伪**——自由文本写什么都合法。
+
+    只枚举程序能验的三种。单位锚（"weight 存的是磅"）刻意不进 kind：
+    SQL 里没有任何东西能证伪它，声明了也只是换个地方写自由文本。
+    """
+
+    kind: Literal["now", "column", "literal"]
+    ref: BlankableText = ""
+
+
+def _coerce_anchor(v):
+    """裸字符串按 literal 收下：宁可降级也不整轮作废（同 BlankableText 的理由）。"""
+    return {"kind": "literal", "ref": v} if isinstance(v, str) else v
+
+
+AnchorMap = Annotated[
+    dict[str, Anchor],
+    BeforeValidator(lambda v: {} if v is None
+                    else {k: _coerce_anchor(x) for k, x in v.items()}),
+]
+
+
 class OutputDecl(BaseModel):
     name: str
     source: Literal["column", "derived"]
     column: BlankableText = ""                  # source=column 时必填
     expr: BlankableText = ""                    # source=derived 时必填
-    anchors: BlankableDict = Field(default_factory=dict)   # 列 -> 存量值的参照系
+    anchors: AnchorMap = Field(default_factory=dict)       # 列 -> 存量值的参照系
 
     @model_validator(mode="after")
     def _source_fields(self) -> "OutputDecl":
@@ -68,10 +94,24 @@ class Assumption(BaseModel):
         return str(v)
 
 
+class Considered(BaseModel):
+    """对库画像每一条事实的表态：用了没用；没用必须给理由。
+
+    M3 的触发机制。dev #24/#26 那组对照证明模型知道 attendance rate =
+    出勤/容量，只是没把 Capacity 拉进视野——强制表态把"没想到"变成
+    "想过并否决了"，而后者可校验、可统计。
+    """
+
+    item: str                                   # 画像条目编号，如 "P1"
+    used: bool
+    note: BlankableText = ""                    # used=false 时必填理由
+
+
 class Declarations(BaseModel):
     time_context: TimeContext
     outputs: list[OutputDecl] = Field(min_length=1)
     assumptions: list[Assumption] = Field(default_factory=list)
+    considered: list[Considered] = Field(default_factory=list)
 
 
 class DslOutput(BaseModel):
@@ -295,15 +335,179 @@ def _c4_anchors(decl: Declarations) -> list[str]:
     return issues
 
 
+# ---------------------------------------------------------------- 画像渲染
+
+def render_profile(items: list[str]) -> str:
+    """把画像条目编号成 prompt 文本块；编号是 considered 的引用键。"""
+    if not items:
+        return "(none for this database)"
+    return "\n".join(f"P{i}. {x}" for i, x in enumerate(items, 1))
+
+
+def profile_ids_for(items: list[str]) -> set[str]:
+    """与 render_profile 同源的编号集合，避免两处各编一套。"""
+    return {f"P{i}" for i in range(1, len(items) + 1)}
+
+
+def render_profile_block(items: list[str]) -> str:
+    """planner 用的画像块：**没有画像时返回空串**。
+
+    dev 62% 的错断在 plan 阶段（planner 先把锚猜错，dslgen 只能补救），
+    所以知识必须在犯错之前送到 planner。但 planner 的提示词是 M1 对照组
+    共用的——返回空串是为了让 use_profile=False 时渲染出的消息与 M1
+    **逐字节相同**（tests/test_pipeline.py 有断言锁死）。
+    """
+    if not items:
+        return ""
+    return ("\nFacts derived from the actual database contents:\n\n"
+            + render_profile(items) + "\n")
+
+
+# ---------------------------------------------------------------- C5a 表态完整
+
+def _c5a_considered(decl: Declarations, profile_ids: set[str]) -> list[str]:
+    """库画像的每一条都必须被表态；否决必须给理由。"""
+    if not profile_ids:
+        return []
+    issues = []
+    disposed = {c.item for c in decl.considered}
+    for missing in sorted(profile_ids - disposed):
+        issues.append(
+            f"库画像条目 {missing} 没有出现在 considered 里——每一条都必须表态"
+            f"（used=true 说明怎么用；used=false 在 note 里说明为什么不用）")
+    for c in decl.considered:
+        if c.item in profile_ids and not c.used and not c.note.strip():
+            issues.append(
+                f"库画像条目 {c.item} 标了 used=false 但没写理由——"
+                f"在 note 里说明为什么本题不需要它")
+    return issues
+
+
+# ---------------------------------------------------------------- C5b 锚一致
+
+_NOW_IN_SQL = re.compile(r"""["']now["']""", re.I)
+# ref 措辞说的是"当前"、kind 却不是 now —— 枚举被绕过的典型形态（dev #3）
+_CURRENT_WORDS = re.compile(r"current|\bnow\b|today|present", re.I)
+# 题面里已经给出百分数字面量（"growth rate is 0.4%"）=> 比率/位移是给定输入。
+# C5b 与 C6 共用：两者的实测误报都集中在这一题式上。
+_GIVEN_RATIO = re.compile(r"\d+(\.\d+)?\s*(%|percent\b)", re.I)
+
+
+def _c5b_anchor_sql(decl: Declarations, tree: exp.Expression,
+                    question: str) -> list[str]:
+    """时间位移的题里，锚在当前的列必须真的从当前换算过去。
+
+    train #158 是最干净的证据：模型把 dob 是 DD/MM/YYYY 写进了 plan **和**
+    anchor，SQL 照样写 strftime('%Y', dob)（对该格式返回 NULL）。dev #3 同构
+    （anchor 写 "current age"、算式却拿发行年当锚）。
+    事实已经在上下文里，断的是执行——这一类纯知识注入零收益，只有一致性
+    校验能抓。
+
+    四个条件缺一不可，每一个都是为压掉实测出来的误报：
+    1. `displaced=true`——问题不涉及别的时点时，"存的是当前值"是个无害的
+       陈述，没有换算可以算错。
+    2. 题面没给出百分数字面量——"growth rate is 0.4%" 一类题的时间位移由
+       给定比率表达（`x * 1.004`），SQL 里合法地没有任何日期函数。
+       没这道闸门，dev 的误报全部是这一形态（3 harmful → 0；代价是同题式的
+       1 条 useful 也被滤掉，净值划算）。
+    3. 锚是 now-ish——kind=now，或 ref 措辞就说的是当前（后者防止模型把
+       kind 写成 literal 就绕过这条检查，枚举白做）。
+    4. SQL 里没有 'now'。
+
+    去掉第 1 条会炸：实测 train 上从 3 条涨到 119 条，其中 80 条打在**本来
+    判对**的题上（"current age as stored" 是正确声明的常见措辞）。
+
+    实测（对着已跑出的 M2 trace 算，"有用"= 该题原本判错）：
+      dev  触发 2，2 useful / 0 harmful，命中设计靶子 #3
+      train 触发 3，2 useful / 1 harmful
+    量很小，本来就不指望它出分——它的价值是把 #158 那类"声明对、SQL 错"
+    变成可观测的，而不是刷分。注意：这份实测跑在**旧 trace** 上，那里的
+    anchors 全是裸字符串（降级成 literal）；提示词改版后模型会真的填
+    kind=now，触发量预期上升，且新增的那部分正是本检查的靶心。
+    """
+    if not decl.time_context.displaced or _GIVEN_RATIO.search(question):
+        return []
+    now_ish = sorted({k for o in decl.outputs for k, a in o.anchors.items()
+                      if a.kind == "now" or _CURRENT_WORDS.search(a.ref)})
+    if not now_ish or _NOW_IN_SQL.search(tree.sql(dialect="sqlite")):
+        return []
+    return [f"问题涉及别的时间点，anchors 里 {now_ish} 的参照系是当前时点，"
+            f"但 SQL 里没有出现 'now'——存量值锚在当前，就必须从当前换算过去"
+            f"（如 strftime('%Y','now')）；若锚其实不在当前，改 kind/ref 说清楚"]
+
+
+# ---------------------------------------------------------------- C6 比率线索
+
+# 只在题面明确要"比率"时才触发。"average" 刻意不收：它常指聚合而非比率，
+# 且 Archer 里恰好有名为 Average 的存量列，宽进只会把普通取值题逼成比率题。
+_RATIO_WORDS = re.compile(
+    r"\brates?\b|\bratios?\b|\bdensity\b|proportion|percentage|per capita|\bper\b",
+    re.I)
+
+
+def _c6_ratio_hint(tree: exp.Expression, question: str,
+                   db_path: Path) -> list[str]:
+    """题面要比率、SQL 却一个除法都没有 => 把用到的表的数值列摆出来。
+
+    三道闸门，每一道都是为消除一类实测出来的误报：
+
+    1. 题面必须有比率词（"average" 不算——库里恰好有名为 Average 的列）。
+    2. 题面若已给出百分数字面量，比率是给定输入，不用算（dev #96/#97/#99
+       都是 "growth rate is 0.4%"，本来判对，提示了反而可能改坏）。
+    3. SQL 里若已有除法，模型已经在算比率了（dev #26/#27 正确写出
+       Average/Capacity，但同表 Highest/Lowest 未用到；若用"有未用到的
+       兄弟列"当条件就会误报，白烧一轮去改一个已经对的答案）。
+
+    只提示不判错：分母是哪一列由模型决定，程序无从判定。这一条兑现的是
+    dev #24/#25 vs #26/#27 证明过的事——把候选摆到眼前就够，不用教公式。
+
+    实测精度（对着已跑出的 M2 预测算，"有用"= 该题原本判错）：
+      dev   104 题触发 4，4 useful / 0 harmful —— #24/#25/#40/#41 全是设计靶子
+      train 414 题触发 11，6 useful / 5 harmful
+    dev 是 100% 但规则是在 dev 上调的，train 的 55% 才是无偏估计。已知的
+    误报形态：把"tired at the highest rate"这类定性排名当成了要算的比率
+    （train #326/#328/#335）。收窄 \\bper\\b 试过，train 反而掉到 1 useful /
+    3 harmful（"2 dollars per dose"那批本来抓对了），故保留。
+
+    C6 只在 M3-c 生效——它到底是净收益还是净损失，交给消融量，不在这里猜。
+    """
+    if not _RATIO_WORDS.search(question) or _GIVEN_RATIO.search(question):
+        return []
+    if next(tree.find_all(exp.Div), None) is not None:
+        return []
+    used = {c.name.lower() for c in tree.find_all(exp.Column)}
+    issues = []
+    for table, cols in numeric_columns(db_path).items():
+        hit = [c for c in cols if c.lower() in used]
+        rest = [c for c in cols if c.lower() not in used]
+        if hit and rest:
+            issues.append(
+                f"题面问的是比率，但 SQL 里没有任何除法，只取了 {table} 的 {hit}；"
+                f"同表还有数值列 {rest}——比率的分母是不是其中之一？"
+                f"确认不需要归一化就在 considered 里写明理由")
+    return issues
+
+
 # ---------------------------------------------------------------- 总入口
 
-def validate(out: DslOutput, schema_info: SchemaInfo, db_path: Path) -> list[str]:
-    """四组检查汇总；返回 issue 列表（空 = 通过），文字直接作修复反馈。"""
+def validate(out: DslOutput, schema_info: SchemaInfo, db_path: Path, *,
+             question: str, profile_ids: set[str],
+             extra_checks: bool = False) -> list[str]:
+    """全部检查汇总；返回 issue 列表（空 = 通过），文字直接作修复反馈。
+
+    C1–C4 是 M2 的既有检查，恒开。C5a 由 profile_ids 是否为空自然开关。
+    C5b/C6 是 M3-c 才启用的建议级检查——它们的精度实测在 55%–67%，
+    默认关闭，靠消融量它们到底是净收益还是净损失。
+    """
     try:
         tree = sqlglot.parse_one(out.sql, dialect="sqlite")
     except Exception as e:
         return [f"SQL 无法按 SQLite 语法解析: {e}"]
     decl = out.declarations
-    return (_c1_alignment(decl, tree) + _c2_consistency(decl, tree)
-            + _c3_grounding(decl, tree, schema_info, db_path)
-            + _c4_anchors(decl))
+    issues = (_c1_alignment(decl, tree) + _c2_consistency(decl, tree)
+              + _c3_grounding(decl, tree, schema_info, db_path)
+              + _c4_anchors(decl) + _c5a_considered(decl, profile_ids))
+    if extra_checks:
+        issues += _c5b_anchor_sql(decl, tree, question)
+        issues += _c6_ratio_hint(tree, question, db_path)
+    return issues

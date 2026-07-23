@@ -82,9 +82,9 @@ def test_vote_all_failed_falls_back_to_last():
 def test_shipped_templates_load_and_declare_expected_placeholders():
     from model.pipeline.templates import PLACEHOLDERS, load_template
 
-    assert PLACEHOLDERS["planner.user"] == {"schema", "question"}
+    assert PLACEHOLDERS["planner.user"] == {"schema", "question", "profile"}
     assert PLACEHOLDERS["sqlgen.user"] == {"schema", "question", "plan"}
-    assert PLACEHOLDERS["dslgen.user"] == {"schema", "question", "plan"}
+    assert PLACEHOLDERS["dslgen.user"] == {"schema", "question", "plan", "profile"}
     assert PLACEHOLDERS["dslgen.repair"] == {"issues"}
     for name in PLACEHOLDERS:
         assert load_template(name).strip()  # 所有模板文件齐全且非空
@@ -230,3 +230,92 @@ def test_predict_all_records_llm_failure_as_empty(monkeypatch, tmp_path):
     preds = generator.predict_all([_sample()], [db], progress=False)
     assert preds == [""]  # 框架约定：LLM 调用失败记空串
     assert generator.trace_records[0]["error"]
+
+
+# ---------------------------------------------------------- M3 消融档
+
+def test_m3_variants_registered():
+    from model import MODELS
+
+    for name in ("m3a-pro-thinking", "m3b-pro-thinking", "m3c-pro-thinking"):
+        assert name in MODELS, sorted(MODELS)
+
+
+def test_m3_ablation_flags_are_strictly_nested():
+    """a=给知识 / b=强制用 / c=加校验，逐档只加一个变量。"""
+    from model.pipeline.plansql import M3A, M3B, M3C
+
+    assert (M3A.use_profile, M3A.force_considered, M3A.extra_checks) == (True, False, False)
+    assert (M3B.use_profile, M3B.force_considered, M3B.extra_checks) == (True, True, False)
+    assert (M3C.use_profile, M3C.force_considered, M3C.extra_checks) == (True, True, True)
+
+
+def test_m2_baseline_keeps_all_m3_switches_off():
+    """dslsql-pro-thinking 必须与已跑出的 M2 结果逐位一致，否则分差不可归因。"""
+    from model.pipeline.plansql import DSLSQL, DSLSQLPro
+
+    for cls in (DSLSQL, DSLSQLPro):
+        assert (cls.use_profile, cls.force_considered, cls.extra_checks) == (False, False, False)
+
+
+def test_m3_variants_share_the_m2_backbone():
+    """消融只动开关，骨干必须同底，否则变量不唯一。"""
+    from model.pipeline.plansql import DSLSQLPro, M3A, M3B, M3C
+
+    for cls in (M3A, M3B, M3C):
+        assert cls.endpoint_spec == DSLSQLPro.endpoint_spec
+        assert cls.n_plans == DSLSQLPro.n_plans
+        assert cls.max_repairs == DSLSQLPro.max_repairs
+
+
+def test_preview_renders_every_shipped_template(capsys, monkeypatch):
+    """预览工具必须能渲染所有模板——加占位符时最容易漏掉这里。
+
+    Task 2 加 {profile} 时就漏了，preview 直接抛 ValueError 而测试全绿。
+    """
+    import sys
+
+    from model.pipeline.__main__ import main
+
+    monkeypatch.setattr(sys, "argv",
+                        ["model.pipeline", "--data", "en_dev", "--preview", "3"])
+    main()
+    out = capsys.readouterr().out
+    assert "dslgen user" in out and "Facts derived from" in out
+    assert "P1." in out and "singer.Age" in out      # 画像真的填进去了
+
+
+def test_planner_message_byte_identical_when_profile_off():
+    """use_profile=False 时 planner 消息必须与 M1 时代逐字节相同。
+
+    planner 提示词是 M1 对照组共用的；这条断言是"改 M3 不会污染 M1/M2"的
+    唯一硬保证。M1 时代的模板正文写死在这里，改模板必须同步改这里并想清楚。
+    """
+    from model.pipeline.dsl import render_profile_block
+    from model.pipeline.templates import render
+
+    legacy = ("Database schema with sample rows:\n\n"
+              "SCHEMA\n\n"
+              "Question: Q\n\n"
+              "Write the plan.\n")
+    assert render("planner.user", schema="SCHEMA", question="Q",
+                  profile=render_profile_block([])) == legacy
+
+
+def test_planner_message_carries_profile_when_on():
+    from model.pipeline.dsl import render_profile_block
+    from model.pipeline.templates import render
+
+    msg = render("planner.user", schema="SCHEMA", question="Q",
+                 profile=render_profile_block(["存量时点列 singer.Age：…"]))
+    assert "P1. 存量时点列 singer.Age" in msg
+    assert msg.index("P1.") < msg.index("Question: Q")   # 画像必须在题面之前
+
+
+def test_profile_reaches_planner_for_m3_but_not_for_m1_m2():
+    from model.pipeline.plansql import DSLSQLPro, M3A, M3B, M3C, PlanSQLPro
+
+    for cls in (PlanSQLPro, DSLSQLPro):
+        assert cls.use_profile is False
+    for cls in (M3A, M3B, M3C):
+        assert cls.use_profile is True

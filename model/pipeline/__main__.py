@@ -10,6 +10,8 @@ import argparse
 import config
 from archer_eval.data import load_dataset, resolve_dataset
 from archer_eval.evaluate import find_db_file
+from model.pipeline.dsl import render_profile, render_profile_block
+from model.pipeline.profile import build_profile
 from model.pipeline.templates import load_template, render
 from model.prompts import schema_with_rows
 
@@ -25,17 +27,27 @@ def main() -> None:
     args = parser.parse_args()
 
     sample = load_dataset(resolve_dataset(args.data))[args.preview]
-    schema = schema_with_rows(find_db_file(config.DB_DIR, sample.db_id))
+    db_path = find_db_file(config.DB_DIR, sample.db_id)
+    schema = schema_with_rows(db_path)
+    # M3-a 及以上会注入库画像；预览一律带上，改完规则先看再跑
+    items = build_profile(db_path)
+    profile = render_profile(items)
 
+    # sqlgen 只有 M1 plansql 用；M2/M3 dslsql 走 dslgen——预览分段标明归属，
+    # 免得把 M1 的 SQL 直出提示词误读成当前 DSL 管线的一部分
     sections = [
         ("planner system", load_template("planner.system")),
-        ("planner user", render("planner.user", schema=schema, question=sample.question)),
-        ("sqlgen system", load_template("sqlgen.system")),
-        ("sqlgen user", render("sqlgen.user", schema=schema, question=sample.question,
-                               plan="<planner 的输出会填在这里>")),
-        ("dslgen system", load_template("dslgen.system")),
-        ("dslgen user", render("dslgen.user", schema=schema, question=sample.question,
-                               plan="<planner 的输出会填在这里>")),
+        ("planner user [M3 起带库画像]",
+         render("planner.user", schema=schema, question=sample.question,
+                profile=render_profile_block(items))),
+        ("sqlgen system [仅 M1 plansql]", load_template("sqlgen.system")),
+        ("sqlgen user [仅 M1 plansql]",
+         render("sqlgen.user", schema=schema, question=sample.question,
+                plan="<planner 的输出会填在这里>")),
+        ("dslgen system [M2/M3 dslsql]", load_template("dslgen.system")),
+        ("dslgen user [M2/M3 dslsql]",
+         render("dslgen.user", schema=schema, question=sample.question,
+                plan="<planner 的输出会填在这里>", profile=profile)),
     ]
     for title, text in sections:
         print(f"{'=' * 28} {title} {'=' * 28}")

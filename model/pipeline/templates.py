@@ -16,11 +16,11 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 # 模板名 -> 允许出现的占位符集合（模板名即 prompts/<名>.md）
 PLACEHOLDERS: dict[str, set[str]] = {
     "planner.system": set(),
-    "planner.user": {"schema", "question"},
+    "planner.user": {"schema", "question", "profile"},
     "sqlgen.system": set(),
     "sqlgen.user": {"schema", "question", "plan"},
     "dslgen.system": set(),
-    "dslgen.user": {"schema", "question", "plan"},
+    "dslgen.user": {"schema", "question", "plan", "profile"},
     "dslgen.repair": {"issues"},
 }
 

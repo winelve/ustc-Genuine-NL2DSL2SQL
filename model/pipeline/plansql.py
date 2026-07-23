@@ -30,6 +30,7 @@ class PlanSQL(SQLGenerator):
     n_plans = 1                  # >1 时 planner 升温出多样 plan + 执行结果投票
     plan_temperature = 0.7
     concurrency = API_CONCURRENCY
+    use_profile = False          # M3 库画像；关闭时 planner 消息与 M1 逐字节相同
 
     def __init__(self) -> None:
         self.endpoint = ChatEndpoint(**self.endpoint_spec)
@@ -38,7 +39,8 @@ class PlanSQL(SQLGenerator):
     def _stages(self) -> list:
         # 每次调用现取参数，实例上改 n_plans 立即生效；M2 的新阶段插在这里
         return [
-            PlanStage(self.endpoint, self.n_plans, self.plan_temperature),
+            PlanStage(self.endpoint, self.n_plans, self.plan_temperature,
+                      use_profile=self.use_profile),
             GenerateStage(self.endpoint),
             VoteStage(),
         ]
@@ -100,11 +102,22 @@ class DSLSQL(PlanSQL):
     """
 
     max_repairs = 2
+    # M3 消融开关。基线全 False = M3 系的对照点。
+    # ⚠️ dslgen 提示词在 M3 开发中改过版（anchors 枚举化、considered 段、
+    # user 模板多出 Facts 标题行），与跑出 en_dev 44.2 的 M2 版本**不同**——
+    # 做 M3 消融前必须用当前提示词重跑本基线，不能拿 44.2 直接比。
+    # use_profile 继承自 PlanSQL，打开时 planner 与 dslgen **两处都注入**。
+    force_considered = False
+    extra_checks = False
 
     def _stages(self) -> list:
         return [
-            PlanStage(self.endpoint, self.n_plans, self.plan_temperature),
-            DeclareStage(self.endpoint, self.max_repairs),
+            PlanStage(self.endpoint, self.n_plans, self.plan_temperature,
+                      use_profile=self.use_profile),
+            DeclareStage(self.endpoint, self.max_repairs,
+                         use_profile=self.use_profile,
+                         force_considered=self.force_considered,
+                         extra_checks=self.extra_checks),
             VoteStage(),
         ]
 
@@ -119,3 +132,40 @@ class DSLSQLPro(DSLSQL):
         # 注意 DeepSeek 思考模式静默忽略 temperature（见 PROGRESS 决策记录）
         request_params={"extra_body": {"thinking": {"type": "enabled"}}},
     )
+
+
+class M3A(DSLSQLPro):
+    """M3-a：库画像进 prompt（**planner 与 dslgen 两处都注入**），不强制表态。
+
+    只"给知识"。与 M3-b 的分差就是本项目最有论文价值的那个数：
+    给知识 vs 强制用知识。
+
+    注 planner 是必须的：dev 62% 的错断在 plan 阶段，planner 先把锚猜错，
+    dslgen 只能补救。只注 dslgen 等于错已经犯完了才递材料。
+    """
+
+    name = "m3a-pro-thinking"
+    use_profile = True
+
+
+class M3B(M3A):
+    """M3-b：+ considered 强制表态（C5a）。
+
+    触发机制：把"没想到"变成"想过并否决了"，而后者可校验、可统计。
+    依据 dev #24/#26 那组天然对照——模型知道 attendance rate = 出勤/容量，
+    只是没把 Capacity 拉进视野。
+    """
+
+    name = "m3b-pro-thinking"
+    force_considered = True
+
+
+class M3C(M3B):
+    """M3-c：+ C5b 锚一致性 + C6 比率线索。
+
+    这两个是建议级检查，实测精度 55%–67%（见各自 docstring）。
+    它们到底是净收益还是净损失，由 M3-c − M3-b 的分差回答，不预设。
+    """
+
+    name = "m3c-pro-thinking"
+    extra_checks = True
