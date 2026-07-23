@@ -19,6 +19,7 @@ class Candidate:
     ok: bool | None = None       # None = 尚未执行
     error: str | None = None
     n_rows: int | None = None
+    checks: dict | None = None   # M2 声明层：{"passed", "rounds", "declarations"}
 
 
 @dataclass

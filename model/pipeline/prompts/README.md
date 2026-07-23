@@ -17,6 +17,10 @@ sqlgen.system.md ──┐                                │
 sqlgen.user.md ────┤  {schema} {question} + {plan} ◀┘
                     ▼
                sqlgen LLM ──→ SQL 候选 × n ──→ 只读执行淘汰 + 多数投票 ──→ 最终 SQL
+
+dslgen.system.md ──┐  M2 dslsql 用 dslgen 替换 sqlgen：
+dslgen.user.md ────┤  同样吃 {schema} {question} {plan}，产出 SQL+声明表 JSON；
+dslgen.repair.md ──┘  校验不过时把 {issues} 发回模型定向修复（≤2 轮）
 ```
 
 ## 占位符字典
@@ -27,6 +31,9 @@ sqlgen.user.md ────┤  {schema} {question} + {plan} ◀┘
 | planner.user.md | `{schema}` `{question}` | `schema_with_rows(db)` / 数据集题面 |
 | sqlgen.system.md | （无） | SQL 生成的角色设定，纯文本 |
 | sqlgen.user.md | `{schema}` `{question}` `{plan}` | 同上 + planner 的输出 |
+| dslgen.system.md | （无） | M2 声明层生成的角色设定 + JSON 格式说明 |
+| dslgen.user.md | `{schema}` `{question}` `{plan}` | 同 sqlgen.user |
+| dslgen.repair.md | `{issues}` | 校验器产出的失败项列表（每行 `- ...`） |
 
 规则：占位符是 `{小写标识符}`；写错名字加载时直接报错并列出可用项；
 模板里其他花括号（JSON 示例、集合写法）原样保留，不受影响。

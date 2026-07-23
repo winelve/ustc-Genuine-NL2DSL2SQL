@@ -33,6 +33,9 @@ def main() -> None:
         ("sqlgen system", load_template("sqlgen.system")),
         ("sqlgen user", render("sqlgen.user", schema=schema, question=sample.question,
                                plan="<planner 的输出会填在这里>")),
+        ("dslgen system", load_template("dslgen.system")),
+        ("dslgen user", render("dslgen.user", schema=schema, question=sample.question,
+                               plan="<planner 的输出会填在这里>")),
     ]
     for title, text in sections:
         print(f"{'=' * 28} {title} {'=' * 28}")

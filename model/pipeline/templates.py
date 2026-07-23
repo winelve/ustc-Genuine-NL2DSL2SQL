@@ -19,6 +19,9 @@ PLACEHOLDERS: dict[str, set[str]] = {
     "planner.user": {"schema", "question"},
     "sqlgen.system": set(),
     "sqlgen.user": {"schema", "question", "plan"},
+    "dslgen.system": set(),
+    "dslgen.user": {"schema", "question", "plan"},
+    "dslgen.repair": {"issues"},
 }
 
 # 只把 {小写标识符} 当占位符候选，其余花括号不归模板管

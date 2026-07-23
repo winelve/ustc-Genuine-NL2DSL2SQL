@@ -84,8 +84,10 @@ def test_shipped_templates_load_and_declare_expected_placeholders():
 
     assert PLACEHOLDERS["planner.user"] == {"schema", "question"}
     assert PLACEHOLDERS["sqlgen.user"] == {"schema", "question", "plan"}
+    assert PLACEHOLDERS["dslgen.user"] == {"schema", "question", "plan"}
+    assert PLACEHOLDERS["dslgen.repair"] == {"issues"}
     for name in PLACEHOLDERS:
-        assert load_template(name).strip()  # 四个模板文件齐全且非空
+        assert load_template(name).strip()  # 所有模板文件齐全且非空
 
 
 """end-to-end（假 LLM + 临时小库）--------------------------------------"""

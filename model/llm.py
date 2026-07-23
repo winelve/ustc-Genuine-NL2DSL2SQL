@@ -27,16 +27,19 @@ class ChatEndpoint:
         self.model = model
         self.request_params = dict(request_params or {})
 
-    def chat(self, system: str, user: str, **overrides) -> str:
-        """发一轮 system+user 对话，返回回复正文；overrides 覆盖 request_params。"""
+    def chat_messages(self, messages: list[dict], **overrides) -> str:
+        """发一段完整对话（修复循环需要带历史），返回回复正文。"""
         params = {**self.request_params, **overrides}
         response = self._client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            **params,
+            model=self.model, messages=messages, **params,
         )
         # 思维链在 message.reasoning_content，与 content 同级；这里只要最终答案
         return response.choices[0].message.content or ""
+
+    def chat(self, system: str, user: str, **overrides) -> str:
+        """发一轮 system+user 对话；overrides 覆盖 request_params。"""
+        return self.chat_messages(
+            [{"role": "system", "content": system},
+             {"role": "user", "content": user}],
+            **overrides,
+        )

@@ -18,6 +18,7 @@ from config import API_CONCURRENCY
 from model.base import SQLGenerator
 from model.llm import ChatEndpoint
 from model.pipeline.context import PipelineContext
+from model.pipeline.stages.declare import DeclareStage
 from model.pipeline.stages.generate import GenerateStage
 from model.pipeline.stages.plan import PlanStage
 from model.pipeline.stages.vote import VoteStage
@@ -88,5 +89,33 @@ class PlanSQLPro(PlanSQL):
         key_env="DEEPSEEK_API_KEY",
         # 开思考换推理质量；代价是 DeepSeek 思考模式静默忽略采样参数——
         # 各 stage 传的 temperature 不生效，n_plans>1 的多样性会失效（见 PROGRESS 决策记录）
+        request_params={"extra_body": {"thinking": {"type": "enabled"}}},
+    )
+
+
+class DSLSQL(PlanSQL):
+    """M2 半程 IR：sqlgen 换成 DeclareStage（SQL + 声明表 + 校验修复循环）。
+
+    planner 与投票与 M1 完全一致——M2 − M1 的唯一变量就是声明层。
+    """
+
+    max_repairs = 2
+
+    def _stages(self) -> list:
+        return [
+            PlanStage(self.endpoint, self.n_plans, self.plan_temperature),
+            DeclareStage(self.endpoint, self.max_repairs),
+            VoteStage(),
+        ]
+
+
+class DSLSQLPro(DSLSQL):
+    name = "dslsql-pro-thinking"
+    endpoint_spec = dict(
+        base_url="https://api.deepseek.com/v1",
+        model="deepseek-v4-pro",
+        key_env="DEEPSEEK_API_KEY",
+        # M2 主线骨干 = pro + thinking（M1 收官矩阵结论），与 M1 对照同底；
+        # 注意 DeepSeek 思考模式静默忽略 temperature（见 PROGRESS 决策记录）
         request_params={"extra_body": {"thinking": {"type": "enabled"}}},
     )

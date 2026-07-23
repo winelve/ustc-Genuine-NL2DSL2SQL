@@ -21,7 +21,7 @@
 | 基础框架 | `archer_eval` 评测器（VA/EX/SIM，Algorithm 1）+ `model` 生成框架 + runner + pytest | ✅ 完成 |
 | M0 裸基线 | CT-3 prompt + LLM 直接出 SQL（deepseek-v4-flash/pro 已接入，含 thinking 对照） | ✅ 完成（en_dev 约 VA 98 / EX 20+） |
 | M1 plan 式 pipeline（对照组） | planner → SQL 生成 → 执行淘汰 + 多数投票（默认 n_plans=1） | ✅ 代码完成+测试全绿；待真实 API 冒烟与 dev 跑分 |
-| M2 DSL 中间层 | planner 后加 DSL 结构化输出 → 规则校验循环 → sqlglot 编译 + LLM 降级通道 | ⬜ 未开始 |
+| M2 DSL 中间层 | planner 后加 DSL 结构化输出 → 规则校验循环 → sqlglot 编译 + LLM 降级通道 | 🔨 代码完成+测试全绿；待真实 API 冒烟与 dev 跑分 |
 | M3 增量迭代 | ASSUME 反事实算子 / 公式库 / 值链接强化 / 经验缓存 / 投票加宽 | ⬜ 未开始 |
 
 ## 当前工作：M1 plan 式 pipeline
@@ -91,11 +91,66 @@
   `en_dev_plansql-pro-3.json`（n=3）、`raw-deepsesk-model-logs/en_dev_deepseek-v4-pro.json`
   （非 thinking 直出）；thinking 组的历史记录见 plan-sql-logs/ 与 raw-deepsesk-model-logs/。
 
-**下一步：推进 M2（DSL 中间层），M1 定格不再动。**
-主线 = pro-thinking 骨干、基线 40.4；迭代调试用 flash。M2 的靶子是 thinking
-自己补不出来的三样：机器可校验性（DSL+校验循环，抓 A+C 口径错）、确定性编译
-（sqlglot 零幻觉）、外部知识注入（公式库/值口径，M3）。ASSUME 算子对准 H。
-M2−M1 分差即中心论据。
+M1 定格为对照组，不再动。M2 的靶子是 thinking 自己补不出来的三样：机器可校验性
+（DSL+校验循环，抓 A+C 口径错）、确定性编译（sqlglot 零幻觉）、外部知识注入
+（公式库/值口径，M3）。ASSUME 算子对准 H。M2−M1 分差即中心论据。
+
+## 当前工作：M2 DSL 中间层（声明层 + 校验循环）
+
+**定位决策（2026-07-22，设计文档 `docs/design/2026-07-22-M2-dslsql.md`，三方案对比）**：
+① 全程 IR（模型只出受限 DSL，sqlglot 编译）弃——M1 已证明"强推理骨干经过更窄的
+中间层"会掉分，受限代数只会更窄；③ 片段 IR（算式走 DSL、骨架 SQL 直出、程序拼接）
+弃——拼接边界工程上切不干净；选定 **② 半程 IR**：SQL 仍由模型全力直出，但必须随附
+结构化声明表，纯规则校验声明的完整性/与 SQL 的一致性/接地，不过则定向修复——保住
+thinking 骨干 40.4 的底盘、零表达力天花板，DSL 的作用是强制显式化 + 给 M3 知识注入
+留插座。错误分布依据：+反事实原则后剩余 62 道错题全部是"SQL 合法但语义错"，C 类
+主导模式是时间回算（没意识到要算 / 算了但口径猜错），纯结构校验一条都抓不到——
+M2 的价值主张不是"约束/校验器"，而是逼模型把口径假设显式写进 anchor 槽位，
+判对错留给 M3 公式库。
+
+**实现清单**（分支 `dsl`，计划 8 个任务全部完成，93 项测试全绿）：
+
+- `model/pipeline/dsl.py` —— 声明表 Pydantic schema（`time_context` / `outputs` /
+  `assumptions`，零 Archer 专属词汇）+ `parse_output` + 四组校验器：
+  C1 完整性（必填字段齐全 + sqlglot 解析 SQL 输出列与 `outputs` 一一对应）、
+  C2 一致性（`displaced=true` ⇒ 至少一个输出列 derived；assumptions 必须参与计算）、
+  C3 接地（表/列存在于 schema；字面值 difflib 近邻核对库内值）、
+  C4 锚完整（`derived` 表达式每个时间语义列须有 anchor）+ `validate()` 总入口。
+- `model/pipeline/stages/declare.py` —— `DeclareStage`：dslgen 调用 + 修复循环编排，
+  校验失败项定向拼进对话重生成，默认 ≤2 轮，`Candidate.checks` 记每轮 trace，
+  轮数用尽兜底取最后一版 SQL（绝不空串）。
+- `model/pipeline/prompts/dslgen.{system,user}.md` + `dslgen.repair.md` 三件套、
+  `templates.py` 占位符登记同步。
+- `DSLSQL` / `DSLSQLPro` 注册为 `dslsql-pro`（骨干同 plansql-pro：deepseek-v4-pro +
+  thinking），预测文件 `predictions/dslsql-pro_<数据集>.json`；planner 相关文件与
+  M1 注册项零改动。
+
+**最终审查修掉的两处（2026-07-22，commit 8b69185，均先补失败测试再改）**：
+
+- **C3 存在性判定被候选池截断**：`_c3_literal_neighbors` 原先拿 `LIMIT 2000` 的
+  截断值集判断"字面值在不在列里"。dev 两库碰不到（world_1 里 `Name`/`Population`
+  列名跨表重名，被"不猜表"规则跳过），但 train 的 soccer_1 `Player.player_name`
+  有 10848 个不同值、列名唯一——排在 cap 之后的**真实**球员名会被判成打错并附近邻
+  建议，白白耗一轮修复去改正确的 SQL。改为带条件查询精确判存在，cap 只截断喂给
+  difflib 的候选池（原本的用途）。
+- **trace 每轮只留 SQL 不留声明**：设计 §5 要求"每轮的 SQL 与声明"，原实现只在
+  `checks` 顶层留最终声明。修复前后的声明差异正是"声明层起没起作用"的过程证据，
+  少了它修复率之外的定性分析做不了。现每轮 `rounds[i]` 都带 `declarations`。
+
+**两项事实核查（2026-07-22，用户提出，见设计文档 §1）**：
+
+- **`commonsense_knowledge` 字段测试时不提供**：Archer 论文（2024.eacl-long.6）
+  主实验（§6.1）只输入问题本身，"w/ knowledge"仅为 §6.2 分析实验，OraPlan 全篇未用
+  该字段——官方设定 = w/o knowledge。约束：M3 公式库不得直接使用 dev 集该字段，
+  合法路线是从 train 集该字段离线蒸馏通用公式库，靠 train→dev 泛化。
+- **数据库无字段注释**：10 库中仅 bike_1 的 DDL 带注释，dev 两库
+  （concert_singer、world_1）零注释——模型对列语义的全部依据 = 列名 + 3 行样本，
+  "`Age` 为当前年龄"这类口径在输入中根本不存在，只能靠模型猜或外部注入，佐证
+  M2 anchor 声明 + M3 知识注入的组合设计。
+
+**下一步**：用户跑 `dslsql-pro` 的 en_dev 真实评测（`.venv\Scripts\python.exe -m model
+--model dslsql-pro --data en_dev --eval`），对照 M1 40.4；trace 里各检查触发率/
+修复率是论文过程证据，值得单独统计。
 
 ## 决策记录
 
@@ -130,6 +185,16 @@ M2−M1 分差即中心论据。
   （plansql-pro = deepseek-v4-pro + thinking，flash 变体暂不保留）。
 - 注意（潜伏问题）：pro 变体现开 thinking，DeepSeek 思考模式**静默忽略 temperature**；
   n_plans=1 无影响，但将来 n_plans>1 的多样性会失效，届时需关思考或换多样性来源。
+- 2026-07-22 · **M2 选定半程 IR**（三方案对比见"当前工作"）：全程 IR 弃因 M1 已证明
+  更窄的中间层会拉低强推理骨干（自由文本 plan −9.6 EX），受限代数只会更窄；片段 IR
+  弃因算式/骨架拼接边界工程上切不干净；半程 IR 保住 thinking 骨干 40.4 底盘、
+  零表达力天花板，且 M1 消融显示剩余错误全是"SQL 合法但语义错"、纯结构校验抓不到，
+  DSL 的价值在于强制显式化口径假设 + 给 M3 知识注入留插座，不在于约束/校验本身。
+- 2026-07-22 · **修复轮数默认 2**（`DeclareStage` 类属性，可调）：与 M1 的执行淘汰
+  重试节奏一致，避免修复循环无限拖长单题延迟；轮数用尽兜底取最后一版 SQL。
+- 2026-07-22 · **值近邻用 difflib，不引 rapidfuzz**：C3 接地检查现阶段只需"当前
+  VA 100% 的保险"级别的近邻核对，标准库够用；M3 值链接强化需要更强的模糊匹配时再引
+  rapidfuzz 依赖，避免过早引入未用满的第三方库。
 
 ## 完整路线图（总架构，M0→M3 是同一张图逐步点亮）
 
