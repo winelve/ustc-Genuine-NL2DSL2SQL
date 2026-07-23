@@ -361,3 +361,43 @@ def test_baseline_and_m3abc_keep_conventions_off():
 
     for cls in (DSLSQLPro, M3A, M3B, M3C):
         assert (cls.conventions, cls.convention_checks) == (False, False)
+
+
+def test_noplan_variants_registered_and_single_variable():
+    """no-plan 消融双臂：唯一差异 = conventions；其余开关全关（单变量红线）。"""
+    from model import MODELS
+    from model.pipeline.plansql import M3DPNoPlan, NoPlanDSLSQL
+
+    assert MODELS["noplan-pro-thinking"] is NoPlanDSLSQL
+    assert MODELS["m3dp-noplan-pro-thinking"] is M3DPNoPlan
+    assert (NoPlanDSLSQL.conventions, M3DPNoPlan.conventions) == (False, True)
+
+
+def test_m3dx_noplan_adds_only_extra_checks():
+    """m3dx = m3dp-noplan + C5b/C6（dev 实测 0 有害的两个建议级检查）。
+
+    单变量：相对 m3dp-noplan 唯一差异是 extra_checks；C7 保持关
+    （C7-abs dev 实测 0 有用/2 有害，开了是负期望）。"""
+    from model import MODELS
+    from model.pipeline.plansql import M3DPNoPlan, M3DXNoPlan
+
+    assert MODELS["m3dx-noplan-pro-thinking"] is M3DXNoPlan
+    assert issubclass(M3DXNoPlan, M3DPNoPlan)
+    assert M3DXNoPlan.extra_checks is True
+    assert (M3DXNoPlan.conventions, M3DXNoPlan.convention_checks,
+            M3DXNoPlan.use_profile, M3DXNoPlan.force_considered) \
+        == (True, False, False, False)
+
+
+def test_noplan_stage_composition_skips_planner():
+    from model.pipeline.plansql import M3DPNoPlan, NoPlanDSLSQL
+
+    for cls in (NoPlanDSLSQL, M3DPNoPlan):
+        assert (cls.use_profile, cls.force_considered, cls.extra_checks,
+                cls.convention_checks) == (False, False, False, False)
+        # 阶段构成：无 PlanStage，DeclareStage 走 no-plan 模式
+        inst = cls.__new__(cls)          # 绕过 __init__（不建真实 endpoint）
+        inst.endpoint = object()
+        names = [type(s).__name__ for s in inst._stages()]
+        assert names == ["DeclareStage", "VoteStage"]
+        assert inst._stages()[0].use_plan is False

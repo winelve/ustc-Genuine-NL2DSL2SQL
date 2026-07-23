@@ -398,6 +398,40 @@ def test_declare_good_first_try_single_call(toy_db):
     assert c.sql == "SELECT count(*) AS n FROM singer"
     assert c.checks["passed"] is True and len(c.checks["rounds"]) == 1
     assert c.checks["declarations"]["outputs"][0]["name"] == "n"
+
+
+def test_declare_noplan_mode_runs_without_plans(toy_db):
+    """use_plan=False：ctx.plans 为空也要出恰好一个候选，user 消息无 Plan 段。
+
+    no-plan 消融的接线关键——知识（约定）与问题在同一条消息里直达 dslgen，
+    没有"planner 先把决定定死"的前站。
+    """
+    from model.pipeline.context import PipelineContext
+    from model.pipeline.stages.declare import DeclareStage
+
+    ctx = PipelineContext(question="How many singers?", db_path=toy_db)
+    ctx.schema = "CREATE TABLE singer (...)"          # 刻意不设 ctx.plans
+    endpoint = _FakeEndpoint([GOOD_JSON])
+    DeclareStage(endpoint, use_plan=False).run(ctx)
+
+    [c] = ctx.candidates
+    assert c.sql == "SELECT count(*) AS n FROM singer" and c.plan == ""
+    user = endpoint.calls[0][1]["content"]
+    assert "Plan:" not in user
+    assert "How many singers?" in user and "CREATE TABLE singer" in user
+
+
+def test_declare_noplan_still_carries_conventions(toy_db):
+    """no-plan + conventions：附录进 system，user 走 noplan 模板。"""
+    from model.pipeline.context import PipelineContext
+    from model.pipeline.stages.declare import DeclareStage
+
+    ctx = PipelineContext(question="q", db_path=toy_db)
+    ctx.schema = "CREATE TABLE singer (...)"
+    endpoint = _FakeEndpoint([GOOD_JSON])
+    DeclareStage(endpoint, use_plan=False, conventions=True).run(ctx)
+    system = endpoint.calls[0][0]["content"]
+    assert "K1. " in system and "not a valid stance" in system
     assert len(endpoint.calls) == 1
 
 

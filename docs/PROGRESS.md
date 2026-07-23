@@ -340,10 +340,141 @@ train/dev 分离）见下方"m3d 实验协议"。
   dslgen 拿着约定去执行一个已经定错的 plan——与 m3a"只注 dslgen"是同一个错误，
   这次是为保 planner 冻结而主动选的。#98 的分摊策略正是 plan 阶段定下的。
 
-**下一步（建议，待用户拍板）**：no-plan 变体——m3d 双臂去掉 PlanStage，
-question+schema+约定直达 dslgen，一次运行同时回答"planner 死重"与
-"知识晚到"两个悬案；若仍无声息，zh_dev 复验一轮后按"约定在 dev 的天花板
-≈ 覆盖 15 题且与其他错因叠加"收档，叙事转机制发现。
+**no-plan 消融（2026-07-23 用户拍板"试一下"，已实现，174 项测试全绿）**：
+`NoPlanDSLSQL`（`noplan-pro-thinking`，去 PlanStage 的基线）与
+`M3DPNoPlan`（`m3dp-noplan-pro-thinking`，+约定 prose），
+新模板 `dslgen.user.noplan.md`、`DeclareStage(use_plan=False)`；
+单变量红线有测试锁死（唯一差异 = conventions）。
+
+```
+.venv\Scripts\python.exe -m model --model noplan-pro-thinking --data en_dev --eval
+.venv\Scripts\python.exe -m model --model m3dp-noplan-pro-thinking --data en_dev --eval
+```
+
+读数（写死）：noplan − 45.19 = 纯去 planner 的效应；
+m3dp-noplan − noplan = 排除 plan 前站后 prose 约定的净值。
+|净差| ≤ 3 题按噪声报告。
+
+**no-plan 实测（2026-07-23）——本项目第一个显著结果**：
+
+| | EX | 翻转 vs 上一档 | McNemar |
+|---|---|---|---|
+| 基线（有 plan） | 45.19 | — | — |
+| noplan | **52.88**（VA 99.0） | +17/−9 | p≈0.17 |
+| noplan+约定 | **57.69**（VA 99.0） | +13/−8 | p≈0.38 |
+| **合计 基线→noplan+约定** | **+12.50** | **+20/−7** | **p≈0.019 ✅** |
+
+逐题机制（不是噪声，两步各有清晰指纹）：
+
+- **去 planner 的 +17 里 12 题是时间锚簇**（#12–15/#20–23/#48–51）——dev 最大
+  单一错因（锚点臆断）大部分**自愈**：不是知识修好的，是移走了"在无知识状态下
+  先把锚定死"的前站。plan 层对 thinking 骨干不是死重（M1 结论），是**负资产**，
+  下游越结构化（声明层）越明显。OraPlan 自家消融早就写着同一形状：
+  无 guidelines 的 planner（44.23）**差于**无 planner（64.42）；我们 45.19 < 52.88。
+- **约定的 +13 里 9 题是点名靶子**：#100/#101（K5 CAST）、#102/#103（K10
+  per-capita，两题首次同时对）、#26/#27（K11 宽表，首次对）、#98（K6 反事实，
+  夺回）、#5（锚）。**同一份 prose，在 plan 后面 ±0.00，在决策点前 +4.81**——
+  知识注入的成败不在内容在时机：必须抵达"尚未被约束的决策点"。
+- 仍未破：#0–#3（Gentleman 无 WHERE 读法）、#24/#25（Average 字面吸引）、
+  #92–95（线性外推，约定表按 train-only 红线没收这条）。
+
+**诚实警示**：no-plan 这一刀是看完 dev 取证后下的——en_dev 对这个决定而言
+已不是干净考卷；zh_dev / test 复验通过前不庆祝。m3dp-noplan−noplan 单步
+p≈0.38，靠靶子指纹撑机制解释，复验时重点看约定靶子是否再现。
+**train 复验已做（见"验证债① 实测"节）：train 上净 +3 题 p≈0.78 纯噪声——
+"负资产"仅在 plan 型错误占主导的 dev 画像上成立，勿写成全局结论。**
+
+## 刷分冲刺（2026-07-23 用户定调：继续在 en_dev 冲分，目标 60+）
+
+**最终成绩：`m3dx-noplan-pro-thinking` en_dev EX 63.46（66/104，VA 100）——
+2026-07-23 用户确认满足，冲分收档。实测与归因见下方"牌 1 实测"。**
+（下文为冲刺时的牌面记录，保留供论文取材。）
+到 60% 需再 +3 题；65% 需 +8。剩余 44 错题的簇分布与三张牌：
+
+**牌 1（已实现，下一跑）**：`m3dx-noplan-pro-thinking` = m3dp-noplan + C5b/C6
+建议级检查（extra_checks）。依据：C6 dev 离线实测 4 触发 4 有用 0 有害，
+靶子 #24/#25/#40/#41 在 57.69 的错题单里全数仍错；C5b 带 %闸门后 2/2/0。
+**C7 刻意不开**（C7-abs dev 0 有用/2 有害，#84/#86 现在是对的，开了负期望）。
+预期 +2~4 题 → 59.6~61.5。
+
+```
+.venv\Scripts\python.exe -m model --model m3dx-noplan-pro-thinking --data en_dev --eval
+```
+
+读数：对照 57.69，逐题翻转 + McNemar；重点看 #24/#25/#40/#41 是否被 C6 顶动
+（老 m3c 时代 C6 曾在 #40 顶两轮成功，但那时有 plan；#24/#25 当年三轮顶不动）。
+
+**牌 1 实测（2026-07-23）：EX 63.46（VA 100.00，66/104）——超预期上限，用户满足，冲分收档。**
+
+单步 57.69→63.46：+11/−5 净 +6，McNemar p≈0.21（单步不显著）。
+累计 基线 45.19→63.46：**+22/−3 净 +19，p≈0.00016**——整条 no-plan+约定+检查
+链路对基线是压倒性显著。
+
++6 的归因分解（trace 逐题核对，消息→检查器映射已对照 `dsl.py` 源码确认）：
+
+- **C6 净 +3，与离线预测完全吻合**：#24/#25/#40/#41 四靶全部触发、模型四题
+  全部在被顶后改写 SQL 且终版含除法（trace rounds 可查），#24/#25/#41 三题
+  转对，#40 改了仍错，0 有害。离线预测 4 触发 4 有用，实弹 4 触发 3 转化——
+  **无 plan 时建议级检查顶得动 thinking**（对照 m3c 时代有 plan 时 #24/#25
+  三轮顶不动），plan 的"锁死效应"连修复回路也压制。
+- **C5b 净 0**：只触发 #93（未修出），无害。
+- **其余 +8/−5 净 +3 是重跑抖动**：#64/#65/#72 修对时两档都无任何检查触发，
+  纯采样方差；#48/#51（锚簇）这次翻错，触发的只有两档共有的恒开 C2。
+  注意"displaced=true 但无 derived"这条消息属 **C2（恒开）不是 C5b**，
+  归因时勿凭消息文本猜编号，以 `dsl.py` validate() 的门控为准。
+
+**诚实口径**：63.46 里约 3 分是运气（抖动净 +3），本臂真实力约 60–61，
+重跑可能回落；但 C6 的 +3 是有 trace 因果链的真收益。VA 100% 系修复回路
+把最后一个非法 SQL 也救回。牌 2（dev 蒸馏，未跨线）、牌 3（C8，未实现）
+均不再需要。
+
+**牌 2（16 题的大矿，但需用户拍板跨线）**：剩余四大簇
+①#0–#3 时间状语读法（"at the time of X's release"作用于全表非过滤）
+②#6/#7/#46/#47 成员反事实（"若 X 参加了所有演唱会"=补行，非过滤）
+③#60–#63 majority=plurality + 比较分母取全库
+④#92–#95 线性外推（增长率不变=等差 GNP+(GNP−GNPOld)，非等比）
+——**已 grep 验证 train 零证据**（四个正则均 0 命中），train-only 红线立不了项。
+要吃这 16 题只能走 **dev 蒸馏 guidelines**（= OraPlan 附录 5.1 的原始做法，
+挑战赛惯例，但违反本项目 2026-07-23 定的"知识只从 train 立项"红线）。
+方案若批准：另立 `KD*` 命名空间 + 单独档位（如 m3kd-noplan），文档明标
+"dev-informed，不与 K-train 轴混算"，泛化性由最终 test 集裁决。**待用户拍板。**
+
+**牌 3（合法、程序化、还没实现）**：C8 "字面值在别的列"检查——
+#68–#71 的 `Kang-won` 是 `city.District` 的值，pred 拿去配 `city.Name` 返回空集。
+纯 schema+数据驱动（同 C3/C6 家族，零 Archer 专属），实现后先用
+`scripts/measure_checks.py` 对 train 离线测精度再定去留。靶子 4 题。
+
+**验证债（冲分后必须还，写论文前不可跳）**：
+① ~~`noplan-pro-thinking` 跑 en_train~~ **已还（2026-07-23，实测见下节）**；
+② zh_dev 三档复验（基线/noplan/noplan+约定）——no-plan 决策是看完 en_dev
+取证后下的，en_dev 对它已不是干净考卷；③ m3dc-noplan（C7 无 plan 转化率）。
+
+### 验证债① 实测：noplan @ en_train（2026-07-23）
+
+`noplan-pro-thinking` en_train：**EX 52.90**（VA 98.07，219/414）。
+对照 = `results/m2-dslsql/en_train_dslsql-pro-thinking.json`（带 plan，EX 52.17，
+216/414）。逐题翻转 **+27/−24，净 +3 题，McNemar p≈0.78——train 上纯噪声**。
+分错因类型看也无单簇：A 降（69.3→64.9）、A+C 平、A+C+H/A+H 各微升。
+
+**判读（对"planner 负资产"结论的修正）**：
+- dev +7.7 在 train 上**不复现**——planner 的害处不是全局的，而是集中在
+  dev 特有的失效画像上（62% plan 阶段推理错、时间锚簇 12 题自愈）；train 推理错
+  只占 9%（口径/常数为主），plan 移走后无从获益，只剩 ±24/27 的大幅 churn 对消。
+  这与"dev 与 train 失效画像相反"的错因分析完全自洽，机制解释反而更完整了：
+  **去 planner 的收益 ∝ 数据集里 plan 型错误的占比**。
+- 论文口径应写成："移除 planner 在 414 题干净大样本上无害（p≈0.78），
+  在 plan 型错误占主导的 dev 上显著获益"——不写"planner 全局负资产"。
+- **混杂提醒**：对照是 M2 时代模板（anchors 枚举化等改版前）跑的，非严格单变量；
+  dev 侧同一模板漂移只值 ~+1 分（44.2→45.19），不足以翻转"train 无净效应"的读数。
+  如需论文级严格对照，须用当前模板重跑 `dslsql-pro-thinking` en_train（414 次
+  调用，费用大，暂记账不跑）。
+
+**新会话交接须知**：预测/结果文件在 `predictions/`、`results/`（历史归档在
+`results/m3-knowledge/`、`predictions/m2-dslsql/`）；逐题对比脚本模式见本文件
+各"实测"节（load results samples 的 index/match 做翻转表 + McNemar）；
+检查器精度一律用 `scripts/measure_checks.py` 复算，不许凭记忆引数字；
+错题分析文档在 `docs/analysis/`（gitignored，勿删）；约定表红线测试在
+`tests/test_conventions.py`，改 K 条目前先读它。
 
 ## 决策记录
 

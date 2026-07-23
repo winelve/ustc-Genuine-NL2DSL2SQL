@@ -20,7 +20,7 @@ class DeclareStage:
     def __init__(self, endpoint: ChatEndpoint, max_repairs: int = 2, *,
                  use_profile: bool = False, force_considered: bool = False,
                  extra_checks: bool = False, conventions: bool = False,
-                 convention_checks: bool = False) -> None:
+                 convention_checks: bool = False, use_plan: bool = True) -> None:
         self.endpoint = endpoint
         self.max_repairs = max_repairs
         # 五个开关默认关 = M3 系的对照基线；M3 各档在 plansql.py 里显式打开。
@@ -30,6 +30,9 @@ class DeclareStage:
         self.extra_checks = extra_checks
         self.conventions = conventions
         self.convention_checks = convention_checks
+        # no-plan 消融：False 时不读 ctx.plans，question+schema(+约定)直达 dslgen，
+        # 消除"planner 在无知识状态下先把决定定死"的前站（m3a/m3d 两次撞到的墙）
+        self.use_plan = use_plan
 
     def _system(self) -> str:
         """基线模板 + 可选约定附录。附录是追加式的——基线消息逐字节不变。"""
@@ -45,10 +48,15 @@ class DeclareStage:
         items = build_profile(ctx.db_path) if self.use_profile else []
         profile_ids = profile_ids_for(items) if self.force_considered else set()
         system = self._system()
-        for plan in ctx.plans:
-            user = render("dslgen.user", schema=ctx.schema,
-                          question=ctx.question, plan=plan,
-                          profile=render_profile(items))
+        for plan in (ctx.plans if self.use_plan else [None]):
+            if plan is None:
+                user = render("dslgen.user.noplan", schema=ctx.schema,
+                              question=ctx.question,
+                              profile=render_profile(items))
+            else:
+                user = render("dslgen.user", schema=ctx.schema,
+                              question=ctx.question, plan=plan,
+                              profile=render_profile(items))
             messages = [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
@@ -82,7 +90,7 @@ class DeclareStage:
                         issues="\n".join(f"- {issue}" for issue in issues))},
                 ]
             ctx.candidates.append(Candidate(
-                plan=plan, sql=sql,
+                plan=plan or "", sql=sql,
                 checks={"passed": passed, "rounds": rounds,
                         "declarations": declarations},
             ))

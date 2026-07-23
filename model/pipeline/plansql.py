@@ -195,3 +195,54 @@ class M3DC(M3DP):
 
     name = "m3dc-pro-thinking"
     convention_checks = True
+
+
+class NoPlanDSLSQL(DSLSQLPro):
+    """no-plan 消融基线：去掉 PlanStage，question+schema 直达 dslgen。
+
+    一次运行回答两个悬案：① planner 对 thinking 骨干是否死重（M1 实测 ±0
+    的延伸——那时下游是 sqlgen，这次是声明层）；② 与 M3DPNoPlan 对比时，
+    排除"plan 在无知识状态下先定死决定"的混杂（m3a、m3d 两次撞到的同一堵墙，
+    m3dp 实测 ±0.00 且 #98 的分摊策略正是 plan 阶段定下的）。
+    对照点：本臂 − 基线 45.19 = 纯去 planner 的效应。
+    """
+
+    name = "noplan-pro-thinking"
+
+    def _stages(self) -> list:
+        return [
+            DeclareStage(self.endpoint, self.max_repairs,
+                         use_profile=self.use_profile,
+                         force_considered=self.force_considered,
+                         extra_checks=self.extra_checks,
+                         conventions=self.conventions,
+                         convention_checks=self.convention_checks,
+                         use_plan=False),
+            VoteStage(),
+        ]
+
+
+class M3DPNoPlan(NoPlanDSLSQL):
+    """no-plan + 约定 prose：知识与问题同一条消息抵达唯一的决策点。
+
+    本臂 − noplan 基线 = 排除 plan 前站后 prose 约定的净值；
+    若仍 ≈0，"约定 prose 无效"才真正定案（m3dp 的 ±0.00 有 plan 混杂）。
+    实测（2026-07-23）：45.19 → 52.88（去 plan）→ 57.69（+约定），
+    合计 McNemar p≈0.019，靶子指纹见 PROGRESS。
+    """
+
+    name = "m3dp-noplan-pro-thinking"
+    conventions = True
+
+
+class M3DXNoPlan(M3DPNoPlan):
+    """m3dp-noplan + C5b/C6 建议级检查（extra_checks）。
+
+    动机：C6 的 dev 离线实测 4 触发 4 有用 0 有害，靶子 #24/#25/#40/#41
+    在 57.69 的错题单里全数仍错；C5b 加 %闸门后 dev 2/2/0。
+    C7 刻意不开：C7-abs dev 实测 0 有用 / 2 有害（#84/#86 现在是对的），
+    开了是负期望。相对 m3dp-noplan 单变量 = extra_checks。
+    """
+
+    name = "m3dx-noplan-pro-thinking"
+    extra_checks = True
