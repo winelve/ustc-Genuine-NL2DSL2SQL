@@ -10,6 +10,7 @@ import argparse
 import config
 from archer_eval.data import load_dataset, resolve_dataset
 from archer_eval.evaluate import find_db_file
+from model.pipeline.conventions import conventions_block
 from model.pipeline.dsl import render_profile, render_profile_block
 from model.pipeline.profile import build_profile
 from model.pipeline.templates import load_template, render
@@ -45,6 +46,8 @@ def main() -> None:
          render("sqlgen.user", schema=schema, question=sample.question,
                 plan="<planner 的输出会填在这里>")),
         ("dslgen system [M2/M3 dslsql]", load_template("dslgen.system")),
+        ("dslgen system 附录 [仅 m3d]",
+         render("dslgen.conventions", conventions=conventions_block())),
         ("dslgen user [M2/M3 dslsql]",
          render("dslgen.user", schema=schema, question=sample.question,
                 plan="<planner 的输出会填在这里>", profile=profile)),

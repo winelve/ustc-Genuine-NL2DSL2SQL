@@ -319,3 +319,45 @@ def test_profile_reaches_planner_for_m3_but_not_for_m1_m2():
         assert cls.use_profile is False
     for cls in (M3A, M3B, M3C):
         assert cls.use_profile is True
+
+
+def test_dslgen_system_byte_identical_when_conventions_off():
+    """conventions=False 时 system 消息与本周基线完全一致——45.19 不作废。"""
+    from model.pipeline.stages.declare import DeclareStage
+    from model.pipeline.templates import load_template
+
+    stage = DeclareStage(endpoint=None)
+    assert stage._system() == load_template("dslgen.system")
+
+
+def test_dslgen_system_carries_conventions_when_on():
+    from model.pipeline.conventions import CONVENTIONS
+    from model.pipeline.stages.declare import DeclareStage
+    from model.pipeline.templates import load_template
+
+    stage = DeclareStage(endpoint=None, conventions=True)
+    system = stage._system()
+    assert system.startswith(load_template("dslgen.system"))
+    for c in CONVENTIONS:
+        assert f"{c.id}. " in system
+    # 反投降条款必须在场：中性事实诱发推理放弃是 m3a 的实锤教训
+    assert "not a valid stance" in system
+
+
+def test_m3d_switch_matrix():
+    """m3d 双臂：prose 臂只开 conventions，check 臂再开 convention_checks；
+    画像/表态/C5bC6 三开关全关——约定轴与画像轴不叠加。"""
+    from model.pipeline.plansql import M3DC, M3DP
+
+    for cls in (M3DP, M3DC):
+        assert (cls.use_profile, cls.force_considered, cls.extra_checks) \
+            == (False, False, False)
+    assert (M3DP.conventions, M3DP.convention_checks) == (True, False)
+    assert (M3DC.conventions, M3DC.convention_checks) == (True, True)
+
+
+def test_baseline_and_m3abc_keep_conventions_off():
+    from model.pipeline.plansql import DSLSQLPro, M3A, M3B, M3C
+
+    for cls in (DSLSQLPro, M3A, M3B, M3C):
+        assert (cls.conventions, cls.convention_checks) == (False, False)

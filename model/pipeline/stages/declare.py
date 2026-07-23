@@ -19,20 +19,32 @@ from model.pipeline.templates import load_template, render
 class DeclareStage:
     def __init__(self, endpoint: ChatEndpoint, max_repairs: int = 2, *,
                  use_profile: bool = False, force_considered: bool = False,
-                 extra_checks: bool = False) -> None:
+                 extra_checks: bool = False, conventions: bool = False,
+                 convention_checks: bool = False) -> None:
         self.endpoint = endpoint
         self.max_repairs = max_repairs
-        # 三个开关默认关 = M3 系的对照基线；M3 各档在 plansql.py 里显式打开。
+        # 五个开关默认关 = M3 系的对照基线；M3 各档在 plansql.py 里显式打开。
         # 注意基线与跑出 44.2 的 M2 并非同一套 dslgen 提示词（见 plansql.DSLSQL）。
         self.use_profile = use_profile
         self.force_considered = force_considered
         self.extra_checks = extra_checks
+        self.conventions = conventions
+        self.convention_checks = convention_checks
+
+    def _system(self) -> str:
+        """基线模板 + 可选约定附录。附录是追加式的——基线消息逐字节不变。"""
+        system = load_template("dslgen.system")
+        if self.conventions:
+            from model.pipeline.conventions import conventions_block
+            system += "\n" + render("dslgen.conventions",
+                                    conventions=conventions_block())
+        return system
 
     def run(self, ctx: PipelineContext) -> None:
         schema_info = load_schema_info(ctx.db_path)
         items = build_profile(ctx.db_path) if self.use_profile else []
         profile_ids = profile_ids_for(items) if self.force_considered else set()
-        system = load_template("dslgen.system")
+        system = self._system()
         for plan in ctx.plans:
             user = render("dslgen.user", schema=ctx.schema,
                           question=ctx.question, plan=plan,
@@ -51,7 +63,8 @@ class DeclareStage:
                     issues = validate(out, schema_info, ctx.db_path,
                                       question=ctx.question,
                                       profile_ids=profile_ids,
-                                      extra_checks=self.extra_checks)
+                                      extra_checks=self.extra_checks,
+                                      convention_checks=self.convention_checks)
                     sql, declarations = out.sql, out.declarations.model_dump()
                 rounds.append({
                     "sql": out.sql if out else None,

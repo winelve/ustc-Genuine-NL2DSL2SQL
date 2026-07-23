@@ -109,6 +109,8 @@ class DSLSQL(PlanSQL):
     # use_profile 继承自 PlanSQL，打开时 planner 与 dslgen **两处都注入**。
     force_considered = False
     extra_checks = False
+    conventions = False          # M3-d：约定附录进 dslgen system（prose 臂）
+    convention_checks = False    # M3-d：C7 约定检查器（强制执行臂）
 
     def _stages(self) -> list:
         return [
@@ -117,7 +119,9 @@ class DSLSQL(PlanSQL):
             DeclareStage(self.endpoint, self.max_repairs,
                          use_profile=self.use_profile,
                          force_considered=self.force_considered,
-                         extra_checks=self.extra_checks),
+                         extra_checks=self.extra_checks,
+                         conventions=self.conventions,
+                         convention_checks=self.convention_checks),
             VoteStage(),
         ]
 
@@ -169,3 +173,25 @@ class M3C(M3B):
 
     name = "m3c-pro-thinking"
     extra_checks = True
+
+
+class M3DP(DSLSQLPro):
+    """M3-d prose 臂：train 蒸馏的约定表以 guidelines 文本注入 dslgen。
+
+    对照系即 OraPlan 的做法（其消融：guidelines 值 +27.9）。
+    与画像轴（m3a/b/c）互斥不叠加——约定对齐的分数单独归因。
+    """
+
+    name = "m3dp-pro-thinking"
+    conventions = True
+
+
+class M3DC(M3DP):
+    """M3-d 强制臂：同一份约定 + C7 检查器在修复环里按违规触发。
+
+    m3dc − m3dp = "机器强制执行约定"的净值——路线 A 的中心论据
+    （dev #40 的 C6 轨迹已证明决策点挑战能顶动模型，此处推广到约定族）。
+    """
+
+    name = "m3dc-pro-thinking"
+    convention_checks = True

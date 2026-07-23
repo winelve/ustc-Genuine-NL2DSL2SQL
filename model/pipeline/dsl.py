@@ -488,16 +488,110 @@ def _c6_ratio_hint(tree: exp.Expression, question: str,
     return issues
 
 
+# ---------------------------------------------------------------- C7 约定检查
+
+# Archer 规定值 vs 常见"更精确"写法。365.25 抓 julianday 年龄公式（K2）。
+_OFFBRAND_CONSTANTS = {
+    "0.453592": "K3", "2.20462": "K3", "25.4": "K3",
+    "1.60934": "K3",   # 注意 1.609344 是对的——用精确匹配整个字面量判定
+    "365.25": "K2",
+}
+_ARCHER_OK = {"0.45", "25", "1.609344"}
+
+_DIFF_WORDS = re.compile(
+    r"difference between|how (?:many|much) (?:more|less|older|younger|taller|"
+    r"higher|longer|heavier)", re.I)
+
+_DISPLACED_WORDS = re.compile(
+    r"\bat the time of\b|\byears? (?:ago|later|earlier)\b|"
+    r"\bin the year \d{4}\b", re.I)
+
+
+def _c7_constants(tree: exp.Expression) -> list[str]:
+    """K2/K3：出现"更精确"的换算常数/儒略年龄式 => 提示 Archer 规定值。
+
+    实测（scripts/measure_checks.py，对着已跑出的 M2 trace 算，
+    "有用"= 该题原本判错）：
+      train 触发 27，26 useful / 1 harmful
+      dev   触发 0
+    """
+    issues = []
+    for lit in tree.find_all(exp.Literal):
+        token = str(lit.this)
+        if token in _ARCHER_OK:
+            continue
+        k = _OFFBRAND_CONSTANTS.get(token)
+        if k == "K3":
+            issues.append(
+                f"SQL 里的常数 {token} 不是本数据集的规定值（K3：0.45 / 25 / "
+                f"1.609344）——请改用规定值")
+        elif k == "K2":
+            issues.append(
+                "SQL 用了 365.25 折算年数（K2）——本数据集的整年公式是 "
+                "strftime('%Y',b)-strftime('%Y',a)-(strftime('%m-%d',b)<"
+                "strftime('%m-%d',a))")
+    return issues
+
+
+def _c7_abs_difference(tree: exp.Expression, question: str) -> list[str]:
+    """K4：题面问 difference、SELECT 里有裸减法且全程无 ABS => 提示。
+
+    实测（scripts/measure_checks.py，对着已跑出的 M2 trace 算，
+    "有用"= 该题原本判错）：
+      train 触发 75，39 useful / 36 harmful（未倒挂，净值微弱为正）
+      dev   触发 2，0 useful / 2 harmful（样本量小；dev 只记录不调参，
+        不据此收窄——调参纪律只认 train）
+    """
+    if not _DIFF_WORDS.search(question):
+        return []
+    if next(tree.find_all(exp.Abs), None) is not None:
+        return []
+    for sel in getattr(tree, "selects", None) or []:
+        if next(sel.find_all(exp.Sub), None) is not None:
+            return ["题面问的是 difference（K4：默认取绝对值），SQL 的输出列里"
+                    "有减法但没有 ABS——若方向确由题面固定，请在 considered/note "
+                    "里说明"]
+    return []
+
+
+def _c7_displaced_dodge(decl: Declarations, question: str) -> list[str]:
+    """反投降：题面有位移措辞、声明却 displaced=false => 要求表态。
+
+    m3a 的实锤（dev #4/#5）：模型以"无从确定"为由放弃换算并顺手声明
+    displaced=false，C2/C4/C5b 全部合法静默。这一条堵的就是那扇门。
+    建议级：模型坚持 false 需要给出理由（写进 reference），不强制改。
+
+    Task 4 实测：初版 _DISPLACED_WORDS 含 `\\bwould (?:have|be)\\b`，
+    在 train 上触发 2、2 harmful / 0 useful（train #235/#243，"if the price
+    was increased by X%, what would be…" 这类反事实假设题——"would be"
+    只是问句语气，不是时间位移；且这两条是全 train 唯一命中该分支的题，
+    删掉不损失任何 useful），按 Step 3 规则收窄一次：删除该分支后
+      train 触发 0（未再倒挂，保留启用）
+      dev   触发 6，4 useful [0, 5, 7, 48] / 2 harmful [11, 50]
+        （dev 只记录不调参）
+    """
+    if decl.time_context.displaced or not _DISPLACED_WORDS.search(question):
+        return []
+    return ["题面含时间位移措辞（at the time of / years ago / in the year "
+            "YYYY），但声明 displaced=false——若坚持不位移，请在 "
+            "time_context.reference 里写明理由；若确有位移，改 true 并按 "
+            "K1 选锚换算"]
+
+
 # ---------------------------------------------------------------- 总入口
 
 def validate(out: DslOutput, schema_info: SchemaInfo, db_path: Path, *,
              question: str, profile_ids: set[str],
-             extra_checks: bool = False) -> list[str]:
+             extra_checks: bool = False,
+             convention_checks: bool = False) -> list[str]:
     """全部检查汇总；返回 issue 列表（空 = 通过），文字直接作修复反馈。
 
     C1–C4 是 M2 的既有检查，恒开。C5a 由 profile_ids 是否为空自然开关。
     C5b/C6 是 M3-c 才启用的建议级检查——它们的精度实测在 55%–67%，
     默认关闭，靠消融量它们到底是净收益还是净损失。
+    C7 是约定检查（规定常数/ABS/反投降），精度数字见各函数 docstring
+    （scripts/measure_checks.py 实测；C7-dodge 曾因 train 倒挂收窄过一次
+    正则），默认关闭。
     """
     try:
         tree = sqlglot.parse_one(out.sql, dialect="sqlite")
@@ -510,4 +604,8 @@ def validate(out: DslOutput, schema_info: SchemaInfo, db_path: Path, *,
     if extra_checks:
         issues += _c5b_anchor_sql(decl, tree, question)
         issues += _c6_ratio_hint(tree, question, db_path)
+    if convention_checks:
+        issues += _c7_constants(tree)
+        issues += _c7_abs_difference(tree, question)
+        issues += _c7_displaced_dodge(decl, question)
     return issues

@@ -735,3 +735,74 @@ def test_extra_checks_default_off_keeps_m2_baseline_behaviour():
     from model.pipeline.dsl import validate
 
     assert inspect.signature(validate).parameters["extra_checks"].default is False
+
+
+# ---------------------------------------------------------- C7 约定检查
+
+def _validate_conv(toy_db, sql, question, declarations=None):
+    from model.pipeline.dsl import DslOutput, load_schema_info, validate
+
+    decl = declarations or {
+        "time_context": {"displaced": False, "reference": ""},
+        "outputs": [{"name": "a", "source": "column", "column": "singer.Age"}],
+        "assumptions": [], "considered": []}
+    out = DslOutput.model_validate({"sql": sql, "declarations": decl})
+    return validate(out, load_schema_info(toy_db), toy_db, question=question,
+                    profile_ids=set(), convention_checks=True)
+
+
+def test_c7_flags_offbrand_constants(toy_db):
+    issues = _validate_conv(
+        toy_db, "SELECT Age * 0.453592 AS kg FROM singer", "weight in kg?")
+    assert any("K3" in i for i in issues), issues
+
+
+def test_c7_flags_julianday_age(toy_db):
+    issues = _validate_conv(
+        toy_db, "SELECT julianday('now')/365.25 AS y FROM singer", "how old?")
+    assert any("K2" in i for i in issues), issues
+
+
+def test_c7_silent_on_archer_constants(toy_db):
+    issues = _validate_conv(
+        toy_db, "SELECT Age * 0.45 AS kg FROM singer", "weight in kg?")
+    assert not [i for i in issues if "K3" in i], issues
+
+
+def test_c7_abs_difference_hint(toy_db):
+    issues = _validate_conv(
+        toy_db, "SELECT MAX(Age) - MIN(Age) AS d FROM singer",
+        "What is the difference between the oldest and youngest age?")
+    assert any("K4" in i for i in issues), issues
+
+
+def test_c7_abs_silent_when_abs_present(toy_db):
+    issues = _validate_conv(
+        toy_db, "SELECT ABS(MAX(Age) - MIN(Age)) AS d FROM singer",
+        "What is the difference between the oldest and youngest age?")
+    assert not [i for i in issues if "K4" in i], issues
+
+
+def test_c7_displaced_dodge_challenged(toy_db):
+    issues = _validate_conv(
+        toy_db, "SELECT Name, Age FROM singer",
+        "List the age of each singer at the time of the first concert.")
+    assert any("displaced" in i for i in issues), issues
+
+
+def test_c7_dodge_ignores_would_phrased_counterfactuals(toy_db):
+    """train #235/#243 实测：would have/be 是价格反事实不是时间位移——
+    收窄后不得再触发（0 useful / 2 harmful 是当时移除该分支的全部依据）。"""
+    issues = _validate_conv(
+        toy_db, "SELECT Age FROM singer",
+        "If the price was increased by 10%, what would the total be?")
+    assert not [i for i in issues if "displaced" in i], issues
+
+
+def test_c7_all_silent_by_default(toy_db):
+    """convention_checks 默认关——m3a/b/c 与基线行为不变。"""
+    import inspect
+    from model.pipeline.dsl import validate
+
+    assert inspect.signature(validate).parameters[
+        "convention_checks"].default is False
