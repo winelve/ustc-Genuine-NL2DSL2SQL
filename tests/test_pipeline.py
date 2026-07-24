@@ -1,4 +1,4 @@
-"""Tests for model/pipeline (plansql): templates, voting, end-to-end with a fake LLM."""
+"""Tests for model/pipeline: templates, voting, end-to-end with a fake LLM."""
 
 import pytest
 
@@ -106,9 +106,9 @@ def _toy_db(tmp_path):
 
 
 def _fresh_plansql(monkeypatch, fake_chat, n_plans=1):
-    """构造 plansql 实例，把 LLM 调用换成 fake_chat(system, user, **kw)。"""
+    """构造 plan pipeline 实例，把 LLM 调用换成 fake_chat(system, user, **kw)。"""
     pytest.importorskip("openai")
-    from model.pipeline.plansql import ProTPlan
+    from model.pipeline.models import ProTPlan
 
     monkeypatch.setenv(ProTPlan.endpoint_spec["key_env"], "sk-test")
     generator = ProTPlan()
@@ -125,7 +125,7 @@ def _sample(question="How many singers?"):
 
 def test_plansql_registered_in_models():
     from model import MODELS
-    from model.pipeline.plansql import ProTPlan
+    from model.pipeline.models import ProTPlan
 
     assert MODELS["pro-t-plan"] is ProTPlan
 
@@ -244,7 +244,7 @@ def test_m3_variants_registered():
 
 def test_m3_ablation_flags_are_strictly_nested():
     """a=给知识 / b=强制用 / c=加校验，逐档只加一个变量。"""
-    from model.pipeline.plansql import ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk
+    from model.pipeline.archive import ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk
 
     assert (ProTPlanDslProf.use_profile, ProTPlanDslProf.force_considered, ProTPlanDslProf.extra_checks) == (True, False, False)
     assert (ProTPlanDslProfForce.use_profile, ProTPlanDslProfForce.force_considered, ProTPlanDslProfForce.extra_checks) == (True, True, False)
@@ -253,7 +253,7 @@ def test_m3_ablation_flags_are_strictly_nested():
 
 def test_m2_baseline_keeps_all_m3_switches_off():
     """pro-t-plandsl 必须与已跑出的基线结果逐位一致，否则分差不可归因。"""
-    from model.pipeline.plansql import DSLSQL, ProTPlanDsl
+    from model.pipeline.models import DSLSQL, ProTPlanDsl
 
     for cls in (DSLSQL, ProTPlanDsl):
         assert (cls.use_profile, cls.force_considered, cls.extra_checks) == (False, False, False)
@@ -261,7 +261,9 @@ def test_m2_baseline_keeps_all_m3_switches_off():
 
 def test_m3_variants_share_the_m2_backbone():
     """消融只动开关，骨干必须同底，否则变量不唯一。"""
-    from model.pipeline.plansql import ProTPlanDsl, ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk
+    from model.pipeline.archive import (ProTPlanDslProf, ProTPlanDslProfForce,
+                                        ProTPlanDslProfForceChk)
+    from model.pipeline.models import ProTPlanDsl
 
     for cls in (ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk):
         assert cls.endpoint_spec == ProTPlanDsl.endpoint_spec
@@ -311,7 +313,9 @@ def test_planner_message_carries_profile_when_on():
 
 
 def test_profile_reaches_planner_for_m3_but_not_for_m1_m2():
-    from model.pipeline.plansql import ProTPlanDsl, ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk, ProTPlan
+    from model.pipeline.archive import (ProTPlanDslProf, ProTPlanDslProfForce,
+                                        ProTPlanDslProfForceChk)
+    from model.pipeline.models import ProTPlan, ProTPlanDsl
 
     for cls in (ProTPlan, ProTPlanDsl):
         assert cls.use_profile is False
@@ -345,7 +349,7 @@ def test_dslgen_system_carries_conventions_when_on():
 def test_m3d_switch_matrix():
     """约定双臂：prose 臂只开 conventions，check 臂再开 convention_checks；
     画像/表态/C5bC6 三开关全关——约定轴与画像轴不叠加。"""
-    from model.pipeline.plansql import ProTPlanDslConvCchk, ProTPlanDslConv
+    from model.pipeline.archive import ProTPlanDslConvCchk, ProTPlanDslConv
 
     for cls in (ProTPlanDslConv, ProTPlanDslConvCchk):
         assert (cls.use_profile, cls.force_considered, cls.extra_checks) \
@@ -355,7 +359,9 @@ def test_m3d_switch_matrix():
 
 
 def test_baseline_and_m3abc_keep_conventions_off():
-    from model.pipeline.plansql import ProTPlanDsl, ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk
+    from model.pipeline.archive import (ProTPlanDslProf, ProTPlanDslProfForce,
+                                        ProTPlanDslProfForceChk)
+    from model.pipeline.models import ProTPlanDsl
 
     for cls in (ProTPlanDsl, ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk):
         assert (cls.conventions, cls.convention_checks) == (False, False)
@@ -364,7 +370,7 @@ def test_baseline_and_m3abc_keep_conventions_off():
 def test_noplan_variants_registered_and_single_variable():
     """no-plan 消融双臂：唯一差异 = conventions；其余开关全关（单变量红线）。"""
     from model import MODELS
-    from model.pipeline.plansql import ProTDslConv, ProTDsl
+    from model.pipeline.models import ProTDslConv, ProTDsl
 
     assert MODELS["pro-t-dsl"] is ProTDsl
     assert MODELS["pro-t-dsl-conv"] is ProTDslConv
@@ -376,7 +382,7 @@ def test_m3dx_noplan_adds_only_extra_checks():
 
     单变量：相对 pro-t-dsl-conv 唯一差异是 extra_checks；C7 保持关。"""
     from model import MODELS
-    from model.pipeline.plansql import ProTDslConv, ProTDslConvChk
+    from model.pipeline.models import ProTDslConv, ProTDslConvChk
 
     assert MODELS["pro-t-dsl-conv-chk"] is ProTDslConvChk
     assert issubclass(ProTDslConvChk, ProTDslConv)
@@ -387,7 +393,7 @@ def test_m3dx_noplan_adds_only_extra_checks():
 
 
 def test_noplan_stage_composition_skips_planner():
-    from model.pipeline.plansql import ProTDslConv, ProTDsl
+    from model.pipeline.models import ProTDslConv, ProTDsl
 
     for cls in (ProTDsl, ProTDslConv):
         assert (cls.use_profile, cls.force_considered, cls.extra_checks,
@@ -398,3 +404,66 @@ def test_noplan_stage_composition_skips_planner():
         names = [type(s).__name__ for s in inst._stages()]
         assert names == ["DeclareStage", "VoteStage"]
         assert inst._stages()[0].use_plan is False
+
+
+# ------------------------------------------- 满配 leave-one-out 消融三臂
+
+def test_loo_minus_conv_single_variable():
+    """pro-t-dsl-chk = 满配 − conv：相对满配唯一差异 = conventions 关。"""
+    from model import MODELS
+    from model.pipeline.models import ProTDslChk, ProTDslConvChk
+
+    assert MODELS["pro-t-dsl-chk"] is ProTDslChk
+    assert (ProTDslChk.conventions, ProTDslConvChk.conventions) == (False, True)
+    for attr in ("extra_checks", "convention_checks", "use_profile",
+                 "force_considered", "max_repairs", "endpoint_spec", "n_plans"):
+        assert getattr(ProTDslChk, attr) == getattr(ProTDslConvChk, attr), attr
+
+
+def test_loo_minus_repair_single_variable():
+    """pro-t-dsl-conv-chk-r0 = 满配 − 重试：唯一差异 = max_repairs 0。"""
+    from model import MODELS
+    from model.pipeline.models import ProTDslConvChk, ProTDslConvChkR0
+
+    assert MODELS["pro-t-dsl-conv-chk-r0"] is ProTDslConvChkR0
+    assert issubclass(ProTDslConvChkR0, ProTDslConvChk)
+    assert (ProTDslConvChkR0.max_repairs, ProTDslConvChk.max_repairs) == (0, 2)
+    for attr in ("conventions", "extra_checks", "convention_checks",
+                 "use_profile", "force_considered", "endpoint_spec", "n_plans"):
+        assert getattr(ProTDslConvChkR0, attr) == getattr(ProTDslConvChk, attr), attr
+
+
+def test_loo_minus_dsl_is_direct_plus_conventions():
+    """pro-t-direct-conv = 满配 − 声明层：裸直出 + 约定文本，
+    相对 pro-t-direct 唯一差异 = conventions。"""
+    from model import MODELS
+    from model.api import DeepSeekProThinking, DeepSeekProThinkingConv
+
+    assert MODELS["pro-t-direct-conv"] is DeepSeekProThinkingConv
+    assert issubclass(DeepSeekProThinkingConv, DeepSeekProThinking)
+    assert (DeepSeekProThinkingConv.conventions,
+            DeepSeekProThinking.conventions) == (True, False)
+    assert DeepSeekProThinkingConv.request_params == DeepSeekProThinking.request_params
+
+
+def test_direct_system_byte_identical_when_conventions_off():
+    """conventions=False 时直出 system 消息与基线逐字节相同，不能悄悄漂移。"""
+    from model.api import SYSTEM_PROMPT, DeepSeekProThinking
+
+    inst = DeepSeekProThinking.__new__(DeepSeekProThinking)   # 不建真实 endpoint
+    assert inst._system() == SYSTEM_PROMPT
+
+
+def test_direct_conv_system_carries_all_conventions():
+    from model.api import SYSTEM_PROMPT, DeepSeekProThinkingConv
+    from model.pipeline.conventions import CONVENTIONS
+
+    inst = DeepSeekProThinkingConv.__new__(DeepSeekProThinkingConv)
+    system = inst._system()
+    assert system.startswith(SYSTEM_PROMPT)
+    for c in CONVENTIONS:
+        assert f"{c.id}. " in system
+    # 反投降条款必须在场（同 dslgen 附录的约定）
+    assert "not a valid answer" in system
+    # 直出臂没有声明表，附录不得出现声明层专属词汇
+    assert "Declaration" not in system and "declaration" not in system

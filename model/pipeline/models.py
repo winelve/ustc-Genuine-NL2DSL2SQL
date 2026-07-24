@@ -1,10 +1,11 @@
-"""PlanSQL：先规划后写 SQL 的 SQLGenerator 实现。
+"""pipeline 主线模型：编排基类 + 主线消融阶梯的注册类。
 
-pipeline = [PlanStage, GenerateStage, VoteStage]，每条样本流经一遍；
-DSL 结构化/校验阶段可插在 Plan 与 Generate 之间（改 _stages 即可）。
+pipeline = 若干 stage 顺序流过（PlanStage / GenerateStage / DeclareStage /
+VoteStage 的组合），每条样本流经一遍；组合由各类的 _stages() 决定。
 
-参数随模型走（铁律 #2）：骨干 endpoint、n_plans、plan_temperature 都是类属性，
-新变体 = 子类 + MODELS 注册一行。
+参数随模型走（铁律 #2）：骨干 endpoint、消融开关都是类属性，
+新变体 = 子类 + MODELS 注册一行。命名 `<骨干>[-t]-<配置>` 见 docs/ABLATION.md。
+判负存档的探索支（画像轴、带 plan 注知识）在 archive.py，不在这里。
 """
 
 from __future__ import annotations
@@ -135,52 +136,6 @@ class ProTPlanDsl(DSLSQL):
     )
 
 
-class ProTPlanDslProf(ProTPlanDsl):
-    """库画像进 prompt（planner 与 dslgen 两处都注入），不强制表态——只"给知识"。
-
-    注入 planner 是必须的：plan 阶段先把锚定错，dslgen 只能补救；
-    只注 dslgen 等于错已经犯完了才递材料。
-    """
-
-    name = "pro-t-plandsl-prof"
-    use_profile = True
-
-
-class ProTPlanDslProfForce(ProTPlanDslProf):
-    """+ considered 强制表态（C5a）：把"没想到"变成"想过并否决了"，
-    后者才可校验、可统计。
-    """
-
-    name = "pro-t-plandsl-prof-force"
-    force_considered = True
-
-
-class ProTPlanDslProfForceChk(ProTPlanDslProfForce):
-    """+ C5b 锚一致性 + C6 比率线索（建议级检查，精度见各自 docstring/ABLATION.md）。"""
-
-    name = "pro-t-plandsl-prof-force-chk"
-    extra_checks = True
-
-
-class ProTPlanDslConv(ProTPlanDsl):
-    """prose 臂：train 蒸馏的约定表以 guidelines 文本注入 dslgen。
-
-    与画像轴互斥不叠加——约定对齐的分数单独归因。
-    """
-
-    name = "pro-t-plandsl-conv"
-    conventions = True
-
-
-class ProTPlanDslConvCchk(ProTPlanDslConv):
-    """强制臂：同一份约定 + C7 检查器在修复环里按违规触发——
-    机器强制执行约定的净值与 prose 臂对照。
-    """
-
-    name = "pro-t-plandsl-conv-cchk"
-    convention_checks = True
-
-
 class ProTDsl(ProTPlanDsl):
     """去掉 PlanStage，question+schema 直达 dslgen。
 
@@ -220,3 +175,29 @@ class ProTDslConvChk(ProTDslConv):
 
     name = "pro-t-dsl-conv-chk"
     extra_checks = True
+
+
+# ---- 满配 leave-one-out 消融（对照 = pro-t-dsl-conv-chk，方案见 ABLATION.md）
+
+
+class ProTDslChk(ProTDsl):
+    """满配 − conv：声明层 + C5b/C6 检查，不注约定文本。
+
+    与满配的唯一差异 = conventions 关；顺带回答交互问题——
+    chk 的收益（+5.77）是否依赖约定文本在场。
+    """
+
+    name = "pro-t-dsl-chk"
+    extra_checks = True
+
+
+class ProTDslConvChkR0(ProTDslConvChk):
+    """满配 − 重试：修复循环 0 轮，其余逐位同满配。
+
+    检查照跑、照记 trace，但没有重生成通道——检查只通过修复循环起作用，
+    所以关重试 ≡ 关掉全部 C 的效果，一臂度量整个"校验→修复"回路的总值。
+    注意 VA 可能回落：满配 VA 100% 有一部分是修复环救回的非法 SQL。
+    """
+
+    name = "pro-t-dsl-conv-chk-r0"
+    max_repairs = 0

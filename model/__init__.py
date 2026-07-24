@@ -12,14 +12,15 @@
 """
 
 from model.api import (DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro,
-                       DeepSeekProThinking)
+                       DeepSeekProThinking, DeepSeekProThinkingConv)
 from model.base import SQLGenerator
 from model.example import FirstTableBaseline
-from model.pipeline.plansql import (ProTDsl, ProTDslConv, ProTDslConvChk,
-                                     ProTPlan, ProTPlanDsl, ProTPlanDslConv,
-                                     ProTPlanDslConvCchk, ProTPlanDslProf,
-                                     ProTPlanDslProfForce,
-                                     ProTPlanDslProfForceChk)
+from model.pipeline.archive import (ProTPlanDslConv, ProTPlanDslConvCchk,
+                                    ProTPlanDslProf, ProTPlanDslProfForce,
+                                    ProTPlanDslProfForceChk)
+from model.pipeline.models import (ProTDsl, ProTDslChk, ProTDslConv,
+                                   ProTDslConvChk, ProTDslConvChkR0,
+                                   ProTPlan, ProTPlanDsl)
 
 # 注册表：--model 参数用的名字 -> 模型类。含义见 docs/ABLATION.md。
 MODELS: dict[str, type[SQLGenerator]] = {
@@ -32,14 +33,19 @@ MODELS: dict[str, type[SQLGenerator]] = {
     DeepSeekPro.name: DeepSeekPro,                      # pro-direct
     DeepSeekProThinking.name: DeepSeekProThinking,      # pro-t-direct
 
-    # 主线消融：plan → plandsl → dsl(去plan) → +conv → +chk
+    # 主线加法阶梯：plan → plandsl → dsl(去plan) → +conv → +chk
     ProTPlan.name: ProTPlan,                # pro-t-plan
     ProTPlanDsl.name: ProTPlanDsl,          # pro-t-plandsl
     ProTDsl.name: ProTDsl,                  # pro-t-dsl
     ProTDslConv.name: ProTDslConv,          # pro-t-dsl-conv
-    ProTDslConvChk.name: ProTDslConvChk,    # pro-t-dsl-conv-chk  ★最终
+    ProTDslConvChk.name: ProTDslConvChk,    # pro-t-dsl-conv-chk  ★满配·最终
 
-    # 存档：带 plan 注知识的探索支（已被上面 no-plan 线取代，多数判负，保留以可复现）
+    # 满配 leave-one-out 消融（对照 = pro-t-dsl-conv-chk，每臂只动一个变量）
+    ProTDslChk.name: ProTDslChk,                        # pro-t-dsl-chk（−conv）
+    ProTDslConvChkR0.name: ProTDslConvChkR0,            # pro-t-dsl-conv-chk-r0（−重试）
+    DeepSeekProThinkingConv.name: DeepSeekProThinkingConv,  # pro-t-direct-conv（−声明层）
+
+    # 存档：带 plan 注知识的探索支（已被 no-plan 线取代，多数判负，保留以可复现）
     ProTPlanDslProf.name: ProTPlanDslProf,                  # pro-t-plandsl-prof
     ProTPlanDslProfForce.name: ProTPlanDslProfForce,        # pro-t-plandsl-prof-force
     ProTPlanDslProfForceChk.name: ProTPlanDslProfForceChk,  # pro-t-plandsl-prof-force-chk

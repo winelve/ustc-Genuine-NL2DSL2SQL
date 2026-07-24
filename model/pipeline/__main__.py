@@ -1,4 +1,4 @@
-"""预览 plansql 实际发给两个 LLM 的完整消息（不打 API，改完提示词先看再跑）。
+"""预览 pipeline 实际发给各 LLM 的完整消息（不打 API，改完提示词先看再跑）。
 
     python -m model.pipeline --data en_dev --preview 0
 """
@@ -34,20 +34,22 @@ def main() -> None:
     items = build_profile(db_path)
     profile = render_profile(items)
 
-    # sqlgen 只有 plansql（无 DSL）用；dslsql 走 dslgen——预览分段标明归属，
+    # sqlgen 只有 plan 系（无 DSL）用；dsl 系走 dslgen——预览分段标明归属，
     # 免得把 SQL 直出提示词误读成当前 DSL 管线的一部分
     sections = [
         ("planner system", load_template("planner.system")),
         ("planner user [带库画像]",
          render("planner.user", schema=schema, question=sample.question,
                 profile=render_profile_block(items))),
-        ("sqlgen system [仅 plansql]", load_template("sqlgen.system")),
-        ("sqlgen user [仅 plansql]",
+        ("sqlgen system [仅 plan 系]", load_template("sqlgen.system")),
+        ("sqlgen user [仅 plan 系]",
          render("sqlgen.user", schema=schema, question=sample.question,
                 plan="<planner 的输出会填在这里>")),
         ("dslgen system [dslsql]", load_template("dslgen.system")),
         ("dslgen system 附录 [约定 prose 臂]",
          render("dslgen.conventions", conventions=conventions_block())),
+        ("direct system 附录 [pro-t-direct-conv 臂]",
+         render("direct.conventions", conventions=conventions_block())),
         ("dslgen user [dslsql]",
          render("dslgen.user", schema=schema, question=sample.question,
                 plan="<planner 的输出会填在这里>", profile=profile)),

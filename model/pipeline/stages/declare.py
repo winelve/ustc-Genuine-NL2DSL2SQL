@@ -23,7 +23,7 @@ class DeclareStage:
                  convention_checks: bool = False, use_plan: bool = True) -> None:
         self.endpoint = endpoint
         self.max_repairs = max_repairs
-        # 五个开关默认关 = 对照基线；各消融档位在 plansql.py 里显式打开。
+        # 五个开关默认关 = 对照基线；各消融档位在 models.py/archive.py 里显式打开。
         self.use_profile = use_profile
         self.force_considered = force_considered
         self.extra_checks = extra_checks

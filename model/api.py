@@ -50,6 +50,10 @@ class APIModel(SQLGenerator):
     # 厂商扩展字段（如 DeepSeek 的 thinking）包在 "extra_body" 里。默认贪心解码。
     request_params: dict = {"temperature": 0.0}
 
+    # 约定附录开关（K1–K11，追加式注入同 dslgen 那边的做法）：
+    # 关闭时 system 消息与基线逐字节相同，有测试锁死
+    conventions = False
+
     def __init__(self) -> None:
         # 客户端封装统一在 model/llm.py 的 ChatEndpoint，pipeline 与此共用
         self._endpoint = ChatEndpoint(
@@ -59,8 +63,17 @@ class APIModel(SQLGenerator):
             request_params=self.request_params,
         )
 
+    def _system(self) -> str:
+        """基线 system + 可选约定附录。附录是追加式的——基线消息逐字节不变。"""
+        if not self.conventions:
+            return SYSTEM_PROMPT
+        from model.pipeline.conventions import conventions_block
+        from model.pipeline.templates import render
+        return SYSTEM_PROMPT + "\n" + render("direct.conventions",
+                                             conventions=conventions_block())
+
     def predict(self, sample: Sample, db_path: Path) -> str:
-        reply = self._endpoint.chat(SYSTEM_PROMPT, build_ct3_prompt(sample, db_path))
+        reply = self._endpoint.chat(self._system(), build_ct3_prompt(sample, db_path))
         return extract_sql(reply)
 
     def predict_all(
@@ -126,3 +139,15 @@ class DeepSeekPro(APIModel):
 class DeepSeekProThinking(DeepSeekPro):
     name = "pro-t-direct"
     request_params = {"extra_body": {"thinking": {"type": "enabled"}}}
+
+
+class DeepSeekProThinkingConv(DeepSeekProThinking):
+    """直出 + 约定文本（K1–K11）：满配 leave-one-out 的"− DSL 声明层"臂。
+
+    声明层拿掉后校验/修复随之消失，剩下的就是裸直出 + 同一份约定 prose。
+    与 pro-t-direct 的唯一差异 = conventions；与 dsl-conv 对比读出
+    "约定的收益是否依赖声明层"（方案见 docs/ABLATION.md）。
+    """
+
+    name = "pro-t-direct-conv"
+    conventions = True

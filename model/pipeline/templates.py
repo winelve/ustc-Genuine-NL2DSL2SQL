@@ -24,6 +24,7 @@ PLACEHOLDERS: dict[str, set[str]] = {
     "dslgen.user.noplan": {"schema", "question", "profile"},
     "dslgen.repair": {"issues"},
     "dslgen.conventions": {"conventions"},
+    "direct.conventions": {"conventions"},
 }
 
 # 只把 {小写标识符} 当占位符候选，其余花括号不归模板管
