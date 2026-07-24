@@ -1,0 +1,16 @@
+# Runtime dependencies — Archer text-to-SQL pipeline (Python 3.11+).
+#
+#   pip install -r requirements.txt
+#
+# No `pip install -e .` is required: run every command from the repo ROOT
+# directory and the top-level packages (model/, archer_eval/, config.py) are
+# importable directly. Prompt templates load by source-relative path.
+#
+# Versions below are the exact ones the reported results were produced with;
+# relaxing "==" to ">=" is safe if your environment needs it.
+openai==2.46.0
+pydantic==2.13.4
+sqlglot==30.13.0
+
+# Optional — only needed to run the test suite (python -m pytest -q):
+# pytest==9.1.1

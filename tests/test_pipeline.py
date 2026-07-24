@@ -108,10 +108,10 @@ def _toy_db(tmp_path):
 def _fresh_plansql(monkeypatch, fake_chat, n_plans=1):
     """构造 plansql 实例，把 LLM 调用换成 fake_chat(system, user, **kw)。"""
     pytest.importorskip("openai")
-    from model.pipeline.plansql import PlanSQLPro
+    from model.pipeline.plansql import ProTPlan
 
-    monkeypatch.setenv(PlanSQLPro.endpoint_spec["key_env"], "sk-test")
-    generator = PlanSQLPro()
+    monkeypatch.setenv(ProTPlan.endpoint_spec["key_env"], "sk-test")
+    generator = ProTPlan()
     generator.n_plans = n_plans
     monkeypatch.setattr(generator.endpoint, "chat", fake_chat)
     return generator
@@ -125,9 +125,9 @@ def _sample(question="How many singers?"):
 
 def test_plansql_registered_in_models():
     from model import MODELS
-    from model.pipeline.plansql import PlanSQLPro
+    from model.pipeline.plansql import ProTPlan
 
-    assert MODELS["plansql-pro"] is PlanSQLPro
+    assert MODELS["pro-t-plan"] is ProTPlan
 
 
 def test_single_plan_end_to_end(monkeypatch, tmp_path):
@@ -237,35 +237,36 @@ def test_predict_all_records_llm_failure_as_empty(monkeypatch, tmp_path):
 def test_m3_variants_registered():
     from model import MODELS
 
-    for name in ("m3a-pro-thinking", "m3b-pro-thinking", "m3c-pro-thinking"):
+    for name in ("pro-t-plandsl-prof", "pro-t-plandsl-prof-force",
+                 "pro-t-plandsl-prof-force-chk"):
         assert name in MODELS, sorted(MODELS)
 
 
 def test_m3_ablation_flags_are_strictly_nested():
     """a=给知识 / b=强制用 / c=加校验，逐档只加一个变量。"""
-    from model.pipeline.plansql import M3A, M3B, M3C
+    from model.pipeline.plansql import ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk
 
-    assert (M3A.use_profile, M3A.force_considered, M3A.extra_checks) == (True, False, False)
-    assert (M3B.use_profile, M3B.force_considered, M3B.extra_checks) == (True, True, False)
-    assert (M3C.use_profile, M3C.force_considered, M3C.extra_checks) == (True, True, True)
+    assert (ProTPlanDslProf.use_profile, ProTPlanDslProf.force_considered, ProTPlanDslProf.extra_checks) == (True, False, False)
+    assert (ProTPlanDslProfForce.use_profile, ProTPlanDslProfForce.force_considered, ProTPlanDslProfForce.extra_checks) == (True, True, False)
+    assert (ProTPlanDslProfForceChk.use_profile, ProTPlanDslProfForceChk.force_considered, ProTPlanDslProfForceChk.extra_checks) == (True, True, True)
 
 
 def test_m2_baseline_keeps_all_m3_switches_off():
-    """dslsql-pro-thinking 必须与已跑出的 M2 结果逐位一致，否则分差不可归因。"""
-    from model.pipeline.plansql import DSLSQL, DSLSQLPro
+    """pro-t-plandsl 必须与已跑出的基线结果逐位一致，否则分差不可归因。"""
+    from model.pipeline.plansql import DSLSQL, ProTPlanDsl
 
-    for cls in (DSLSQL, DSLSQLPro):
+    for cls in (DSLSQL, ProTPlanDsl):
         assert (cls.use_profile, cls.force_considered, cls.extra_checks) == (False, False, False)
 
 
 def test_m3_variants_share_the_m2_backbone():
     """消融只动开关，骨干必须同底，否则变量不唯一。"""
-    from model.pipeline.plansql import DSLSQLPro, M3A, M3B, M3C
+    from model.pipeline.plansql import ProTPlanDsl, ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk
 
-    for cls in (M3A, M3B, M3C):
-        assert cls.endpoint_spec == DSLSQLPro.endpoint_spec
-        assert cls.n_plans == DSLSQLPro.n_plans
-        assert cls.max_repairs == DSLSQLPro.max_repairs
+    for cls in (ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk):
+        assert cls.endpoint_spec == ProTPlanDsl.endpoint_spec
+        assert cls.n_plans == ProTPlanDsl.n_plans
+        assert cls.max_repairs == ProTPlanDsl.max_repairs
 
 
 def test_preview_renders_every_shipped_template(capsys, monkeypatch):
@@ -313,11 +314,11 @@ def test_planner_message_carries_profile_when_on():
 
 
 def test_profile_reaches_planner_for_m3_but_not_for_m1_m2():
-    from model.pipeline.plansql import DSLSQLPro, M3A, M3B, M3C, PlanSQLPro
+    from model.pipeline.plansql import ProTPlanDsl, ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk, ProTPlan
 
-    for cls in (PlanSQLPro, DSLSQLPro):
+    for cls in (ProTPlan, ProTPlanDsl):
         assert cls.use_profile is False
-    for cls in (M3A, M3B, M3C):
+    for cls in (ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk):
         assert cls.use_profile is True
 
 
@@ -347,52 +348,52 @@ def test_dslgen_system_carries_conventions_when_on():
 def test_m3d_switch_matrix():
     """m3d 双臂：prose 臂只开 conventions，check 臂再开 convention_checks；
     画像/表态/C5bC6 三开关全关——约定轴与画像轴不叠加。"""
-    from model.pipeline.plansql import M3DC, M3DP
+    from model.pipeline.plansql import ProTPlanDslConvCchk, ProTPlanDslConv
 
-    for cls in (M3DP, M3DC):
+    for cls in (ProTPlanDslConv, ProTPlanDslConvCchk):
         assert (cls.use_profile, cls.force_considered, cls.extra_checks) \
             == (False, False, False)
-    assert (M3DP.conventions, M3DP.convention_checks) == (True, False)
-    assert (M3DC.conventions, M3DC.convention_checks) == (True, True)
+    assert (ProTPlanDslConv.conventions, ProTPlanDslConv.convention_checks) == (True, False)
+    assert (ProTPlanDslConvCchk.conventions, ProTPlanDslConvCchk.convention_checks) == (True, True)
 
 
 def test_baseline_and_m3abc_keep_conventions_off():
-    from model.pipeline.plansql import DSLSQLPro, M3A, M3B, M3C
+    from model.pipeline.plansql import ProTPlanDsl, ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk
 
-    for cls in (DSLSQLPro, M3A, M3B, M3C):
+    for cls in (ProTPlanDsl, ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk):
         assert (cls.conventions, cls.convention_checks) == (False, False)
 
 
 def test_noplan_variants_registered_and_single_variable():
     """no-plan 消融双臂：唯一差异 = conventions；其余开关全关（单变量红线）。"""
     from model import MODELS
-    from model.pipeline.plansql import M3DPNoPlan, NoPlanDSLSQL
+    from model.pipeline.plansql import ProTDslConv, ProTDsl
 
-    assert MODELS["noplan-pro-thinking"] is NoPlanDSLSQL
-    assert MODELS["m3dp-noplan-pro-thinking"] is M3DPNoPlan
-    assert (NoPlanDSLSQL.conventions, M3DPNoPlan.conventions) == (False, True)
+    assert MODELS["pro-t-dsl"] is ProTDsl
+    assert MODELS["pro-t-dsl-conv"] is ProTDslConv
+    assert (ProTDsl.conventions, ProTDslConv.conventions) == (False, True)
 
 
 def test_m3dx_noplan_adds_only_extra_checks():
-    """m3dx = m3dp-noplan + C5b/C6（dev 实测 0 有害的两个建议级检查）。
+    """pro-t-dsl-conv-chk = pro-t-dsl-conv + C5b/C6（dev 实测 0 有害的两个建议级检查）。
 
-    单变量：相对 m3dp-noplan 唯一差异是 extra_checks；C7 保持关
+    单变量：相对 pro-t-dsl-conv 唯一差异是 extra_checks；C7 保持关
     （C7-abs dev 实测 0 有用/2 有害，开了是负期望）。"""
     from model import MODELS
-    from model.pipeline.plansql import M3DPNoPlan, M3DXNoPlan
+    from model.pipeline.plansql import ProTDslConv, ProTDslConvChk
 
-    assert MODELS["m3dx-noplan-pro-thinking"] is M3DXNoPlan
-    assert issubclass(M3DXNoPlan, M3DPNoPlan)
-    assert M3DXNoPlan.extra_checks is True
-    assert (M3DXNoPlan.conventions, M3DXNoPlan.convention_checks,
-            M3DXNoPlan.use_profile, M3DXNoPlan.force_considered) \
+    assert MODELS["pro-t-dsl-conv-chk"] is ProTDslConvChk
+    assert issubclass(ProTDslConvChk, ProTDslConv)
+    assert ProTDslConvChk.extra_checks is True
+    assert (ProTDslConvChk.conventions, ProTDslConvChk.convention_checks,
+            ProTDslConvChk.use_profile, ProTDslConvChk.force_considered) \
         == (True, False, False, False)
 
 
 def test_noplan_stage_composition_skips_planner():
-    from model.pipeline.plansql import M3DPNoPlan, NoPlanDSLSQL
+    from model.pipeline.plansql import ProTDslConv, ProTDsl
 
-    for cls in (NoPlanDSLSQL, M3DPNoPlan):
+    for cls in (ProTDsl, ProTDslConv):
         assert (cls.use_profile, cls.force_considered, cls.extra_checks,
                 cls.convention_checks) == (False, False, False, False)
         # 阶段构成：无 PlanStage，DeclareStage 走 no-plan 模式

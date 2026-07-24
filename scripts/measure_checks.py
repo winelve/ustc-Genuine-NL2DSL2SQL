@@ -22,10 +22,12 @@ from model.pipeline.dsl import (Declarations, _c5b_anchor_sql, _c6_ratio_hint,
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULTS = {
-    "dev": ("predictions/m2-dslsql/dslsql-pro-thinking_en_dev",
-            "results/m2-dslsql/en_dev_dslsql-pro-thinking.json"),
-    "train": ("predictions/m2-dslsql/dslsql-pro-thinking_en_train",
-              "results/m2-dslsql/en_train_dslsql-pro-thinking.json"),
+    # 对着 plandsl 基线（无知识/无检查）的 trace 离线测精度。dev 用 -v1（原始 dslgen
+    # 模板那次，EX 44.2），与 PROGRESS 记录的精度数字同源、可复现；train 只有这一版。
+    "dev": ("predictions/plandsl/pro-t-plandsl-v1_en_dev",
+            "results/plandsl/en_dev_pro-t-plandsl-v1.json"),
+    "train": ("predictions/plandsl/pro-t-plandsl_en_train",
+              "results/plandsl/en_train_pro-t-plandsl.json"),
 }
 
 

@@ -479,7 +479,7 @@ def test_dslsql_end_to_end_with_repair(monkeypatch, tmp_path):
     import sqlite3
 
     pytest.importorskip("openai")
-    from model.pipeline.plansql import DSLSQLPro
+    from model.pipeline.plansql import ProTPlanDsl
 
     db = tmp_path / "toy.sqlite"
     conn = sqlite3.connect(db)
@@ -488,8 +488,8 @@ def test_dslsql_end_to_end_with_repair(monkeypatch, tmp_path):
     conn.commit()
     conn.close()
 
-    monkeypatch.setenv(DSLSQLPro.endpoint_spec["key_env"], "sk-test")
-    generator = DSLSQLPro()
+    monkeypatch.setenv(ProTPlanDsl.endpoint_spec["key_env"], "sk-test")
+    generator = ProTPlanDsl()
 
     dsl_replies = iter([BAD_JSON, GOOD_JSON])
 

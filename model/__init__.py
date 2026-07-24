@@ -5,32 +5,46 @@
      OpenAI 兼容的 API 模型继承 api.py 的 APIModel，只填几个类属性）
   2. 在下面的 MODELS 里加一行
   3. python -m model --model <name> --data en_dev --eval
+
+命名约定 `<骨干>[-t]-<配置>`（token 词表见 docs/ABLATION.md）：
+  骨干 flash/pro；`-t` = 开 thinking；配置 = pipeline 组件栈
+  direct → plan → plandsl → dsl（去 plan），可再追加 prof/force/conv/chk/cchk。
 """
 
-from model.api import DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro, DeepSeekProThinking
+from model.api import (DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro,
+                       DeepSeekProThinking)
 from model.base import SQLGenerator
 from model.example import FirstTableBaseline
-from model.pipeline.plansql import DSLSQLPro, M3A, M3B, M3C, PlanSQLPro
-from model.pipeline.plansql import (M3DC, M3DP, M3DPNoPlan, M3DXNoPlan,
-                                    NoPlanDSLSQL)
+from model.pipeline.plansql import (ProTDsl, ProTDslConv, ProTDslConvChk,
+                                     ProTPlan, ProTPlanDsl, ProTPlanDslConv,
+                                     ProTPlanDslConvCchk, ProTPlanDslProf,
+                                     ProTPlanDslProfForce,
+                                     ProTPlanDslProfForceChk)
 
-# 注册表：--model 参数用的名字 -> 模型类
+# 注册表：--model 参数用的名字 -> 模型类。含义见 docs/ABLATION.md。
 MODELS: dict[str, type[SQLGenerator]] = {
+    # 框架自检哑基线（无 LLM，每题取第一张表）
     FirstTableBaseline.name: FirstTableBaseline,
-    DeepSeekFlash.name: DeepSeekFlash,
-    DeepSeekFlashThinking.name: DeepSeekFlashThinking,
-    DeepSeekPro.name: DeepSeekPro,
-    DeepSeekProThinking.name: DeepSeekProThinking,
-    PlanSQLPro.name: PlanSQLPro,
-    DSLSQLPro.name: DSLSQLPro,
-    M3A.name: M3A,
-    M3B.name: M3B,
-    M3C.name: M3C,
-    M3DP.name: M3DP,
-    M3DC.name: M3DC,
-    NoPlanDSLSQL.name: NoPlanDSLSQL,
-    M3DPNoPlan.name: M3DPNoPlan,
-    M3DXNoPlan.name: M3DXNoPlan,
+
+    # 直出基线：LLM 直接出 SQL、无 pipeline（骨干 × thinking 四格对照）
+    DeepSeekFlash.name: DeepSeekFlash,                  # flash-direct
+    DeepSeekFlashThinking.name: DeepSeekFlashThinking,  # flash-t-direct
+    DeepSeekPro.name: DeepSeekPro,                      # pro-direct
+    DeepSeekProThinking.name: DeepSeekProThinking,      # pro-t-direct
+
+    # 主线消融：plan → plandsl → dsl(去plan) → +conv → +chk
+    ProTPlan.name: ProTPlan,                # pro-t-plan
+    ProTPlanDsl.name: ProTPlanDsl,          # pro-t-plandsl
+    ProTDsl.name: ProTDsl,                  # pro-t-dsl
+    ProTDslConv.name: ProTDslConv,          # pro-t-dsl-conv
+    ProTDslConvChk.name: ProTDslConvChk,    # pro-t-dsl-conv-chk  ★最终
+
+    # 存档：带 plan 注知识的探索支（已被上面 no-plan 线取代，多数判负，保留以可复现）
+    ProTPlanDslProf.name: ProTPlanDslProf,                  # pro-t-plandsl-prof
+    ProTPlanDslProfForce.name: ProTPlanDslProfForce,        # pro-t-plandsl-prof-force
+    ProTPlanDslProfForceChk.name: ProTPlanDslProfForceChk,  # pro-t-plandsl-prof-force-chk
+    ProTPlanDslConv.name: ProTPlanDslConv,                  # pro-t-plandsl-conv
+    ProTPlanDslConvCchk.name: ProTPlanDslConvCchk,          # pro-t-plandsl-conv-cchk
 }
 
 __all__ = ["SQLGenerator", "MODELS"]

@@ -88,7 +88,7 @@ class APIModel(SQLGenerator):
 
 
 class DeepSeekFlash(APIModel):
-    name = "deepseek-v4-flash"
+    name = "flash-direct"
     base_url = "https://api.deepseek.com/v1"
     model = "deepseek-v4-flash"
     key_env = "DEEPSEEK_API_KEY"
@@ -104,7 +104,7 @@ class DeepSeekFlash(APIModel):
 class DeepSeekFlashThinking(DeepSeekFlash):
     """开思考的对照组。单独注册名 = 单独的预测/结果文件，和主线互不覆盖。"""
 
-    name = "deepseek-v4-flash-thinking"
+    name = "flash-t-direct"
 
     # 开思考后采样参数一律失效，结果不可复现，且更慢更贵。不发 temperature，
     # 免得看起来像在生效。思考强度服务端默认 high，要更强加顶层参数
@@ -113,7 +113,7 @@ class DeepSeekFlashThinking(DeepSeekFlash):
 
 
 class DeepSeekPro(APIModel):
-    name = "deepseek-v4-pro"
+    name = "pro-direct"
     base_url = "https://api.deepseek.com/v1"
     model = "deepseek-v4-pro"
     key_env = "DEEPSEEK_API_KEY"
@@ -124,5 +124,5 @@ class DeepSeekPro(APIModel):
     
     
 class DeepSeekProThinking(DeepSeekPro):
-    name = "deepseek-v4-pro-thinking"
+    name = "pro-t-direct"
     request_params = {"extra_body": {"thinking": {"type": "enabled"}}}

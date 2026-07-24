@@ -83,8 +83,8 @@ class PlanSQL(SQLGenerator):
         return preds
 
 
-class PlanSQLPro(PlanSQL):
-    name = "plansql-pro"
+class ProTPlan(PlanSQL):
+    name = "pro-t-plan"
     endpoint_spec = dict(
         base_url="https://api.deepseek.com/v1",
         model="deepseek-v4-pro",
@@ -126,8 +126,8 @@ class DSLSQL(PlanSQL):
         ]
 
 
-class DSLSQLPro(DSLSQL):
-    name = "dslsql-pro-thinking"
+class ProTPlanDsl(DSLSQL):
+    name = "pro-t-plandsl"
     endpoint_spec = dict(
         base_url="https://api.deepseek.com/v1",
         model="deepseek-v4-pro",
@@ -138,7 +138,7 @@ class DSLSQLPro(DSLSQL):
     )
 
 
-class M3A(DSLSQLPro):
+class ProTPlanDslProf(ProTPlanDsl):
     """M3-a：库画像进 prompt（**planner 与 dslgen 两处都注入**），不强制表态。
 
     只"给知识"。与 M3-b 的分差就是本项目最有论文价值的那个数：
@@ -148,11 +148,11 @@ class M3A(DSLSQLPro):
     dslgen 只能补救。只注 dslgen 等于错已经犯完了才递材料。
     """
 
-    name = "m3a-pro-thinking"
+    name = "pro-t-plandsl-prof"
     use_profile = True
 
 
-class M3B(M3A):
+class ProTPlanDslProfForce(ProTPlanDslProf):
     """M3-b：+ considered 强制表态（C5a）。
 
     触发机制：把"没想到"变成"想过并否决了"，而后者可校验、可统计。
@@ -160,54 +160,54 @@ class M3B(M3A):
     只是没把 Capacity 拉进视野。
     """
 
-    name = "m3b-pro-thinking"
+    name = "pro-t-plandsl-prof-force"
     force_considered = True
 
 
-class M3C(M3B):
+class ProTPlanDslProfForceChk(ProTPlanDslProfForce):
     """M3-c：+ C5b 锚一致性 + C6 比率线索。
 
     这两个是建议级检查，实测精度 55%–67%（见各自 docstring）。
     它们到底是净收益还是净损失，由 M3-c − M3-b 的分差回答，不预设。
     """
 
-    name = "m3c-pro-thinking"
+    name = "pro-t-plandsl-prof-force-chk"
     extra_checks = True
 
 
-class M3DP(DSLSQLPro):
+class ProTPlanDslConv(ProTPlanDsl):
     """M3-d prose 臂：train 蒸馏的约定表以 guidelines 文本注入 dslgen。
 
     对照系即 OraPlan 的做法（其消融：guidelines 值 +27.9）。
     与画像轴（m3a/b/c）互斥不叠加——约定对齐的分数单独归因。
     """
 
-    name = "m3dp-pro-thinking"
+    name = "pro-t-plandsl-conv"
     conventions = True
 
 
-class M3DC(M3DP):
+class ProTPlanDslConvCchk(ProTPlanDslConv):
     """M3-d 强制臂：同一份约定 + C7 检查器在修复环里按违规触发。
 
     m3dc − m3dp = "机器强制执行约定"的净值——路线 A 的中心论据
     （dev #40 的 C6 轨迹已证明决策点挑战能顶动模型，此处推广到约定族）。
     """
 
-    name = "m3dc-pro-thinking"
+    name = "pro-t-plandsl-conv-cchk"
     convention_checks = True
 
 
-class NoPlanDSLSQL(DSLSQLPro):
+class ProTDsl(ProTPlanDsl):
     """no-plan 消融基线：去掉 PlanStage，question+schema 直达 dslgen。
 
     一次运行回答两个悬案：① planner 对 thinking 骨干是否死重（M1 实测 ±0
-    的延伸——那时下游是 sqlgen，这次是声明层）；② 与 M3DPNoPlan 对比时，
+    的延伸——那时下游是 sqlgen，这次是声明层）；② 与 ProTDslConv 对比时，
     排除"plan 在无知识状态下先定死决定"的混杂（m3a、m3d 两次撞到的同一堵墙，
     m3dp 实测 ±0.00 且 #98 的分摊策略正是 plan 阶段定下的）。
     对照点：本臂 − 基线 45.19 = 纯去 planner 的效应。
     """
 
-    name = "noplan-pro-thinking"
+    name = "pro-t-dsl"
 
     def _stages(self) -> list:
         return [
@@ -222,7 +222,7 @@ class NoPlanDSLSQL(DSLSQLPro):
         ]
 
 
-class M3DPNoPlan(NoPlanDSLSQL):
+class ProTDslConv(ProTDsl):
     """no-plan + 约定 prose：知识与问题同一条消息抵达唯一的决策点。
 
     本臂 − noplan 基线 = 排除 plan 前站后 prose 约定的净值；
@@ -231,18 +231,18 @@ class M3DPNoPlan(NoPlanDSLSQL):
     合计 McNemar p≈0.019，靶子指纹见 PROGRESS。
     """
 
-    name = "m3dp-noplan-pro-thinking"
+    name = "pro-t-dsl-conv"
     conventions = True
 
 
-class M3DXNoPlan(M3DPNoPlan):
-    """m3dp-noplan + C5b/C6 建议级检查（extra_checks）。
+class ProTDslConvChk(ProTDslConv):
+    """pro-t-dsl-conv + C5b/C6 建议级检查（extra_checks）。
 
     动机：C6 的 dev 离线实测 4 触发 4 有用 0 有害，靶子 #24/#25/#40/#41
     在 57.69 的错题单里全数仍错；C5b 加 %闸门后 dev 2/2/0。
     C7 刻意不开：C7-abs dev 实测 0 有用 / 2 有害（#84/#86 现在是对的），
-    开了是负期望。相对 m3dp-noplan 单变量 = extra_checks。
+    开了是负期望。相对 pro-t-dsl-conv 单变量 = extra_checks。
     """
 
-    name = "m3dx-noplan-pro-thinking"
+    name = "pro-t-dsl-conv-chk"
     extra_checks = True
