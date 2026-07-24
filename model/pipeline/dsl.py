@@ -24,9 +24,8 @@ from model.pipeline.profile import numeric_columns
 
 # ---------------------------------------------------------------- 声明表结构
 
-# 槽位不适用时模型自然写 null（displaced=false 就没有 reference 可填）。
-# 这与"没填"同义，收下即可——否则整轮回复作废，白烧一次调用去纠正 null vs ""，
-# 那一轮还不产生任何声明、不做任何语义校验（实测曾吃掉 en_dev 37% 的题的第一轮）。
+# 槽位不适用时模型自然写 null（displaced=false 就没有 reference 可填），
+# 与"没填"同义，直接收下即可——否则整轮回复作废，还得白烧一次调用去纠正 null vs ""。
 BlankableText = Annotated[str, BeforeValidator(lambda v: "" if v is None else v)]
 BlankableDict = Annotated[dict[str, str], BeforeValidator(lambda v: {} if v is None else v)]
 
@@ -97,9 +96,7 @@ class Assumption(BaseModel):
 class Considered(BaseModel):
     """对库画像每一条事实的表态：用了没用；没用必须给理由。
 
-    M3 的触发机制。dev #24/#26 那组对照证明模型知道 attendance rate =
-    出勤/容量，只是没把 Capacity 拉进视野——强制表态把"没想到"变成
-    "想过并否决了"，而后者可校验、可统计。
+    强制表态把"没想到"变成"想过并否决了"——后者才可校验、可统计。
     """
 
     item: str                                   # 画像条目编号，如 "P1"
@@ -318,7 +315,7 @@ def _c3_literal_neighbors(tree: exp.Expression, schema_info: SchemaInfo,
 # ---------------------------------------------------------------- C4 锚完整
 
 def _c4_anchors(decl: Declarations) -> list[str]:
-    """时间位移时，派生表达式用到的每个列都要声明存量值参照系（M3 注入口）。"""
+    """时间位移时，派生表达式用到的每个列都要声明存量值参照系。"""
     if not decl.time_context.displaced:
         return []
     issues = []
@@ -352,10 +349,9 @@ def profile_ids_for(items: list[str]) -> set[str]:
 def render_profile_block(items: list[str]) -> str:
     """planner 用的画像块：**没有画像时返回空串**。
 
-    dev 62% 的错断在 plan 阶段（planner 先把锚猜错，dslgen 只能补救），
-    所以知识必须在犯错之前送到 planner。但 planner 的提示词是 M1 对照组
-    共用的——返回空串是为了让 use_profile=False 时渲染出的消息与 M1
-    **逐字节相同**（tests/test_pipeline.py 有断言锁死）。
+    知识要在 planner 犯错之前送到，但 planner 提示词与不带画像的对照组共用——
+    返回空串是为了让 use_profile=False 时渲染出的消息与对照组**逐字节相同**
+    （tests/test_pipeline.py 有断言锁死）。
     """
     if not items:
         return ""
@@ -386,10 +382,9 @@ def _c5a_considered(decl: Declarations, profile_ids: set[str]) -> list[str]:
 # ---------------------------------------------------------------- C5b 锚一致
 
 _NOW_IN_SQL = re.compile(r"""["']now["']""", re.I)
-# ref 措辞说的是"当前"、kind 却不是 now —— 枚举被绕过的典型形态（dev #3）
+# ref 措辞说的是"当前"、kind 却不是 now —— 枚举被绕过的典型形态
 _CURRENT_WORDS = re.compile(r"current|\bnow\b|today|present", re.I)
-# 题面里已经给出百分数字面量（"growth rate is 0.4%"）=> 比率/位移是给定输入。
-# C5b 与 C6 共用：两者的实测误报都集中在这一题式上。
+# 题面已给出百分数字面量（"growth rate is 0.4%"）=> 比率/位移是给定输入，无需换算
 _GIVEN_RATIO = re.compile(r"\d+(\.\d+)?\s*(%|percent\b)", re.I)
 
 
@@ -397,33 +392,17 @@ def _c5b_anchor_sql(decl: Declarations, tree: exp.Expression,
                     question: str) -> list[str]:
     """时间位移的题里，锚在当前的列必须真的从当前换算过去。
 
-    train #158 是最干净的证据：模型把 dob 是 DD/MM/YYYY 写进了 plan **和**
-    anchor，SQL 照样写 strftime('%Y', dob)（对该格式返回 NULL）。dev #3 同构
-    （anchor 写 "current age"、算式却拿发行年当锚）。
-    事实已经在上下文里，断的是执行——这一类纯知识注入零收益，只有一致性
-    校验能抓。
+    事实已经在上下文里，断的往往是执行（声明写对了，SQL 忘了换算）——这一类
+    纯知识注入零收益，只有一致性校验能抓。
 
-    四个条件缺一不可，每一个都是为压掉实测出来的误报：
-    1. `displaced=true`——问题不涉及别的时点时，"存的是当前值"是个无害的
-       陈述，没有换算可以算错。
-    2. 题面没给出百分数字面量——"growth rate is 0.4%" 一类题的时间位移由
-       给定比率表达（`x * 1.004`），SQL 里合法地没有任何日期函数。
-       没这道闸门，dev 的误报全部是这一形态（3 harmful → 0；代价是同题式的
-       1 条 useful 也被滤掉，净值划算）。
-    3. 锚是 now-ish——kind=now，或 ref 措辞就说的是当前（后者防止模型把
-       kind 写成 literal 就绕过这条检查，枚举白做）。
+    四个条件缺一不可：
+    1. `displaced=true`——不涉及别的时点时，"存的是当前值"是无害陈述，
+       没有换算可以算错。
+    2. 题面没给出百分数字面量——这类题的时间位移由给定比率表达
+       （`x * 1.004`），SQL 里合法地没有任何日期函数。
+    3. 锚是 now-ish——kind=now，或 ref 措辞本身说的是当前（后者防止模型把
+       kind 写成 literal 绕开这条检查）。
     4. SQL 里没有 'now'。
-
-    去掉第 1 条会炸：实测 train 上从 3 条涨到 119 条，其中 80 条打在**本来
-    判对**的题上（"current age as stored" 是正确声明的常见措辞）。
-
-    实测（对着已跑出的 M2 trace 算，"有用"= 该题原本判错）：
-      dev  触发 2，2 useful / 0 harmful，命中设计靶子 #3
-      train 触发 3，2 useful / 1 harmful
-    量很小，本来就不指望它出分——它的价值是把 #158 那类"声明对、SQL 错"
-    变成可观测的，而不是刷分。注意：这份实测跑在**旧 trace** 上，那里的
-    anchors 全是裸字符串（降级成 literal）；提示词改版后模型会真的填
-    kind=now，触发量预期上升，且新增的那部分正是本检查的靶心。
     """
     if not decl.time_context.displaced or _GIVEN_RATIO.search(question):
         return []
@@ -449,27 +428,13 @@ def _c6_ratio_hint(tree: exp.Expression, question: str,
                    db_path: Path) -> list[str]:
     """题面要比率、SQL 却一个除法都没有 => 把用到的表的数值列摆出来。
 
-    三道闸门，每一道都是为消除一类实测出来的误报：
-
+    三道闸门：
     1. 题面必须有比率词（"average" 不算——库里恰好有名为 Average 的列）。
-    2. 题面若已给出百分数字面量，比率是给定输入，不用算（dev #96/#97/#99
-       都是 "growth rate is 0.4%"，本来判对，提示了反而可能改坏）。
-    3. SQL 里若已有除法，模型已经在算比率了（dev #26/#27 正确写出
-       Average/Capacity，但同表 Highest/Lowest 未用到；若用"有未用到的
-       兄弟列"当条件就会误报，白烧一轮去改一个已经对的答案）。
+    2. 题面若已给出百分数字面量，比率是给定输入，不用算。
+    3. SQL 里若已有除法，说明已经在算比率了。
 
-    只提示不判错：分母是哪一列由模型决定，程序无从判定。这一条兑现的是
-    dev #24/#25 vs #26/#27 证明过的事——把候选摆到眼前就够，不用教公式。
-
-    实测精度（对着已跑出的 M2 预测算，"有用"= 该题原本判错）：
-      dev   104 题触发 4，4 useful / 0 harmful —— #24/#25/#40/#41 全是设计靶子
-      train 414 题触发 11，6 useful / 5 harmful
-    dev 是 100% 但规则是在 dev 上调的，train 的 55% 才是无偏估计。已知的
-    误报形态：把"tired at the highest rate"这类定性排名当成了要算的比率
-    （train #326/#328/#335）。收窄 \\bper\\b 试过，train 反而掉到 1 useful /
-    3 harmful（"2 dollars per dose"那批本来抓对了），故保留。
-
-    C6 只在 M3-c 生效——它到底是净收益还是净损失，交给消融量，不在这里猜。
+    只提示不判错：分母是哪一列由模型决定，程序无从判定。精度实测见
+    scripts/measure_checks.py 与 docs/ABLATION.md。
     """
     if not _RATIO_WORDS.search(question) or _GIVEN_RATIO.search(question):
         return []
@@ -508,13 +473,7 @@ _DISPLACED_WORDS = re.compile(
 
 
 def _c7_constants(tree: exp.Expression) -> list[str]:
-    """K2/K3：出现"更精确"的换算常数/儒略年龄式 => 提示 Archer 规定值。
-
-    实测（scripts/measure_checks.py，对着已跑出的 M2 trace 算，
-    "有用"= 该题原本判错）：
-      train 触发 27，26 useful / 1 harmful
-      dev   触发 0
-    """
+    """K2/K3：出现"更精确"的换算常数/儒略年龄式 => 提示 Archer 规定值。"""
     issues = []
     for lit in tree.find_all(exp.Literal):
         token = str(lit.this)
@@ -534,14 +493,7 @@ def _c7_constants(tree: exp.Expression) -> list[str]:
 
 
 def _c7_abs_difference(tree: exp.Expression, question: str) -> list[str]:
-    """K4：题面问 difference、SELECT 里有裸减法且全程无 ABS => 提示。
-
-    实测（scripts/measure_checks.py，对着已跑出的 M2 trace 算，
-    "有用"= 该题原本判错）：
-      train 触发 75，39 useful / 36 harmful（未倒挂，净值微弱为正）
-      dev   触发 2，0 useful / 2 harmful（样本量小；dev 只记录不调参，
-        不据此收窄——调参纪律只认 train）
-    """
+    """K4：题面问 difference、SELECT 里有裸减法且全程无 ABS => 提示。"""
     if not _DIFF_WORDS.search(question):
         return []
     if next(tree.find_all(exp.Abs), None) is not None:
@@ -557,18 +509,8 @@ def _c7_abs_difference(tree: exp.Expression, question: str) -> list[str]:
 def _c7_displaced_dodge(decl: Declarations, question: str) -> list[str]:
     """反投降：题面有位移措辞、声明却 displaced=false => 要求表态。
 
-    m3a 的实锤（dev #4/#5）：模型以"无从确定"为由放弃换算并顺手声明
-    displaced=false，C2/C4/C5b 全部合法静默。这一条堵的就是那扇门。
-    建议级：模型坚持 false 需要给出理由（写进 reference），不强制改。
-
-    Task 4 实测：初版 _DISPLACED_WORDS 含 `\\bwould (?:have|be)\\b`，
-    在 train 上触发 2、2 harmful / 0 useful（train #235/#243，"if the price
-    was increased by X%, what would be…" 这类反事实假设题——"would be"
-    只是问句语气，不是时间位移；且这两条是全 train 唯一命中该分支的题，
-    删掉不损失任何 useful），按 Step 3 规则收窄一次：删除该分支后
-      train 触发 0（未再倒挂，保留启用）
-      dev   触发 6，4 useful [0, 5, 7, 48] / 2 harmful [11, 50]
-        （dev 只记录不调参）
+    防止模型以"无从确定"为由放弃换算、顺手把 displaced 声明为 false，
+    让 C2/C4/C5b 全部合法静默。建议级：坚持 false 需要给出理由，不强制改。
     """
     if decl.time_context.displaced or not _DISPLACED_WORDS.search(question):
         return []
@@ -586,12 +528,9 @@ def validate(out: DslOutput, schema_info: SchemaInfo, db_path: Path, *,
              convention_checks: bool = False) -> list[str]:
     """全部检查汇总；返回 issue 列表（空 = 通过），文字直接作修复反馈。
 
-    C1–C4 是 M2 的既有检查，恒开。C5a 由 profile_ids 是否为空自然开关。
-    C5b/C6 是 M3-c 才启用的建议级检查——它们的精度实测在 55%–67%，
-    默认关闭，靠消融量它们到底是净收益还是净损失。
-    C7 是约定检查（规定常数/ABS/反投降），精度数字见各函数 docstring
-    （scripts/measure_checks.py 实测；C7-dodge 曾因 train 倒挂收窄过一次
-    正则），默认关闭。
+    C1–C4 恒开。C5a 由 profile_ids 是否为空自然开关。C5b/C6/C7 是建议级
+    检查，默认关闭，由 extra_checks/convention_checks 开关控制（精度见
+    scripts/measure_checks.py 与 docs/ABLATION.md）。
     """
     try:
         tree = sqlglot.parse_one(out.sql, dialect="sqlite")

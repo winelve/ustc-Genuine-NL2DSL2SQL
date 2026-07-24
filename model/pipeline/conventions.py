@@ -1,4 +1,4 @@
-"""model/pipeline/conventions.py — Archer 约定表（M3-d，路线 A 主线）。
+"""model/pipeline/conventions.py — Archer 约定表。
 
 从 train 错题蒸馏的口径/常数/输出形态约定。三条红线：
 1. 只收 train 证据 ≥2 题的条目；dev 观察只能佐证，不能立项（dev 是考卷）。

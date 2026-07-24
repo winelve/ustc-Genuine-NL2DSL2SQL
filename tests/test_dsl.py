@@ -1,4 +1,4 @@
-"""Tests for M2 dslsql: chat_messages, declaration schema, validators, DeclareStage, e2e."""
+"""Tests for dslsql: chat_messages, declaration schema, validators, DeclareStage, e2e."""
 
 import pytest
 
@@ -112,11 +112,7 @@ def test_parse_output_source_field_pairing():
 
 
 def test_parse_output_accepts_null_for_optional_text_fields():
-    """模型在"不适用"的槽位写 null 是常态，等价于空串，不该烧一轮修复。
-
-    实测：en_dev 104 题里 38 题的第一轮就废在 time_context.reference=null 上
-    （displaced=false 时模型自然写 null），整轮不产生任何声明、不做语义校验。
-    """
+    """模型在"不适用"的槽位写 null 是常态，等价于空串，不该烧一轮修复。"""
     from model.pipeline.dsl import parse_output
 
     out, err = parse_output(
@@ -228,7 +224,7 @@ def test_c2_assumption_value_must_appear_and_not_as_filter():
     out = _decl(base % "SELECT Age + 1 AS y FROM singer")
     assert any("没有出现" in i for i in _c2_consistency(out.declarations, _tree(out.sql)))
 
-    # 假设值只出现在等值过滤：反事实被当过滤条件（M1 复盘的典型病）
+    # 假设值只出现在等值过滤：反事实被当成了过滤条件
     out = _decl(base % "SELECT Age + 1 AS y FROM singer WHERE Song_release_year = 2001")
     assert any("过滤" in i for i in _c2_consistency(out.declarations, _tree(out.sql)))
 
@@ -515,7 +511,7 @@ def test_dslsql_end_to_end_with_repair(monkeypatch, tmp_path):
     json.dumps(trace)                          # trace 必须可直接落盘
 
 
-# ---------------------------------------------------------- M3 库画像 / considered
+# ---------------------------------------------------------- 库画像 / considered
 
 def _decl_with_considered(considered):
     return {
@@ -582,7 +578,7 @@ def test_c5a_used_true_needs_no_note(toy_db):
 
 
 def test_c5a_silent_when_profile_empty(toy_db):
-    """画像为空（M3-a 或无事实的库）时，considered 不该被要求。"""
+    """画像为空（关闭画像注入或无事实的库）时，considered 不该被要求。"""
     assert _validate_considered(toy_db, [], profile_ids=set()) == []
 
 
@@ -609,7 +605,6 @@ def test_c6_hints_unused_sibling_numeric_column():
 def test_c6_silent_when_any_division_present():
     """SQL 里已经做了除法 -> 模型已经在算比率，闭嘴。
 
-    这是 dev #26/#27 的形态：比率算对了（只是输出形态错），
     若在这里还报一条就是白烧一轮修复去改一个已经对的答案。
     """
     from model.pipeline.dsl import _c6_ratio_hint
@@ -639,8 +634,7 @@ def test_c6_average_alone_is_not_a_ratio_word():
 def test_c6_silent_when_question_supplies_the_ratio():
     """题面已给百分数字面量 -> 比率是输入不是待求量，别提示。
 
-    dev #96/#97/#99（"annual growth rate ... is 0.4%"）本来判对；
-    不加这道闸门它们会被触发，白烧一轮修复去改一个已经对的答案。
+    不加这道闸门，"给定比率"类题目会被误触发，白烧一轮修复去改一个已经对的答案。
     """
     from model.pipeline.dsl import _c6_ratio_hint
 
@@ -652,7 +646,7 @@ def test_c6_silent_when_question_supplies_the_ratio():
 
 
 def test_c6_ratio_words_match_plural():
-    """dev #24/#25 问的是 'attendance rates'——漏了复数就打不中设计靶子。"""
+    """'attendance rates' 这类复数形式也要能命中——漏了复数就打不中检查目标。"""
     from model.pipeline.dsl import _RATIO_WORDS
 
     assert _RATIO_WORDS.search("the lowest and highest average attendance rates")
@@ -676,7 +670,7 @@ def _validate_anchor(toy_db, sql, kind, expr, ref="", question="q"):
 
     out = DslOutput.model_validate(
         {"sql": sql, "declarations": _decl_anchor(kind, expr, ref)})
-    # C5b 属 M3-c 的建议级检查，默认关；测它就得显式打开
+    # C5b 是建议级检查，默认关；测它就得显式打开
     return validate(out, load_schema_info(toy_db), toy_db,
                     question=question, profile_ids=set(), extra_checks=True)
 
@@ -696,7 +690,7 @@ def test_anchor_now_satisfied_by_strftime(toy_db):
 
 
 def test_anchor_ref_says_current_but_kind_is_not_now(toy_db):
-    """dev #3 的真实形态：ref 写 'current age…' 却挑了别的 kind。
+    """ref 写 'current age…' 却挑了别的 kind——枚举被绕过的典型形态。
 
     没有这一条，模型只要把锚写成 literal 就能绕过 C5b，枚举就白做了。
     """
@@ -731,8 +725,8 @@ def test_anchor_rejects_unknown_kind():
 def test_c5b_silent_when_question_is_not_time_displaced(toy_db):
     """displaced=false 时"存的是当前值"是无害陈述，没有换算可以算错。
 
-    去掉这道闸门实测会炸：train 上触发从 3 条涨到 119 条，其中 80 条打在
-    本来判对的题上（"current age as stored" 是正确声明的常见措辞）。
+    "current age as stored" 是正确声明里的常见措辞，没有这道闸门会把大量
+    本来判对的题目错判。
     """
     from model.pipeline.dsl import DslOutput, load_schema_info, validate
 
@@ -752,9 +746,8 @@ def test_c5b_silent_when_question_is_not_time_displaced(toy_db):
 def test_c5b_silent_when_question_gives_the_rate(toy_db):
     """题面已给出百分数（"growth rate is 0.4%"）时不触发。
 
-    dev 的三条误报（#96/#97/#99）全是这一形态：时间位移由给定比率表达
-    （Population * 1.004），SQL 里合法地没有任何日期函数。C6 对同一形态
-    早有 _GIVEN_RATIO 闸门，C5b 抄齐。
+    这类题的时间位移由给定比率表达（Population * 1.004），SQL 里合法地
+    没有任何日期函数。C6 对同一形态早有 _GIVEN_RATIO 闸门，C5b 抄齐。
     """
     issues = _validate_anchor(
         toy_db, "SELECT Age * 1.004 AS a FROM singer", "now", "Age * 1.004",
@@ -825,8 +818,7 @@ def test_c7_displaced_dodge_challenged(toy_db):
 
 
 def test_c7_dodge_ignores_would_phrased_counterfactuals(toy_db):
-    """train #235/#243 实测：would have/be 是价格反事实不是时间位移——
-    收窄后不得再触发（0 useful / 2 harmful 是当时移除该分支的全部依据）。"""
+    """would have/be 是价格反事实的问句语气，不是时间位移——不该触发。"""
     issues = _validate_conv(
         toy_db, "SELECT Age FROM singer",
         "If the price was increased by 10%, what would the total be?")
@@ -834,7 +826,7 @@ def test_c7_dodge_ignores_would_phrased_counterfactuals(toy_db):
 
 
 def test_c7_all_silent_by_default(toy_db):
-    """convention_checks 默认关——m3a/b/c 与基线行为不变。"""
+    """convention_checks 默认关——各消融档位与基线行为不变。"""
     import inspect
     from model.pipeline.dsl import validate
 

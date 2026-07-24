@@ -15,8 +15,8 @@ class PlanStage:
         self.endpoint = endpoint
         self.n_plans = n_plans
         self.plan_temperature = plan_temperature
-        # 知识必须在犯错之前到达：dev 62% 的错断在 plan 阶段。
-        # 默认关 —— 关闭时渲染出的消息与 M1 逐字节相同（见 render_profile_block）。
+        # 知识必须在犯错之前到达——plan 阶段先定锚，后面的阶段只能补救。
+        # 默认关 —— 关闭时渲染出的消息与不带画像时逐字节相同（见 render_profile_block）。
         self.use_profile = use_profile
 
     def run(self, ctx: PipelineContext) -> None:

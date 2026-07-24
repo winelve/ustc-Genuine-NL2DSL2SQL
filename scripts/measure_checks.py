@@ -22,8 +22,8 @@ from model.pipeline.dsl import (Declarations, _c5b_anchor_sql, _c6_ratio_hint,
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULTS = {
-    # 对着 plandsl 基线（无知识/无检查）的 trace 离线测精度。dev 用 -v1（原始 dslgen
-    # 模板那次，EX 44.2），与 PROGRESS 记录的精度数字同源、可复现；train 只有这一版。
+    # 对着 plandsl 基线（无知识/无检查）的 trace 离线测精度；
+    # dev 固定用 -v1 快照（可复现的历史基准），train 只有当前一版。
     "dev": ("predictions/plandsl/pro-t-plandsl-v1_en_dev",
             "results/plandsl/en_dev_pro-t-plandsl-v1.json"),
     "train": ("predictions/plandsl/pro-t-plandsl_en_train",
@@ -47,7 +47,7 @@ def last_declarations(trace_item: dict) -> dict | None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--split", choices=["dev", "train"], required=True)
-    ap.add_argument("--pred")      # 不带扩展名的预测文件前缀，默认 M2 归档
+    ap.add_argument("--pred")      # 不带扩展名的预测文件前缀，默认见 DEFAULTS
     ap.add_argument("--results")
     args = ap.parse_args()
     stem, res = DEFAULTS[args.split]

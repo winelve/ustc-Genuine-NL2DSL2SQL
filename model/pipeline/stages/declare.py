@@ -23,15 +23,14 @@ class DeclareStage:
                  convention_checks: bool = False, use_plan: bool = True) -> None:
         self.endpoint = endpoint
         self.max_repairs = max_repairs
-        # 五个开关默认关 = M3 系的对照基线；M3 各档在 plansql.py 里显式打开。
-        # 注意基线与跑出 44.2 的 M2 并非同一套 dslgen 提示词（见 plansql.DSLSQL）。
+        # 五个开关默认关 = 对照基线；各消融档位在 plansql.py 里显式打开。
         self.use_profile = use_profile
         self.force_considered = force_considered
         self.extra_checks = extra_checks
         self.conventions = conventions
         self.convention_checks = convention_checks
         # no-plan 消融：False 时不读 ctx.plans，question+schema(+约定)直达 dslgen，
-        # 消除"planner 在无知识状态下先把决定定死"的前站（m3a/m3d 两次撞到的墙）
+        # 消除"planner 在无知识状态下先把决定定死"这个前站因素
         self.use_plan = use_plan
 
     def _system(self) -> str:

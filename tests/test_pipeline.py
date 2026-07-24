@@ -232,7 +232,7 @@ def test_predict_all_records_llm_failure_as_empty(monkeypatch, tmp_path):
     assert generator.trace_records[0]["error"]
 
 
-# ---------------------------------------------------------- M3 消融档
+# ---------------------------------------------------------- 消融档位
 
 def test_m3_variants_registered():
     from model import MODELS
@@ -270,10 +270,7 @@ def test_m3_variants_share_the_m2_backbone():
 
 
 def test_preview_renders_every_shipped_template(capsys, monkeypatch):
-    """预览工具必须能渲染所有模板——加占位符时最容易漏掉这里。
-
-    Task 2 加 {profile} 时就漏了，preview 直接抛 ValueError 而测试全绿。
-    """
+    """预览工具必须能渲染所有模板——加占位符时最容易漏掉这里。"""
     import sys
 
     from model.pipeline.__main__ import main
@@ -287,10 +284,10 @@ def test_preview_renders_every_shipped_template(capsys, monkeypatch):
 
 
 def test_planner_message_byte_identical_when_profile_off():
-    """use_profile=False 时 planner 消息必须与 M1 时代逐字节相同。
+    """use_profile=False 时 planner 消息必须与不带画像的基线逐字节相同。
 
-    planner 提示词是 M1 对照组共用的；这条断言是"改 M3 不会污染 M1/M2"的
-    唯一硬保证。M1 时代的模板正文写死在这里，改模板必须同步改这里并想清楚。
+    planner 提示词是对照组共用的；这条断言是"改消融不会污染基线"的
+    唯一硬保证。基线模板正文写死在这里，改模板必须同步改这里并想清楚。
     """
     from model.pipeline.dsl import render_profile_block
     from model.pipeline.templates import render
@@ -323,7 +320,7 @@ def test_profile_reaches_planner_for_m3_but_not_for_m1_m2():
 
 
 def test_dslgen_system_byte_identical_when_conventions_off():
-    """conventions=False 时 system 消息与本周基线完全一致——45.19 不作废。"""
+    """conventions=False 时 system 消息与基线完全一致，不能悄悄漂移。"""
     from model.pipeline.stages.declare import DeclareStage
     from model.pipeline.templates import load_template
 
@@ -341,12 +338,12 @@ def test_dslgen_system_carries_conventions_when_on():
     assert system.startswith(load_template("dslgen.system"))
     for c in CONVENTIONS:
         assert f"{c.id}. " in system
-    # 反投降条款必须在场：中性事实诱发推理放弃是 m3a 的实锤教训
+    # 反投降条款必须在场：防止中性事实诱发模型放弃推理
     assert "not a valid stance" in system
 
 
 def test_m3d_switch_matrix():
-    """m3d 双臂：prose 臂只开 conventions，check 臂再开 convention_checks；
+    """约定双臂：prose 臂只开 conventions，check 臂再开 convention_checks；
     画像/表态/C5bC6 三开关全关——约定轴与画像轴不叠加。"""
     from model.pipeline.plansql import ProTPlanDslConvCchk, ProTPlanDslConv
 
@@ -375,10 +372,9 @@ def test_noplan_variants_registered_and_single_variable():
 
 
 def test_m3dx_noplan_adds_only_extra_checks():
-    """pro-t-dsl-conv-chk = pro-t-dsl-conv + C5b/C6（dev 实测 0 有害的两个建议级检查）。
+    """pro-t-dsl-conv-chk = pro-t-dsl-conv + C5b/C6（建议级检查）。
 
-    单变量：相对 pro-t-dsl-conv 唯一差异是 extra_checks；C7 保持关
-    （C7-abs dev 实测 0 有用/2 有害，开了是负期望）。"""
+    单变量：相对 pro-t-dsl-conv 唯一差异是 extra_checks；C7 保持关。"""
     from model import MODELS
     from model.pipeline.plansql import ProTDslConv, ProTDslConvChk
 
