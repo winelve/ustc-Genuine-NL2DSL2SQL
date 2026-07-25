@@ -1,6 +1,5 @@
-# 实验报告文档
+# 实验报告文档(飞书云文档)
 ```
-# 飞书云文档
 https://ramz9acvkhf.feishu.cn/wiki/AeYiwGpfviXSXHkBspfcKcmhnot?from=from_copylink
 ```
 
