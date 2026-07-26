@@ -112,6 +112,80 @@ python -m model --model pro-t-dsl-conv-chk --data zh_dev --eval
 
 
 
+## 4.5 BIRD 数据集
+
+BIRD（https://bird-bench.github.io/）是第二块跑分场地，dev 集 **1534 题 / 11 库**，
+适配层在 `bird/`。**完整说明见 `docs/BIRD.md`**（用哪份数据、提示词、偏离清单、分数表）。
+
+计分用官方 **`dev-1106`** 版题目（`birdsql/bird_sql_dev_20251106`），对齐榜上
+`DeepSeek-R1 (Baseline)` Dev **61.67** 那一行——reasoning 骨干、单模型、单次调用，
+与本档位形态一致。另一版 `dev_20240627`（主榜那些行用的）也留着记录，两版**分数不可互比**。
+
+### 准备（一次性）
+
+库若已解压在 `data/bird/dev_databases/` 就跳过第 0 步。
+
+```bash
+python -m bird fetch      # 下载计分那版题目，校验 sha256
+python -m bird convert    # → data/bird/dev.json，即 --data bird_dev
+```
+
+### 分批跑（推荐）
+
+档位 `bird-pro-t-direct` = 官方 baseline 提示词 + 单次调用 + evidence。
+1534 题跑满约 2–4 小时，所以分批跑，随时可停。
+
+```bash
+# 1) 冒烟 10 题，确认链路和成本
+python -m model --model bird-pro-t-direct --data bird_dev --limit 10
+
+# 2) 前 500 题
+python -m model --model bird-pro-t-direct --data bird_dev --limit 500
+
+# 3) 补完剩下的（去掉 --limit，前 500 题不重跑）
+python -m model --model bird-pro-t-direct --data bird_dev
+
+# 4) 全部跑完后算最终分数
+python -m bird eval --official --cross-check \
+    --pred predictions/bird-pro-t-direct_bird_dev.json
+python -m bird scores
+```
+
+**跑了多少就能看多少分**：给 `bird eval` 带上跟生成时一样的 `--limit`。
+比如只跑了前 10 题：
+
+```bash
+python -m bird eval --official --pred predictions/bird-pro-t-direct_bird_dev.json --limit 10
+```
+
+`--limit` 必须带——预测文件里只有 10 条，不带它会拿 1534 题去对，直接报错。
+
+**为什么能续着跑**：结果按数据集下标写进 `predictions/*.partial.jsonl`，每 50 题落一次盘
+（`--chunk` 可调，`0` 关闭）。重跑同一条命令自动跳过已完成的题，中断最多丢一块。
+断点只在整个数据集跑完后才删。分几批、每批多大都随意。
+
+### 两个评测入口
+
+| 命令 | 用途 |
+|---|---|
+| `bird eval --official --pred ...` | 跑官方脚本（`bird/official_eval/` 里原样搬来的），**对外说的分数用这个** |
+| `bird eval --pred ...` | 跑我们自己的实现，同一套判分规则，多写一份**逐题对错**到 `results/bird/`，用来查是哪几题错了 |
+| `bird eval --cross-check --pred ...` | 两个都跑，分数必须一样，不一样退出码 1 |
+
+> 判对 = `set(pred_rows) == set(gold_rows)`（行序无关、列序有关、重复行折叠），
+> 异常/超时判 0，无 VA 概念——与 `python -m archer_eval` 的 VA/EX/SIM 是
+> **两套独立指标，数字不可并排**。四条对官方的有意偏离见 `docs/BIRD.md` §3。
+
+**天花板不是 100%**（`python -m bird eval --gold-as-pred` 可复测）：
+① `#518`/`#701` 等几题 gold 自身 30s 内跑不完，官方脚本同样判 0；
+② 6 条 gold 用了 `julianday('now')`（`#127 #143 #146 #158 #178 #1118`），
+亚秒级抖动，任何模型都不可能稳定答对。**所以天花板是个约 99.5% 的浮动值，不是定数。**
+
+**非官方资料**：列描述 CSV、外键等在 `bird/extras.py`，官方 baseline 不用它们，
+接进 prompt 分数就不可跟榜单并排，故不进 `bird` 的默认导出。
+
+---
+
 ## 5. 输出
 
 ```shell

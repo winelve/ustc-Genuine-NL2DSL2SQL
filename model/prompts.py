@@ -101,10 +101,11 @@ def _main() -> None:
     args = parser.parse_args()
 
     samples = load_dataset(resolve_dataset(args.data))
+    db_dir = config.db_dir_for(args.data)
 
     if args.index is not None:
         s = samples[args.index]
-        print(build_ct3_prompt(s, find_db_file(config.DB_DIR, s.db_id),
+        print(build_ct3_prompt(s, find_db_file(db_dir, s.db_id),
                                args.with_knowledge, args.cot, args.with_reasoning_type))
         return
 
@@ -112,7 +113,7 @@ def _main() -> None:
         parser.error("provide --index N or --out FILE")
 
     prompts = [
-        build_ct3_prompt(s, find_db_file(config.DB_DIR, s.db_id),
+        build_ct3_prompt(s, find_db_file(db_dir, s.db_id),
                          args.with_knowledge, args.cot, args.with_reasoning_type)
         for s in samples
     ]

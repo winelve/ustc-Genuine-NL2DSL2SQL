@@ -12,5 +12,10 @@ openai==2.46.0
 pydantic==2.13.4
 sqlglot==30.13.0
 
+# Only needed by `python -m bird eval --official`, which runs BIRD's own
+# evaluation script (vendored unmodified in bird/official_eval/) as a
+# subprocess. Everything else works without it.
+func_timeout==4.3.5
+
 # Optional — only needed to run the test suite (python -m pytest -q):
 # pytest==9.1.1

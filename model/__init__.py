@@ -14,6 +14,7 @@
 from model.api import (DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro,
                        DeepSeekProThinking, DeepSeekProThinkingConv)
 from model.base import SQLGenerator
+from model.bird import BirdDirect
 from model.example import FirstTableBaseline
 from model.pipeline.archive import (ProTPlanDslConv, ProTPlanDslConvCchk,
                                     ProTPlanDslProf, ProTPlanDslProfForce,
@@ -44,6 +45,9 @@ MODELS: dict[str, type[SQLGenerator]] = {
     ProTDslChk.name: ProTDslChk,                        # pro-t-dsl-chk（−conv）
     ProTDslConvChkR0.name: ProTDslConvChkR0,            # pro-t-dsl-conv-chk-r0（−重试）
     DeepSeekProThinkingConv.name: DeepSeekProThinkingConv,  # pro-t-direct-conv（−声明层）
+
+    # BIRD 跑分档位：官方 baseline 口径的单次调用直出（见 model/bird.py）
+    BirdDirect.name: BirdDirect,            # bird-pro-t-direct
 
     # 存档：带 plan 注知识的探索支（已被 no-plan 线取代，多数判负，保留以可复现）
     ProTPlanDslProf.name: ProTPlanDslProf,                  # pro-t-plandsl-prof

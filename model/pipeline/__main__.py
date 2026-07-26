@@ -28,7 +28,7 @@ def main() -> None:
     args = parser.parse_args()
 
     sample = load_dataset(resolve_dataset(args.data))[args.preview]
-    db_path = find_db_file(config.DB_DIR, sample.db_id)
+    db_path = find_db_file(config.db_dir_for(args.data), sample.db_id)
     schema = schema_with_rows(db_path)
     # 库画像会注入 planner 与 dslgen；预览一律带上，改完规则先看再跑
     items = build_profile(db_path)

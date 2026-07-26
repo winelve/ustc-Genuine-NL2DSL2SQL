@@ -26,7 +26,8 @@ def main() -> None:
     )
     parser.add_argument("--pred", help="prediction JSON aligned with the dataset")
     parser.add_argument("--gold-as-pred", action="store_true", help="evaluate gold SQL against itself")
-    parser.add_argument("--db-dir", default=config.DB_DIR, help="root directory of SQLite databases")
+    parser.add_argument("--db-dir", default=None,
+                        help="root directory of SQLite databases (默认按 --data 查)")
     parser.add_argument("--out-dir", default=config.RESULTS_DIR, help="directory for reports")
     parser.add_argument("--timeout", type=float, default=config.DEFAULT_TIMEOUT_S,
                         help="per-query timeout in seconds")
@@ -37,6 +38,7 @@ def main() -> None:
 
     data_path = resolve_dataset(args.data)
     samples = load_dataset(data_path)
+    db_dir = Path(args.db_dir) if args.db_dir else config.db_dir_for(args.data)
     if args.gold_as_pred:
         predictions = [s.query for s in samples]
         pred_name = "gold"
@@ -44,9 +46,9 @@ def main() -> None:
         predictions = load_predictions(args.pred, expected_len=len(samples))
         pred_name = Path(args.pred).stem
 
-    report = evaluate(samples, predictions, args.db_dir, timeout_s=args.timeout, progress=True)
+    report = evaluate(samples, predictions, db_dir, timeout_s=args.timeout, progress=True)
     report = {
-        "meta": make_meta(data_path, args.pred or "gold-as-pred", args.db_dir, args.timeout),
+        "meta": make_meta(data_path, args.pred or "gold-as-pred", db_dir, args.timeout),
         **report,
     }
 
