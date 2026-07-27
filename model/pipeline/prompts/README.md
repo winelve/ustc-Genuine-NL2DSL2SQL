@@ -36,6 +36,7 @@ dslgen.repair.md ──┘  校验不过时把 {issues} 发回模型定向修复
 | dslgen.user.noplan.md | `{schema}` `{question}` `{profile}` | 去 plan 主线（dsl 系）用，无 `{plan}` |
 | dslgen.repair.md | `{issues}` | 校验器产出的失败项列表（每行 `- ...`） |
 | dslgen.conventions.md | `{conventions}` | K1–K11 约定块（conv 开时追加进 dslgen system） |
+| dslgen.knowledge.md | `{knowledge}` | data/knowledge/<数据集>.json 蒸馏条目块（knowledge 开时追加进 dslgen system，约定附录之后） |
 | direct.conventions.md | `{conventions}` | 同一份约定块（pro-t-direct-conv 臂追加进直出 system） |
 
 规则：占位符是 `{小写标识符}`；写错名字加载时直接报错并列出可用项；

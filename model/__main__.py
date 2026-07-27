@@ -28,6 +28,41 @@ from model import MODELS
 
 DEFAULT_CHUNK = 50
 
+SWITCH_COLUMNS = ("plan", "声明层", "知识", "evidence", "L2规则", "SQLens", "重试")
+
+
+def switch_matrix() -> list[tuple[str, dict]]:
+    """每个注册档位开了哪些开关。从类属性直接读，不会与代码脱节。"""
+    rows = []
+    for name, cls in MODELS.items():
+        has_dsl = hasattr(cls, "max_repairs")
+        rows.append((name, {
+            "plan": "✓" if getattr(cls, "n_plans", 0) and _uses_plan(cls) else "-",
+            "声明层": "✓" if has_dsl else "-",
+            "知识": "✓" if getattr(cls, "knowledge", False) else "-",
+            "evidence": "✓" if getattr(cls, "evidence", False) else "-",
+            "L2规则": "✓" if getattr(cls, "learned_rules", False) else "-",
+            "SQLens": "✓" if getattr(cls, "sqlens_checks", False) else "-",
+            "重试": str(getattr(cls, "max_repairs", "-")),
+        }))
+    return rows
+
+
+def _uses_plan(cls) -> bool:
+    """no-plan 档位（ProTDsl 系）在类上显式声明 use_plan=False；直接读类属性，
+    不实例化——实例化会立即构造真实 ChatEndpoint，在没有 API key 的机器上
+    会全部报错（虽有 except 兜底，但会把所有档位误判成 no-plan）。"""
+    return getattr(cls, "use_plan", True)
+
+
+def print_switches() -> None:
+    rows = switch_matrix()
+    width = max(len(n) for n, _ in rows) + 2
+    print("档位".ljust(width) + "  ".join(c.rjust(8) for c in SWITCH_COLUMNS))
+    for name, flags in rows:
+        print(name.ljust(width) + "  ".join(
+            flags[c].rjust(8) for c in SWITCH_COLUMNS))
+
 
 def write_trace(traces, predictions_path: Path) -> Path | None:
     """把模型自报的调试记录写成预测文件旁的 .trace.json；没有就什么都不做。
@@ -119,15 +154,23 @@ def _run_with_checkpoint(
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="model", description="Run a SQL generator on a dataset")
-    parser.add_argument("--model", required=True, choices=sorted(MODELS),
+    parser.add_argument("--model", choices=sorted(MODELS),
                         help="registered model name (see model/__init__.py)")
-    parser.add_argument("--data", required=True,
+    parser.add_argument("--data",
                         help=f"one of {', '.join(config.DATASETS)} or a JSON file path")
     parser.add_argument("--limit", type=int, help="only run the first N samples (smoke test)")
     parser.add_argument("--chunk", type=int, default=DEFAULT_CHUNK,
                         help="checkpoint every N samples (0 = no checkpointing)")
     parser.add_argument("--eval", action="store_true", help="evaluate right after generating")
+    parser.add_argument("--list", action="store_true",
+                        help="打印所有档位的开关矩阵后退出")
     args = parser.parse_args()
+
+    if args.list:
+        print_switches()
+        return
+    if not args.model or not args.data:
+        parser.error("--model 与 --data 必填（或用 --list 查看档位）")
 
     data_path = resolve_dataset(args.data)
     samples = load_dataset(data_path)

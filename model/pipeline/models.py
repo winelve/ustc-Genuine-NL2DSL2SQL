@@ -32,6 +32,9 @@ class PlanSQL(SQLGenerator):
     plan_temperature = 0.7
     concurrency = API_CONCURRENCY
     use_profile = False          # 库画像开关；关闭时 planner 消息与不带画像时逐字节相同
+    # 唯一事实源：no-plan 档位（ProTDsl 系）覆写为 False。--list 与 _stages()
+    # 都读这个类属性，不靠实例化判断（实例化会撞真实 ChatEndpoint 构造）。
+    use_plan = True
 
     def __init__(self) -> None:
         self.endpoint = ChatEndpoint(**self.endpoint_spec)
@@ -48,6 +51,7 @@ class PlanSQL(SQLGenerator):
 
     def _run(self, sample: Sample, db_path: Path) -> PipelineContext:
         ctx = PipelineContext(question=sample.question, db_path=Path(db_path))
+        ctx.evidence = sample.commonsense_knowledge or ""
         ctx.schema = schema_with_rows(db_path)   # [0] 上下文准备：全量 schema+样本行
         for stage in self._stages():
             stage.run(ctx)
@@ -103,23 +107,38 @@ class DSLSQL(PlanSQL):
     """
 
     max_repairs = 2
-    # 消融开关，默认全部关闭 = 对照点。
-    # use_profile 继承自 PlanSQL，打开时 planner 与 dslgen 两处都注入。
+    # 决定读哪份知识/规则文件（data/knowledge、data/rules 下按前缀取）。
+    # 只由类属性决定——model/__main__.py 的 runner 不按 --data 覆盖它：
+    # 知识/规则文件用哪份是档位自己的声明，不该被命令行悄悄改掉；换数据集
+    # 要跑哪份知识/规则，靠注册一个把 dataset 设成对应值的档位类。
+    dataset = "en_train"
+    # 四个学习式消融开关（DeclareStage 认得的新开关），默认全关 = 对照点。
+    knowledge = False
+    evidence = False              # Archer 官方设定 w/o knowledge，只为 BIRD 预留
+    learned_rules = False
+    sqlens_checks = False
+    # 旧开关（C5a-C7/画像/约定）：DeclareStage 已经不接受它们了，_stages() 也不再
+    # 传给它；类属性留着只是为了给归档档位（archive.py 的探索支、下面的
+    # ProTDslConv 系 LOO 臂）当继承默认值——它们的 _stages() 走
+    # archive._ArchivedDeclareStage，相邻档位"只加一个 True"的单变量写法要靠
+    # 这份默认值成立。
+    use_profile = False           # 继承自 PlanSQL，这里重复声明只为醒目
     force_considered = False
     extra_checks = False
-    conventions = False          # 约定附录进 dslgen system（prose 臂）
-    convention_checks = False    # C7 约定检查器（强制执行臂）
+    conventions = False           # 约定附录进 dslgen system（prose 臂）
+    convention_checks = False     # C7 约定检查器（强制执行臂）
 
     def _stages(self) -> list:
         return [
             PlanStage(self.endpoint, self.n_plans, self.plan_temperature,
                       use_profile=self.use_profile),
             DeclareStage(self.endpoint, self.max_repairs,
-                         use_profile=self.use_profile,
-                         force_considered=self.force_considered,
-                         extra_checks=self.extra_checks,
-                         conventions=self.conventions,
-                         convention_checks=self.convention_checks),
+                         dataset=self.dataset,
+                         knowledge=self.knowledge,
+                         evidence=self.evidence,
+                         learned_rules=self.learned_rules,
+                         sqlens_checks=self.sqlens_checks,
+                         use_plan=self.use_plan),
             VoteStage(),
         ]
 
@@ -144,24 +163,49 @@ class ProTDsl(ProTPlanDsl):
     """
 
     name = "pro-t-dsl"
+    use_plan = False   # 唯一事实源：--list 与 _stages() 都读它，见 PlanSQL.use_plan
 
     def _stages(self) -> list:
-        return [
-            DeclareStage(self.endpoint, self.max_repairs,
-                         use_profile=self.use_profile,
-                         force_considered=self.force_considered,
-                         extra_checks=self.extra_checks,
-                         conventions=self.conventions,
-                         convention_checks=self.convention_checks,
-                         use_plan=False),
-            VoteStage(),
-        ]
+        # 老三样（conventions/extra_checks/convention_checks）任一打开，就说明
+        # 这一档还在用旧开关（pro-t-dsl-conv 系 LOO 臂）——走 archive.py 的
+        # _ArchivedDeclareStage 适配层；否则走新四开关的主线 DeclareStage。
+        # 局部 import 避免 models.py/archive.py 模块级循环 import
+        # （archive.py 反过来要 import ProTPlanDsl）。单一 _stages()，
+        # ProTDslConv/ProTDslConvChk/ProTDslConvChkR0/ProTDslChk 都靠它分流，
+        # 不必各自重复覆写。
+        if self.conventions or self.extra_checks or self.convention_checks:
+            from model.pipeline.archive import _ArchivedDeclareStage
+            # 全部七个旧/新开关都转发——类属性是唯一事实源，_stages() 只管
+            # "转发"不管"筛选"；漏转发等于让某个开关在这条分支上静默失效
+            # （例如将来出现 conventions=True + knowledge=True 的组合臂）。
+            declare = _ArchivedDeclareStage(
+                self.endpoint, self.max_repairs,
+                dataset=self.dataset,
+                knowledge=self.knowledge,
+                evidence=self.evidence,
+                use_profile=self.use_profile,
+                force_considered=self.force_considered,
+                extra_checks=self.extra_checks,
+                conventions=self.conventions,
+                convention_checks=self.convention_checks,
+                use_plan=self.use_plan)
+        else:
+            declare = DeclareStage(
+                self.endpoint, self.max_repairs,
+                dataset=self.dataset,
+                knowledge=self.knowledge,
+                evidence=self.evidence,
+                learned_rules=self.learned_rules,
+                sqlens_checks=self.sqlens_checks,
+                use_plan=self.use_plan)
+        return [declare, VoteStage()]
 
 
 class ProTDslConv(ProTDsl):
     """no-plan + 约定 prose：知识与问题同一条消息抵达唯一的决策点。
 
     与 no-plan 基线的分差 = 排除 plan 前站后，prose 约定单独的净值。
+    仍用旧开关 conventions，`_stages()` 继承自 `ProTDsl`（见上）。
     """
 
     name = "pro-t-dsl-conv"
@@ -201,3 +245,33 @@ class ProTDslConvChkR0(ProTDslConvChk):
 
     name = "pro-t-dsl-conv-chk-r0"
     max_repairs = 0
+
+
+# ---- 学习式知识/规则阶梯（本轮 learned-checks 的主线，方案见 ABLATION.md）
+#
+# 全部 no-plan（知识的阻断器是 plan 前站，实测同一份知识 plan 后 ±0.00、
+# plan 前 +4.81、裸直出 +8.65）、max_repairs=2（检查器只通过修复循环起作用，
+# 关掉重试后检查照跑但改变不了输出，实测 −10.58）。四档只用新开关，
+# 不碰 conventions/extra_checks/convention_checks，走 ProTDsl._stages() 里
+# 的 DeclareStage 分支（不经 _ArchivedDeclareStage）。
+
+
+class ProTDslKnowledge(ProTDsl):
+    """+ 蒸馏知识（进 system）。相对 pro-t-dsl 单变量 = knowledge。"""
+
+    name = "pro-t-dsl-knowledge"
+    knowledge = True
+
+
+class ProTDslKnowledgeRules(ProTDslKnowledge):
+    """+ L2 学习规则（进修复环）。单变量 = learned_rules。"""
+
+    name = "pro-t-dsl-knowledge-rules"
+    learned_rules = True
+
+
+class ProTDslKnowledgeRulesSqlens(ProTDslKnowledgeRules):
+    """+ SQLens 静态信号。单变量 = sqlens_checks。★满配"""
+
+    name = "pro-t-dsl-knowledge-rules-sqlens"
+    sqlens_checks = True

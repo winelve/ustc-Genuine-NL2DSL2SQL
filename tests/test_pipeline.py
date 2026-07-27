@@ -333,11 +333,15 @@ def test_dslgen_system_byte_identical_when_conventions_off():
 
 
 def test_dslgen_system_carries_conventions_when_on():
+    """conventions 换代后移出了 DeclareStage 基类，进了
+    archive._ArchivedDeclareStage（归档档位与 models.py 的 ProTDslConv 系
+    LOO 臂共用的适配层）——这条测试原本锁的是"conventions=True 时约定附录
+    正确追加"这件事本身，不是锁在哪个类上，所以只换构造的类，断言不变。"""
+    from model.pipeline.archive import _ArchivedDeclareStage
     from model.pipeline.conventions import CONVENTIONS
-    from model.pipeline.stages.declare import DeclareStage
     from model.pipeline.templates import load_template
 
-    stage = DeclareStage(endpoint=None, conventions=True)
+    stage = _ArchivedDeclareStage(endpoint=None, conventions=True)
     system = stage._system()
     assert system.startswith(load_template("dslgen.system"))
     for c in CONVENTIONS:
@@ -393,17 +397,26 @@ def test_m3dx_noplan_adds_only_extra_checks():
 
 
 def test_noplan_stage_composition_skips_planner():
+    """阶段构成：无 PlanStage，DeclareStage(-家族) 走 no-plan 模式。
+
+    ProTDslConv 走 archive._ArchivedDeclareStage（conventions=True 时的适配层），
+    ProTDsl 走基类 DeclareStage——两者具体类型不同，所以用 isinstance 断言
+    "恰好一个 DeclareStage 及其子类、没有 PlanStage、use_plan=False" 这个真正
+    的不变量，而不是比较类名字符串（那样会漏判 _ArchivedDeclareStage）。
+    """
     from model.pipeline.models import ProTDslConv, ProTDsl
+    from model.pipeline.stages.declare import DeclareStage
+    from model.pipeline.stages.plan import PlanStage
 
     for cls in (ProTDsl, ProTDslConv):
         assert (cls.use_profile, cls.force_considered, cls.extra_checks,
                 cls.convention_checks) == (False, False, False, False)
-        # 阶段构成：无 PlanStage，DeclareStage 走 no-plan 模式
         inst = cls.__new__(cls)          # 绕过 __init__（不建真实 endpoint）
         inst.endpoint = object()
-        names = [type(s).__name__ for s in inst._stages()]
-        assert names == ["DeclareStage", "VoteStage"]
-        assert inst._stages()[0].use_plan is False
+        stages = inst._stages()
+        assert not any(isinstance(s, PlanStage) for s in stages)
+        declare = [s for s in stages if isinstance(s, DeclareStage)]
+        assert len(declare) == 1 and declare[0].use_plan is False
 
 
 # ------------------------------------------- 满配 leave-one-out 消融三臂
@@ -467,3 +480,219 @@ def test_direct_conv_system_carries_all_conventions():
     assert "not a valid answer" in system
     # 直出臂没有声明表，附录不得出现声明层专属词汇
     assert "Declaration" not in system and "declaration" not in system
+
+
+# --------------------------------------------------------- evidence 注入口
+
+def test_noplan_user_has_no_evidence_line_when_empty():
+    """evidence 为空时整块消失——不留 "Evidence:" 空行。"""
+    from model.pipeline.templates import render
+    msg = render("dslgen.user.noplan", schema="S", question="Q", evidence="")
+    assert "Evidence" not in msg
+    assert "Q" in msg
+
+
+def test_noplan_user_carries_evidence_when_present():
+    from model.pipeline.templates import render
+    msg = render("dslgen.user.noplan", schema="S", question="Q",
+                 evidence="Evidence: eligible free rate = free / total")
+    assert "eligible free rate = free / total" in msg
+
+
+def test_noplan_template_dropped_profile_placeholder():
+    """库画像已废，主线模板里不该再有它。"""
+    from model.pipeline.templates import PLACEHOLDERS
+    assert PLACEHOLDERS["dslgen.user.noplan"] == {"schema", "question", "evidence"}
+
+
+def test_pipeline_context_carries_evidence():
+    from pathlib import Path
+    from model.pipeline.context import PipelineContext
+    ctx = PipelineContext(question="Q", db_path=Path("x.sqlite"))
+    assert ctx.evidence == ""
+    ctx.evidence = "E"
+    assert ctx.to_trace()["evidence"] == "E"
+
+
+def test_archer_arms_keep_evidence_off():
+    """Archer 官方设定是 w/o knowledge（2024.eacl-long.6 §6.1）——不许开。"""
+    from model.pipeline.models import (ProTDsl, ProTPlanDsl, ProTPlan)
+    for cls in (ProTPlan, ProTPlanDsl, ProTDsl):
+        assert getattr(cls, "evidence", False) is False
+
+
+# ------------------------------------------------ 档位换代：学习式知识/规则阶梯
+
+def test_new_arms_are_single_variable_ladder():
+    """加法阶梯：每一档相对上一档只多开一个开关。"""
+    from model.pipeline.models import (ProTDsl, ProTDslKnowledge,
+                                       ProTDslKnowledgeRules,
+                                       ProTDslKnowledgeRulesSqlens)
+
+    def flags(cls):
+        return (cls.knowledge, cls.learned_rules, cls.sqlens_checks)
+
+    assert flags(ProTDsl) == (False, False, False)
+    assert flags(ProTDslKnowledge) == (True, False, False)
+    assert flags(ProTDslKnowledgeRules) == (True, True, False)
+    assert flags(ProTDslKnowledgeRulesSqlens) == (True, True, True)
+
+
+def test_new_arms_are_all_noplan(monkeypatch):
+    """知识的阻断器是 plan 前站——新档位一律 no-plan。
+
+    monkeypatch 打桩 API key：PlanSQL.__init__ 会立即构造真实 ChatEndpoint，
+    没有密钥就抛 RuntimeError（见 tests/test_pipeline.py:113 同款打桩）。
+    """
+    pytest.importorskip("openai")
+    from model.pipeline.models import (ProTDsl, ProTDslKnowledge,
+                                       ProTDslKnowledgeRules,
+                                       ProTDslKnowledgeRulesSqlens)
+    from model.pipeline.stages.declare import DeclareStage
+
+    monkeypatch.setenv(ProTDsl.endpoint_spec["key_env"], "sk-test")
+    for cls in (ProTDslKnowledge, ProTDslKnowledgeRules, ProTDslKnowledgeRulesSqlens):
+        stages = cls()._stages()
+        declare = [s for s in stages if isinstance(s, DeclareStage)]
+        assert len(declare) == 1 and declare[0].use_plan is False
+
+
+def test_switch_matrix_covers_every_registered_model():
+    from model import MODELS
+    from model.__main__ import switch_matrix
+
+    rows = {name for name, _ in switch_matrix()}
+    assert rows == set(MODELS)
+
+
+def test_archived_arms_still_instantiate(monkeypatch):
+    """归档≠删除：老档位仍要能建起来并渲染消息。
+
+    monkeypatch 打桩 API key，理由同 test_new_arms_are_all_noplan。
+    """
+    pytest.importorskip("openai")
+    from model.pipeline.archive import (ProTPlanDslConv, ProTPlanDslConvCchk,
+                                        ProTPlanDslProf, ProTPlanDslProfForce,
+                                        ProTPlanDslProfForceChk)
+
+    monkeypatch.setenv(ProTPlanDslProf.endpoint_spec["key_env"], "sk-test")
+    for cls in (ProTPlanDslProf, ProTPlanDslProfForce, ProTPlanDslProfForceChk,
+                ProTPlanDslConv, ProTPlanDslConvCchk):
+        assert cls.name
+        assert cls()._stages()
+
+
+def test_conv_knowledge_probe_renders_both_appendices_in_order(monkeypatch):
+    """conventions 与 knowledge 同时打开时，走 `ProTDsl._stages()` 归档分支
+    渲染出的 system 仍然遵守"约定块在知识块之前"这条顺序不变量（与
+    `_ArchivedDeclareStage` 直接构造时验证的是同一件事，这里额外确认走
+    `_stages()` 这条真实路径也成立）。
+
+    注意：这条测试**只**覆盖 `knowledge`（以及顺序），不覆盖
+    `evidence`/`use_profile`/`force_considered`/`dataset` 的转发——那四个
+    只在 `run()` 里被消费，这里从不调 `run()`；`dataset` 更是被下面
+    monkeypatch 的 `load_knowledge` 完全无视。转发完整性由
+    `test_archived_declare_stage_receives_every_forwarded_switch` 与
+    `test_archived_dsl_stage_receives_every_forwarded_switch` 直接断言属性来锁，
+    不靠这条测试的渲染结果。
+    """
+    from model.pipeline.models import ProTDsl
+    from model.pipeline.stages import declare as declare_mod
+    from model.pipeline.stages.declare import DeclareStage
+    from model.pipeline.templates import load_template
+
+    monkeypatch.setattr(declare_mod, "load_knowledge",
+                        lambda *_a, **_k: [{"id": "D1", "text": "Generic rule."}])
+
+    class _ConvKnowledgeProbe(ProTDsl):
+        name = "test-only-conv-knowledge-probe"
+        conventions = True
+        knowledge = True
+
+    inst = _ConvKnowledgeProbe.__new__(_ConvKnowledgeProbe)
+    inst.endpoint = object()
+    stages = inst._stages()
+    [declare] = [s for s in stages if isinstance(s, DeclareStage)]
+    system = declare._system()
+    assert system.startswith(load_template("dslgen.system"))
+    conventions_pos = system.index("K1.")
+    knowledge_pos = system.index("D1. Generic rule.")
+    assert conventions_pos < knowledge_pos
+
+
+def test_archived_declare_stage_receives_every_forwarded_switch():
+    """直接锁转发本身，不绕渲染/`run()`：把全部开关都设成能与默认值区分的
+    非默认值，调 `ProTDsl._stages()` 拿到真正构造出来的
+    `_ArchivedDeclareStage` 实例，逐个断言实例属性等于类上声明的值。
+
+    这是修复轮 1 那条 `test_conv_knowledge_probe_renders_...`
+    （原名 `test_stages_forwards_every_switch_to_archived_declare_stage`）
+    的教训：它只调 `_system()`，`evidence`/`use_profile`/`force_considered`
+    只在 `run()` 里被消费、`dataset` 被 monkeypatch 掉的 `load_knowledge`
+    完全遮住，四个开关的转发丢了它也测不出来。断言属性本身就与"在 run() 里
+    怎么被消费"无关，漏转发一个就会当场断言失败。
+    """
+    from model.pipeline.models import ProTDsl
+    from model.pipeline.stages.declare import DeclareStage
+
+    class _AllSwitchesProbe(ProTDsl):
+        name = "test-only-all-switches-probe"
+        dataset = "en_probe"
+        knowledge = True
+        evidence = True
+        use_profile = True
+        force_considered = True
+        extra_checks = True
+        conventions = True
+        convention_checks = True
+
+    inst = _AllSwitchesProbe.__new__(_AllSwitchesProbe)
+    inst.endpoint = object()
+    [declare] = [s for s in inst._stages() if isinstance(s, DeclareStage)]
+    assert declare.dataset == "en_probe"
+    assert declare.knowledge is True
+    assert declare.evidence is True
+    assert declare.use_profile is True
+    assert declare.force_considered is True
+    assert declare.extra_checks is True
+    assert declare.conventions is True
+    assert declare.convention_checks is True
+    assert declare.use_plan is False   # ProTDsl 是 no-plan 档位
+
+
+def test_archived_dsl_stage_receives_every_forwarded_switch():
+    """同上，但站点是 `archive._ArchivedDsl._stages()`（带 plan 的归档族，
+    `pro-t-plandsl-prof`/`pro-t-plandsl-conv` 系走这条）。不需要真实 API
+    key——用 `__new__` 绕过 `__init__`，不触发 `ChatEndpoint` 构造。
+    """
+    from model.pipeline.archive import _ArchivedDsl
+    from model.pipeline.stages.declare import DeclareStage
+
+    class _AllSwitchesProbe(_ArchivedDsl):
+        name = "test-only-all-switches-probe-2"
+        dataset = "en_probe"
+        knowledge = True
+        evidence = True
+        use_profile = True
+        force_considered = True
+        extra_checks = True
+        conventions = True
+        convention_checks = True
+        # _ArchivedDsl 经 DSLSQL/ProTPlanDsl 继承到 PlanSQL.use_plan = True，
+        # 与 _ArchivedDeclareStage.__init__ 的默认值 True 重合——不显式覆写成
+        # False，下面 use_plan 那条断言就是空转的（删掉 archive.py 里的
+        # use_plan=self.use_plan 转发，这条测试照样绿）。
+        use_plan = False
+
+    inst = _AllSwitchesProbe.__new__(_AllSwitchesProbe)
+    inst.endpoint = object()
+    [declare] = [s for s in inst._stages() if isinstance(s, DeclareStage)]
+    assert declare.dataset == "en_probe"
+    assert declare.knowledge is True
+    assert declare.evidence is True
+    assert declare.use_profile is True
+    assert declare.force_considered is True
+    assert declare.extra_checks is True
+    assert declare.conventions is True
+    assert declare.convention_checks is True
+    assert declare.use_plan is False

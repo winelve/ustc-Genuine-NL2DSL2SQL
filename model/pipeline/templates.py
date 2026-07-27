@@ -21,10 +21,13 @@ PLACEHOLDERS: dict[str, set[str]] = {
     "sqlgen.user": {"schema", "question", "plan"},
     "dslgen.system": set(),
     "dslgen.user": {"schema", "question", "plan", "profile"},
-    "dslgen.user.noplan": {"schema", "question", "profile"},
+    "dslgen.user.noplan": {"schema", "question", "evidence"},
     "dslgen.repair": {"issues"},
     "dslgen.conventions": {"conventions"},
+    "dslgen.knowledge": {"knowledge"},
     "direct.conventions": {"conventions"},
+    "distill.knowledge": {"cases", "min_evidence", "max_items"},
+    "distill.rules": {"cases", "vocabulary", "min_evidence", "max_items"},
 }
 
 # 只把 {小写标识符} 当占位符候选，其余花括号不归模板管

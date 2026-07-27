@@ -21,6 +21,8 @@ from model.pipeline.archive import (ProTPlanDslConv, ProTPlanDslConvCchk,
                                     ProTPlanDslProfForceChk)
 from model.pipeline.models import (ProTDsl, ProTDslChk, ProTDslConv,
                                    ProTDslConvChk, ProTDslConvChkR0,
+                                   ProTDslKnowledge, ProTDslKnowledgeRules,
+                                   ProTDslKnowledgeRulesSqlens,
                                    ProTPlan, ProTPlanDsl)
 
 # 注册表：--model 参数用的名字 -> 模型类。含义见 docs/ABLATION.md。
@@ -55,6 +57,11 @@ MODELS: dict[str, type[SQLGenerator]] = {
     ProTPlanDslProfForceChk.name: ProTPlanDslProfForceChk,  # pro-t-plandsl-prof-force-chk
     ProTPlanDslConv.name: ProTPlanDslConv,                  # pro-t-plandsl-conv
     ProTPlanDslConvCchk.name: ProTPlanDslConvCchk,          # pro-t-plandsl-conv-cchk
+
+    # 学习式知识/规则阶梯（设计见 docs/superpowers/specs/2026-07-27-learned-checks-design.md）
+    ProTDslKnowledge.name: ProTDslKnowledge,                      # pro-t-dsl-knowledge
+    ProTDslKnowledgeRules.name: ProTDslKnowledgeRules,            # pro-t-dsl-knowledge-rules
+    ProTDslKnowledgeRulesSqlens.name: ProTDslKnowledgeRulesSqlens,  # ★满配
 }
 
 __all__ = ["SQLGenerator", "MODELS"]

@@ -27,6 +27,7 @@ class PipelineContext:
     question: str
     db_path: Path
     schema: str = ""
+    evidence: str = ""           # 题目自带的外部知识（BIRD 有，Archer 官方设定不用）
     plans: list[str] = field(default_factory=list)
     candidates: list[Candidate] = field(default_factory=list)
     winner: int | None = None    # 胜出候选的下标
@@ -35,6 +36,7 @@ class PipelineContext:
     def to_trace(self) -> dict:
         return {
             "question": self.question,
+            "evidence": self.evidence,
             "plans": self.plans,
             "candidates": [asdict(c) for c in self.candidates],
             "winner": self.winner,

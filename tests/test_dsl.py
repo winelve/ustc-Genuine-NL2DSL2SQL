@@ -416,14 +416,18 @@ def test_declare_noplan_mode_runs_without_plans(toy_db):
 
 
 def test_declare_noplan_still_carries_conventions(toy_db):
-    """no-plan + conventions：附录进 system，user 走 noplan 模板。"""
+    """no-plan + conventions：附录进 system，user 走 noplan 模板。
+
+    conventions 换代后移出了 DeclareStage 基类，进了
+    archive._ArchivedDeclareStage——这条测试锁的是"no-plan 模式下约定附录
+    仍然生效"这个行为本身，不是锁在哪个类上，所以只换构造的类。"""
+    from model.pipeline.archive import _ArchivedDeclareStage
     from model.pipeline.context import PipelineContext
-    from model.pipeline.stages.declare import DeclareStage
 
     ctx = PipelineContext(question="q", db_path=toy_db)
     ctx.schema = "CREATE TABLE singer (...)"
     endpoint = _FakeEndpoint([GOOD_JSON])
-    DeclareStage(endpoint, use_plan=False, conventions=True).run(ctx)
+    _ArchivedDeclareStage(endpoint, use_plan=False, conventions=True).run(ctx)
     system = endpoint.calls[0][0]["content"]
     assert "K1. " in system and "not a valid stance" in system
     assert len(endpoint.calls) == 1
