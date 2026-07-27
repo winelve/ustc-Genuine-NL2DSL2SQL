@@ -21,6 +21,12 @@ class DeclareStage:
                  use_profile: bool = False, force_considered: bool = False,
                  extra_checks: bool = False, conventions: bool = False,
                  convention_checks: bool = False, use_plan: bool = True) -> None:
+        # 中间状态（本计划 Task 2）：C5a/C5b/C6/C7 已归档到 dsl/archived_checks.py，
+        # validate() 不再接受 profile_ids/extra_checks/convention_checks。下面
+        # use_profile/force_considered/extra_checks/convention_checks 四个开关
+        # 仍在（换代要等 Task 13），但已经不再传给 validate——归档档位
+        # （archive.py 里那些 pro-t-plandsl-prof*/-conv*）的行为会暂时退化，
+        # 这是预期的，Task 13 会把它们接回 validate_archived。
         self.endpoint = endpoint
         self.max_repairs = max_repairs
         # 五个开关默认关 = 对照基线；各消融档位在 models.py/archive.py 里显式打开。
@@ -68,10 +74,7 @@ class DeclareStage:
                     issues = [parse_error]
                 else:
                     issues = validate(out, schema_info, ctx.db_path,
-                                      question=ctx.question,
-                                      profile_ids=profile_ids,
-                                      extra_checks=self.extra_checks,
-                                      convention_checks=self.convention_checks)
+                                      question=ctx.question)
                     sql, declarations = out.sql, out.declarations.model_dump()
                 rounds.append({
                     "sql": out.sql if out else None,

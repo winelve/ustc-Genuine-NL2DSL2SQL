@@ -344,15 +344,13 @@ def test_validate_aggregates_and_passes_good_output(toy_db):
     from model.pipeline.dsl import load_schema_info, parse_output, validate
 
     out, _ = parse_output(GOOD_JSON)
-    assert validate(out, load_schema_info(toy_db), toy_db,
-                    question="", profile_ids=set()) == []
+    assert validate(out, load_schema_info(toy_db), toy_db, question="") == []
 
     out, _ = parse_output(
         '{"sql": "SELECT_BROKEN((", "declarations": {'
         '"time_context": {"displaced": false}, '
         '"outputs": [{"name": "x", "source": "column", "column": "singer.Name"}]}}')
-    issues = validate(out, load_schema_info(toy_db), toy_db,
-                      question="", profile_ids=set())
+    issues = validate(out, load_schema_info(toy_db), toy_db, question="")
     assert issues and "解析" in issues[0]      # SQL 解析失败单独成 issue
 
 
@@ -524,13 +522,19 @@ def _decl_with_considered(considered):
 
 
 def _validate_considered(toy_db, considered, profile_ids={"P1"}):
-    from model.pipeline.dsl import DslOutput, load_schema_info, validate
+    """C5a 已归档（画像轴判负）：走 validate_archived，不再是主线 validate。"""
+    import sqlglot
+
+    from model.pipeline.dsl import DslOutput
+    from model.pipeline.dsl.archived_checks import validate_archived
 
     out = DslOutput.model_validate(
         {"sql": "SELECT Name FROM singer",
          "declarations": _decl_with_considered(considered)})
-    return validate(out, load_schema_info(toy_db), toy_db,
-                    question="q", profile_ids=profile_ids)
+    tree = sqlglot.parse_one(out.sql, dialect="sqlite")
+    return validate_archived(out, tree, toy_db, question="q",
+                             profile_ids=profile_ids, extra_checks=False,
+                             convention_checks=False)
 
 
 def test_render_profile_numbers_items():
@@ -594,7 +598,7 @@ def _concert_db():
 
 def test_c6_hints_unused_sibling_numeric_column():
     """题面问 rate、SQL 里没有除法 -> 提示同表还有 Capacity。"""
-    from model.pipeline.dsl import _c6_ratio_hint
+    from model.pipeline.dsl.archived_checks import _c6_ratio_hint
 
     issues = _c6_ratio_hint(
         _tree("SELECT Name, Average FROM stadium ORDER BY Average DESC"),
@@ -607,7 +611,7 @@ def test_c6_silent_when_any_division_present():
 
     若在这里还报一条就是白烧一轮修复去改一个已经对的答案。
     """
-    from model.pipeline.dsl import _c6_ratio_hint
+    from model.pipeline.dsl.archived_checks import _c6_ratio_hint
 
     assert not _c6_ratio_hint(
         _tree("SELECT Name, Average / Capacity AS r FROM stadium"),
@@ -616,7 +620,7 @@ def test_c6_silent_when_any_division_present():
 
 def test_c6_silent_without_ratio_word():
     """题面没有比率词 -> 不打扰（避免把普通取值题逼成比率题）。"""
-    from model.pipeline.dsl import _c6_ratio_hint
+    from model.pipeline.dsl.archived_checks import _c6_ratio_hint
 
     assert not _c6_ratio_hint(
         _tree("SELECT Name, Average FROM stadium"),
@@ -625,7 +629,7 @@ def test_c6_silent_without_ratio_word():
 
 def test_c6_average_alone_is_not_a_ratio_word():
     """'average' 不算比率词——库里恰好有名为 Average 的列，宽进必炸。"""
-    from model.pipeline.dsl import _RATIO_WORDS
+    from model.pipeline.dsl.archived_checks import _RATIO_WORDS
 
     assert not _RATIO_WORDS.search("What is the average attendance?")
     assert _RATIO_WORDS.search("What is the average attendance rate?")
@@ -636,7 +640,7 @@ def test_c6_silent_when_question_supplies_the_ratio():
 
     不加这道闸门，"给定比率"类题目会被误触发，白烧一轮修复去改一个已经对的答案。
     """
-    from model.pipeline.dsl import _c6_ratio_hint
+    from model.pipeline.dsl.archived_checks import _c6_ratio_hint
 
     assert not _c6_ratio_hint(
         _tree("SELECT Population * 1.004 AS p FROM country WHERE Name = 'UK'"),
@@ -647,7 +651,7 @@ def test_c6_silent_when_question_supplies_the_ratio():
 
 def test_c6_ratio_words_match_plural():
     """'attendance rates' 这类复数形式也要能命中——漏了复数就打不中检查目标。"""
-    from model.pipeline.dsl import _RATIO_WORDS
+    from model.pipeline.dsl.archived_checks import _RATIO_WORDS
 
     assert _RATIO_WORDS.search("the lowest and highest average attendance rates")
     assert _RATIO_WORDS.search("the highest attendance rate")
@@ -666,13 +670,19 @@ def _decl_anchor(kind, expr, ref=""):
 
 
 def _validate_anchor(toy_db, sql, kind, expr, ref="", question="q"):
-    from model.pipeline.dsl import DslOutput, load_schema_info, validate
+    """C5b 已归档（用户裁决本轮不启用）：走 validate_archived。"""
+    import sqlglot
+
+    from model.pipeline.dsl import DslOutput
+    from model.pipeline.dsl.archived_checks import validate_archived
 
     out = DslOutput.model_validate(
         {"sql": sql, "declarations": _decl_anchor(kind, expr, ref)})
+    tree = sqlglot.parse_one(sql, dialect="sqlite")
     # C5b 是建议级检查，默认关；测它就得显式打开
-    return validate(out, load_schema_info(toy_db), toy_db,
-                    question=question, profile_ids=set(), extra_checks=True)
+    return validate_archived(out, tree, toy_db, question=question,
+                             profile_ids=set(), extra_checks=True,
+                             convention_checks=False)
 
 
 def test_anchor_now_requires_now_in_sql(toy_db):
@@ -726,9 +736,12 @@ def test_c5b_silent_when_question_is_not_time_displaced(toy_db):
     """displaced=false 时"存的是当前值"是无害陈述，没有换算可以算错。
 
     "current age as stored" 是正确声明里的常见措辞，没有这道闸门会把大量
-    本来判对的题目错判。
+    本来判对的题目错判。C5b 已归档（用户裁决本轮不启用），走 validate_archived。
     """
-    from model.pipeline.dsl import DslOutput, load_schema_info, validate
+    import sqlglot
+
+    from model.pipeline.dsl import DslOutput
+    from model.pipeline.dsl.archived_checks import validate_archived
 
     out = DslOutput.model_validate({
         "sql": "SELECT Age AS a FROM singer",
@@ -738,8 +751,10 @@ def test_c5b_silent_when_question_is_not_time_displaced(toy_db):
                          "expr": "Age",
                          "anchors": {"Age": {"kind": "now", "ref": "current age"}}}],
             "assumptions": [], "considered": []}})
-    issues = validate(out, load_schema_info(toy_db), toy_db,
-                      question="q", profile_ids=set(), extra_checks=True)
+    tree = sqlglot.parse_one(out.sql, dialect="sqlite")
+    issues = validate_archived(out, tree, toy_db, question="q",
+                               profile_ids=set(), extra_checks=True,
+                               convention_checks=False)
     assert not [i for i in issues if "now" in i], issues
 
 
@@ -755,27 +770,37 @@ def test_c5b_silent_when_question_gives_the_rate(toy_db):
     assert not [i for i in issues if "now" in i], issues
 
 
-def test_extra_checks_default_off_keeps_m2_baseline_behaviour():
-    """C5b/C6 默认关——基线（三开关全 False）的校验集合不含建议级检查。"""
+def test_extra_checks_has_no_default_on_archived_entry():
+    """C5b/C6 已归档（用户裁决本轮不启用）：主线 validate() 干脆没有这个开关了
+    （见 test_validate_signature_drops_archived_switches）；validate_archived 上
+    extra_checks 也不给默认值，逼调用方（archive.py/measure_checks.py）显式表态，
+    不会有任何路径悄悄把它默认打开。"""
     import inspect
 
-    from model.pipeline.dsl import validate
+    from model.pipeline.dsl.archived_checks import validate_archived
 
-    assert inspect.signature(validate).parameters["extra_checks"].default is False
+    assert inspect.signature(validate_archived).parameters[
+        "extra_checks"].default is inspect.Parameter.empty
 
 
 # ---------------------------------------------------------- C7 约定检查
 
 def _validate_conv(toy_db, sql, question, declarations=None):
-    from model.pipeline.dsl import DslOutput, load_schema_info, validate
+    """C7 已归档（职能被 L2 学习规则覆盖）：走 validate_archived。"""
+    import sqlglot
+
+    from model.pipeline.dsl import DslOutput
+    from model.pipeline.dsl.archived_checks import validate_archived
 
     decl = declarations or {
         "time_context": {"displaced": False, "reference": ""},
         "outputs": [{"name": "a", "source": "column", "column": "singer.Age"}],
         "assumptions": [], "considered": []}
     out = DslOutput.model_validate({"sql": sql, "declarations": decl})
-    return validate(out, load_schema_info(toy_db), toy_db, question=question,
-                    profile_ids=set(), convention_checks=True)
+    tree = sqlglot.parse_one(sql, dialect="sqlite")
+    return validate_archived(out, tree, toy_db, question=question,
+                             profile_ids=set(), extra_checks=False,
+                             convention_checks=True)
 
 
 def test_c7_flags_offbrand_constants(toy_db):
@@ -826,9 +851,30 @@ def test_c7_dodge_ignores_would_phrased_counterfactuals(toy_db):
 
 
 def test_c7_all_silent_by_default(toy_db):
-    """convention_checks 默认关——各消融档位与基线行为不变。"""
+    """C7 已归档：主线 validate() 干脆没有 convention_checks 这个开关了
+    （见 test_validate_signature_drops_archived_switches）；validate_archived 上
+    convention_checks 也不给默认值，逼调用方显式表态，各消融档位不会悄悄被打开。"""
+    import inspect
+    from model.pipeline.dsl.archived_checks import validate_archived
+
+    assert inspect.signature(validate_archived).parameters[
+        "convention_checks"].default is inspect.Parameter.empty
+
+
+# ---------------------------------------------------------- 归档收窄（Task 2）
+
+def test_validate_signature_drops_archived_switches():
+    """L1 恒开只有 C1-C4；C5a/C5b/C6/C7 已归档，validate 不再有它们的开关。"""
     import inspect
     from model.pipeline.dsl import validate
+    params = set(inspect.signature(validate).parameters)
+    assert params == {"out", "schema_info", "db_path", "question"}
 
-    assert inspect.signature(validate).parameters[
-        "convention_checks"].default is False
+
+def test_archived_checks_still_importable():
+    """归档≠删除：历史档位仍要能跑。"""
+    from model.pipeline.dsl.archived_checks import (
+        _c5a_considered, _c5b_anchor_sql, _c6_ratio_hint,
+        _c7_abs_difference, _c7_constants, _c7_displaced_dodge,
+        validate_archived)
+    assert callable(validate_archived)
