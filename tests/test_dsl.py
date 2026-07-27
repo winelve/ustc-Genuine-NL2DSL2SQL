@@ -415,6 +415,53 @@ def test_declare_noplan_mode_runs_without_plans(toy_db):
     assert "How many singers?" in user and "CREATE TABLE singer" in user
 
 
+def test_declare_noplan_empty_fewshot_block_is_byte_identical(toy_db):
+    """基线没有检索块时必须继续逐字节使用原 no-plan 模板。"""
+    from model.pipeline.context import PipelineContext
+    from model.pipeline.stages.declare import DeclareStage
+    from model.pipeline.templates import render
+
+    ctx = PipelineContext(question="How many singers?", db_path=toy_db)
+    ctx.schema = "CREATE TABLE singer (...)"
+    endpoint = _FakeEndpoint([GOOD_JSON])
+    stage = DeclareStage(endpoint, use_plan=False)
+
+    stage.run(ctx)
+
+    assert endpoint.calls[0][1]["content"] == render(
+        "dslgen.user.noplan",
+        schema=ctx.schema,
+        question=ctx.question,
+        evidence="",
+    )
+
+
+def test_declare_noplan_fewshot_uses_sql_semantics_template_and_parses(toy_db):
+    """SQL 示例只作语义参考，目标仍在首轮返回 SQL+declarations JSON。"""
+    from model.pipeline.context import PipelineContext
+    from model.pipeline.stages.declare import DeclareStage
+
+    ctx = PipelineContext(question="How many singers?", db_path=toy_db)
+    ctx.schema = "CREATE TABLE singer (...)"
+    ctx.fewshot_block = "REFERENCE EXAMPLES"
+    endpoint = _FakeEndpoint([GOOD_JSON])
+
+    DeclareStage(endpoint, use_plan=False).run(ctx)
+
+    user = endpoint.calls[0][1]["content"]
+    assert user.startswith("REFERENCE EXAMPLES\n\n")
+    assert (
+        "The references above demonstrate SQL semantics only. For the target "
+        "question, return the complete SQL-plus-declarations JSON required by "
+        "the system message."
+    ) in user
+    assert user.rstrip().endswith("JSON:")
+    [candidate] = ctx.candidates
+    assert candidate.sql == "SELECT count(*) AS n FROM singer"
+    assert candidate.checks["passed"] is True
+    assert len(candidate.checks["rounds"]) == 1
+
+
 def test_declare_noplan_still_carries_conventions(toy_db):
     """no-plan + conventions：附录进 system，user 走 noplan 模板。
 

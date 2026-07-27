@@ -148,7 +148,13 @@ def _run_with_checkpoint(
                 fh.write("\n".join(lines) + "\n")
 
     predictions = [done[i]["sql"] for i in range(len(samples))]
-    trace_records = [done[i].get("trace") for i in range(len(samples))]
+    trace_provider = getattr(generator, "trace_for_sample", None)
+    trace_records = []
+    for i, sample in enumerate(samples):
+        trace = done[i].get("trace")
+        if trace is None and callable(trace_provider):
+            trace = trace_provider(sample)
+        trace_records.append(trace)
     return predictions, trace_records
 
 

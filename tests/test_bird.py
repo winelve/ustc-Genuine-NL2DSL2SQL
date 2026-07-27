@@ -6,6 +6,7 @@
 
 import collections
 import hashlib
+import inspect
 import io
 import json
 import re
@@ -724,14 +725,24 @@ def test_bird_model_registered():
     assert MODELS["bird-pro-t-direct"] is BirdDirect
 
 
-def test_bird_model_sends_one_user_message_with_official_prompt(tmp_path):
+def test_bird_model_sends_one_user_message_with_official_prompt(tmp_path, monkeypatch):
+    from bird.official import official_prompt
+    from model.fewshot.store import SelectionStore
+
+    def forbid_selection_load(cls, path):
+        raise AssertionError(f"baseline touched few-shot selection: {path}")
+
+    monkeypatch.setattr(SelectionStore, "from_path", classmethod(forbid_selection_load))
     model = _bird_model("```sql\nSELECT a FROM t\n```")
-    sql = model.predict(_sample("rate = a / b"), _db_file(tmp_path))
+    sample = _sample("rate = a / b")
+    db_path = _db_file(tmp_path)
+    sql = model.predict(sample, db_path)
 
     assert sql == "SELECT a FROM t"                    # markdown 围栏被剥掉
     messages = model._endpoint.calls[0]
     assert len(messages) == 1 and messages[0]["role"] == "user"
     body = messages[0]["content"]
+    assert body == official_prompt(sample, db_path)
     assert "CREATE TABLE t" in body
     assert "-- External Knowledge: rate = a / b" in body
     assert "example rows" not in body
@@ -753,11 +764,177 @@ def test_bird_model_request_params_match_the_official_setup():
     assert BirdDirect.use_evidence is True
 
 
-def test_bird_model_does_not_touch_archer_prompting():
-    """红线：BIRD 档位不掺 Archer 的 CT-3 提示词与约定表。"""
-    src = _source("model/bird.py")
+def test_bird_direct_does_not_touch_archer_prompting():
+    """红线：**榜单可比的那个直出档位**不掺 Archer 的 CT-3 提示词与约定表。
+
+    作用域收窄过一次（原先查整个 model/bird.py）：`BirdProTDsl` 落进同一个
+    文件后，"整份文件不许出现 CT-3"就不再成立——那一档的价值恰恰是把 Archer
+    主线的声明层（含带样本行的 schema）原样搬到 BIRD 上测泛化。红线要守的是
+    `BirdDirect` 与官方 baseline 逐字对齐，所以改成只查它自己的源码。
+    """
+    from model.bird import BirdDirect
+
+    src = inspect.getsource(BirdDirect)
     assert "build_ct3_prompt" not in src
+    assert "schema_with_rows" not in src
     assert "conventions" not in src
+
+
+def test_bird_fewshot_variant_keeps_official_prompt_as_suffix(tmp_path):
+    from bird.official import official_prompt
+    from model.bird import BirdDirectFewShot
+    from model.fewshot.store import SelectionStore, sample_key
+    from model.fewshot.types import FewShotExample, SelectedExample, SelectionRecord
+
+    sample = _sample("rate = a / b", question="Compute the rate.")
+    db_path = _db_file(tmp_path)
+    key = sample_key(sample.db_id, sample.question)
+    record = SelectionRecord(
+        target_key=key,
+        corpus="bird_train",
+        encoder="sentence-transformers/all-mpnet-base-v2",
+        k=3,
+        examples=tuple(
+            SelectedExample(
+                example=FewShotExample(
+                    source_id=f"bird_train:{index}",
+                    db_id="reference_db",
+                    question=f"Reference question {index}?",
+                    sql=f"SELECT {index}",
+                ),
+                distance=float(index),
+            )
+            for index in range(3)
+        ),
+    )
+    model = object.__new__(BirdDirectFewShot)
+    model._endpoint = _FakeEndpoint()
+    model._fewshot_store = SelectionStore(records={key: record})
+
+    model.predict(sample, db_path)
+
+    messages = model._endpoint.calls[0]
+    assert len(messages) == 1 and messages[0]["role"] == "user"
+    sent = messages[0]["content"]
+    assert sent.startswith("### Retrieved examples")
+    assert sent.endswith(official_prompt(sample, db_path))
+
+
+def test_bird_fewshot_variant_is_single_variable_and_registered():
+    from model import MODELS
+    from model.bird import BirdDirect, BirdDirectFewShot
+
+    assert MODELS["bird-pro-t-direct-fs"] is BirdDirectFewShot
+    assert issubclass(BirdDirectFewShot, BirdDirect)
+    assert {
+        key for key in BirdDirectFewShot.__dict__ if not key.startswith("_")
+    } == {"name", "fewshot_selection"}
+    for attr in (
+        "base_url",
+        "model",
+        "key_env",
+        "request_params",
+        "conventions",
+        "use_evidence",
+    ):
+        assert getattr(BirdDirectFewShot, attr) == getattr(BirdDirect, attr), attr
+
+
+# ------------------------------------------------- bird-pro-t-dsl（泛化臂）
+
+def test_bird_dsl_registered():
+    from model import MODELS
+    from model.bird import BirdProTDsl
+
+    assert MODELS["bird-pro-t-dsl"] is BirdProTDsl
+
+
+def test_bird_dsl_fewshot_variant_is_single_variable_and_registered():
+    from model import MODELS
+    from model.bird import BirdProTDsl, BirdProTDslFewShot
+
+    assert MODELS["bird-pro-t-dsl-fs"] is BirdProTDslFewShot
+    assert issubclass(BirdProTDslFewShot, BirdProTDsl)
+    assert {
+        key for key in BirdProTDslFewShot.__dict__ if not key.startswith("_")
+    } == {"name", "fewshot_selection"}
+    assert BirdProTDslFewShot.evidence is True
+    assert BirdProTDslFewShot.use_plan is False
+
+
+def test_bird_dsl_switch_matrix_is_pro_t_dsl_plus_evidence():
+    """唯一变量红线：相对主线 `pro-t-dsl` 只有 evidence 一处不同。
+
+    逐个断言而不是"跟 ProTDsl 比 __dict__"——开关是继承来的类属性，比 dict
+    会漏掉没被覆写的那些，而"某个开关被静默打开"正是这里要防的事
+    （f086cee 修的就是归档分支漏转发开关）。
+    """
+    from model.bird import BirdProTDsl
+    from model.pipeline.models import ProTDsl
+
+    assert BirdProTDsl.evidence is True and ProTDsl.evidence is False
+    assert BirdProTDsl.dataset == "bird_dev"
+    assert BirdProTDsl.use_plan is False
+    assert BirdProTDsl.max_repairs == 2
+    for switch in ("knowledge", "learned_rules", "sqlens_checks",
+                   "conventions", "extra_checks", "convention_checks",
+                   "use_profile", "force_considered"):
+        assert getattr(BirdProTDsl, switch) is False, switch
+    # 骨干与 bird-pro-t-direct 同底（deepseek-v4-pro + thinking）
+    assert BirdProTDsl.endpoint_spec["model"] == "deepseek-v4-pro"
+    assert BirdProTDsl.endpoint_spec["request_params"] == {
+        "extra_body": {"thinking": {"type": "enabled"}}}
+
+
+def test_bird_dsl_goes_through_mainline_declare_stage_with_evidence_on():
+    """走主线 DeclareStage（不是归档适配层），且 evidence 真的转发下去了。"""
+    from model.bird import BirdProTDsl
+    from model.pipeline.stages.declare import DeclareStage
+
+    inst = BirdProTDsl.__new__(BirdProTDsl)
+    inst.endpoint = object()
+    stages = inst._stages()
+    [declare] = [s for s in stages if isinstance(s, DeclareStage)]
+    assert type(declare) is DeclareStage          # 归档层是子类，这里必须是本尊
+    assert declare.evidence is True
+    assert declare.use_plan is False
+    assert declare.knowledge is False and declare.sqlens_checks is False
+    assert declare._rules == []                   # learned_rules 关 => 不加载规则库
+
+
+def test_bird_dsl_user_message_is_archer_baseline_plus_one_evidence_line():
+    """消息级红线：evidence 只往 user 消息里加一行 `Evidence: ...`，别的逐字节不变。
+
+    这条把"唯一变量"从类属性落到实际发出去的字节上——开关矩阵对了但模板渲染
+    错了（比如 evidence 顺手改了 schema 段），单靠上一条测试看不出来。
+    """
+    from model.pipeline.context import PipelineContext
+    from model.pipeline.stages.declare import DeclareStage
+    from model.pipeline.templates import render
+
+    ctx = PipelineContext(question="how many?", db_path=Path("."))
+    ctx.evidence = "rate = a / b"
+    ctx.schema = "CREATE TABLE t (a int);"
+
+    on = DeclareStage(object(), 2, dataset="bird_dev", evidence=True, use_plan=False)
+    off = DeclareStage(object(), 2, dataset="en_train", evidence=False, use_plan=False)
+    body = dict(schema=ctx.schema, question=ctx.question)
+    msg_on = render("dslgen.user.noplan", **body, evidence=on._evidence_block(ctx))
+    msg_off = render("dslgen.user.noplan", **body, evidence=off._evidence_block(ctx))
+
+    assert "Evidence: rate = a / b" in msg_on
+    assert "Evidence" not in msg_off
+    # 去掉那一行后两者逐字节相同
+    assert msg_on.replace("Evidence: rate = a / b", "") == msg_off
+
+
+def test_bird_dsl_system_message_is_the_untouched_baseline():
+    """system 侧一个字都不该多——knowledge/conventions 全关时就是裸模板。"""
+    from model.pipeline.stages.declare import DeclareStage
+    from model.pipeline.templates import load_template
+
+    stage = DeclareStage(object(), 2, dataset="bird_dev", evidence=True, use_plan=False)
+    assert stage._system() == load_template("dslgen.system")
 
 
 # ---------------------------------------------------------- 断点续跑

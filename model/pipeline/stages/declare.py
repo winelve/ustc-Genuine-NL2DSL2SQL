@@ -103,9 +103,21 @@ class DeclareStage:
         system = self._system()
         for plan in (ctx.plans if self.use_plan else [None]):
             if plan is None:
-                user = render("dslgen.user.noplan", schema=ctx.schema,
-                              question=ctx.question,
-                              evidence=self._evidence_block(ctx))
+                if ctx.fewshot_block:
+                    user = render(
+                        "dslgen.user.noplan.fewshot",
+                        schema=ctx.schema,
+                        question=ctx.question,
+                        evidence=self._evidence_block(ctx),
+                        examples=ctx.fewshot_block,
+                    )
+                else:
+                    user = render(
+                        "dslgen.user.noplan",
+                        schema=ctx.schema,
+                        question=ctx.question,
+                        evidence=self._evidence_block(ctx),
+                    )
             else:
                 user = render("dslgen.user", schema=ctx.schema,
                               question=ctx.question, plan=plan,

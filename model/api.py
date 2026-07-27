@@ -19,9 +19,12 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import config
 from archer_eval.data import Sample
 from archer_eval.progress import Progress
 from model.base import SQLGenerator
+from model.fewshot.render import render_reference_examples
+from model.fewshot.store import SelectionStore, sample_key
 from model.llm import ChatEndpoint
 from model.prompts import build_ct3_prompt
 from config import API_CONCURRENCY
@@ -54,6 +57,9 @@ class APIModel(SQLGenerator):
     # 关闭时 system 消息与基线逐字节相同，有测试锁死
     conventions = False
 
+    # 只在显式 few-shot 变体上设置；None 是严格的零文件读取基线。
+    fewshot_selection: str | None = None
+
     def __init__(self) -> None:
         # 客户端封装统一在 model/llm.py 的 ChatEndpoint，pipeline 与此共用
         self._endpoint = ChatEndpoint(
@@ -62,6 +68,15 @@ class APIModel(SQLGenerator):
             key_env=self.key_env,
             request_params=self.request_params,
         )
+        self.trace_records: list[dict | None] = []
+        self._fewshot_store = None
+        if self.fewshot_selection is not None:
+            path = (
+                config.FEWSHOT_DIR
+                / "selections"
+                / f"{self.fewshot_selection}.json"
+            )
+            self._fewshot_store = SelectionStore.from_path(path)
 
     def _system(self) -> str:
         """基线 system + 可选约定附录。附录是追加式的——基线消息逐字节不变。"""
@@ -72,8 +87,56 @@ class APIModel(SQLGenerator):
         return SYSTEM_PROMPT + "\n" + render("direct.conventions",
                                              conventions=conventions_block())
 
+    def _fewshot_record(self, sample: Sample):
+        """Return the fixed record; the baseline path remains a no-op."""
+        if self.fewshot_selection is None:
+            return None
+        record = self._fewshot_store.for_sample(sample.db_id, sample.question)
+        if record is None:
+            target_key = sample_key(sample.db_id, sample.question)
+            raise KeyError(
+                f"fixed few-shot selection {self.fewshot_selection!r} has no "
+                f"record for db_id={sample.db_id!r}, sample_key={target_key}"
+            )
+        return record
+
+    def _fewshot_examples(self, sample: Sample) -> str:
+        """Render this sample's fixed references; baseline returns immediately."""
+        record = self._fewshot_record(sample)
+        if record is None:
+            return ""
+        return render_reference_examples(record)
+
+    def trace_for_sample(self, sample: Sample) -> dict | None:
+        """Build reproducibility metadata without making an API request."""
+        record = self._fewshot_record(sample)
+        if record is None:
+            return None
+        return {
+            "question": sample.question,
+            "fewshot": {
+                "selection": self.fewshot_selection,
+                "corpus": record.corpus,
+                "corpus_sha256": self._fewshot_store.corpus_sha256,
+                "encoder": record.encoder,
+                "k": record.k,
+                "source_ids": [
+                    selected.example.source_id for selected in record.examples
+                ],
+                "distances": [
+                    selected.distance for selected in record.examples
+                ],
+            },
+        }
+
     def predict(self, sample: Sample, db_path: Path) -> str:
-        reply = self._endpoint.chat(self._system(), build_ct3_prompt(sample, db_path))
+        examples = self._fewshot_examples(sample)
+        prompt = (
+            build_ct3_prompt(sample, db_path, examples=examples)
+            if examples
+            else build_ct3_prompt(sample, db_path)
+        )
+        reply = self._endpoint.chat(self._system(), prompt)
         return extract_sql(reply)
 
     def predict_all(
@@ -81,22 +144,34 @@ class APIModel(SQLGenerator):
     ) -> list[str]:
         """并发发请求；结果保持输入顺序，单条失败记空串（同基类约定）。"""
 
-        def one(indexed: tuple[int, tuple[Sample, Path]]) -> tuple[str, str | None]:
+        def one(
+            indexed: tuple[int, tuple[Sample, Path]]
+        ) -> tuple[str, dict | None, str | None]:
             i, (sample, db_path) = indexed
+            trace = None
             try:
-                return self.predict(sample, db_path), None
+                trace = self.trace_for_sample(sample)
+                return self.predict(sample, db_path), trace, None
             except Exception as e:
                 # 失败消息带回主线程统一打印，工作线程不碰终端
-                return "", f"  sample {i} failed: {type(e).__name__}: {e}"
+                error = f"  sample {i} failed: {type(e).__name__}: {e}"
+                if trace is not None:
+                    trace = {**trace, "error": error}
+                return "", trace, error
 
         bar = Progress(len(samples), "generate", enabled=progress)
         preds = []
+        traces = []
         with ThreadPoolExecutor(max_workers=self.concurrency) as pool:
-            for sql, error in pool.map(one, enumerate(zip(samples, db_paths))):
+            for sql, trace, error in pool.map(
+                one, enumerate(zip(samples, db_paths))
+            ):
                 if error:
                     bar.write(error)
                 preds.append(sql)
+                traces.append(trace)
                 bar.step()
+        self.trace_records = traces
         return preds
 
 
@@ -139,6 +214,11 @@ class DeepSeekPro(APIModel):
 class DeepSeekProThinking(DeepSeekPro):
     name = "pro-t-direct"
     request_params = {"extra_body": {"thinking": {"type": "enabled"}}}
+
+
+class DeepSeekProThinkingFewShot(DeepSeekProThinking):
+    name = "pro-t-direct-fs"
+    fewshot_selection = "archer_en_dev_rsl_k3"
 
 
 class DeepSeekProThinkingConv(DeepSeekProThinking):

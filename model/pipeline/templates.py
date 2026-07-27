@@ -22,6 +22,9 @@ PLACEHOLDERS: dict[str, set[str]] = {
     "dslgen.system": set(),
     "dslgen.user": {"schema", "question", "plan", "profile"},
     "dslgen.user.noplan": {"schema", "question", "evidence"},
+    "dslgen.user.noplan.fewshot": {
+        "schema", "question", "evidence", "examples",
+    },
     "dslgen.repair": {"issues"},
     "dslgen.conventions": {"conventions"},
     "dslgen.knowledge": {"knowledge"},

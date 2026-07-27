@@ -186,6 +186,66 @@ python -m bird eval --official --pred predictions/bird-pro-t-direct_bird_dev.jso
 
 ---
 
+## 4.6 离线 few-shot 检索
+
+few-shot 使用 RSL-SQL 相同的 `all-mpnet-base-v2` 问题向量和欧氏距离，
+默认固定选最近的 3 个训练问题。检索只在实验准备阶段运行；线上生成只读取
+已经落盘的选择 JSON，因此不需要加载 Torch。
+
+重依赖请装在单独的 Python 3.11/3.12 CPU 环境，不要装进本项目的 Python 3.13
+环境：
+
+```powershell
+py -3.12 -m venv ..\.venv-ustc-fewshot
+..\.venv-ustc-fewshot\Scripts\python.exe -m pip install -r requirements-fewshot.txt
+```
+
+Archer 英文训练集转 corpus、检索 dev、审计：
+
+```powershell
+..\.venv-ustc-fewshot\Scripts\python.exe scripts\build_fewshot.py corpus `
+  --input data\en_data\train.json `
+  --format archer-json `
+  --name archer_en_train `
+  --output data\fewshot\corpora\archer_en_train.json
+
+..\.venv-ustc-fewshot\Scripts\python.exe scripts\build_fewshot.py select `
+  --corpus data\fewshot\corpora\archer_en_train.json `
+  --targets data\en_data\dev.json `
+  --target-format archer-json `
+  --encoder data\fewshot\models\all-mpnet-base-v2 `
+  --k 3 `
+  --output data\fewshot\selections\archer_en_dev_rsl_k3.json
+
+..\.venv-ustc-fewshot\Scripts\python.exe scripts\build_fewshot.py audit `
+  --selection data\fewshot\selections\archer_en_dev_rsl_k3.json
+```
+
+BIRD 训练 Parquet 转 corpus 后，用同一条 `select` 命令检索；目标格式改为
+`bird-json`：
+
+```powershell
+..\.venv-ustc-fewshot\Scripts\python.exe scripts\build_fewshot.py corpus `
+  --input data\fewshot\raw\bird_train.parquet `
+  --format bird-parquet `
+  --name bird_train `
+  --output data\fewshot\corpora\bird_train.json
+
+..\.venv-ustc-fewshot\Scripts\python.exe scripts\build_fewshot.py select `
+  --corpus data\fewshot\corpora\bird_train.json `
+  --targets data\bird\dev.json `
+  --target-format bird-json `
+  --encoder data\fewshot\models\all-mpnet-base-v2 `
+  --k 3 `
+  --output data\fewshot\selections\bird_dev_rsl_k3.json
+```
+
+选择文件记录 encoder、corpus SHA-256、`k`、逐题近邻和距离；重复运行应产生
+逐字节相同的 JSON。若 corpus 与 targets 是同一文件，目标必须带 `source_id`，
+对应训练项会被强制排除，避免把答案本身作为示例。
+
+---
+
 ## 5. 输出
 
 ```shell
@@ -232,4 +292,3 @@ python -m model.prompts --data en_dev --index 0
 # 预览 pipeline 发给各 LLM 的完整消息（第 0 题）
 python -m model.pipeline --data en_dev --preview 0
 ```
-

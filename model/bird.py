@@ -24,6 +24,7 @@ from pathlib import Path
 from archer_eval.data import Sample
 from bird.official import official_prompt
 from model.api import APIModel, extract_sql
+from model.pipeline.models import ProTDsl
 
 
 class BirdDirect(APIModel):
@@ -51,5 +52,49 @@ class BirdDirect(APIModel):
 
     def predict(self, sample: Sample, db_path: Path) -> str:
         prompt = official_prompt(sample, db_path, evidence=self.use_evidence)
+        examples = self._fewshot_examples(sample)
+        if examples:
+            prompt = f"{examples}\n\n{prompt}"
         reply = self._endpoint.chat_messages([{"role": "user", "content": prompt}])
         return extract_sql(reply)
+
+
+class BirdDirectFewShot(BirdDirect):
+    name = "bird-pro-t-direct-fs"
+    fewshot_selection = "bird_dev_rsl_k3"
+
+
+class BirdProTDsl(ProTDsl):
+    """Archer 主线的声明层档位搬到 BIRD——测 pipeline 的跨数据集泛化。
+
+    与 en_dev 上那个 52.88 的 `pro-t-dsl` **逐位相同**：no-plan、声明层 +
+    C1-C4 恒开检查 + 2 轮修复环，knowledge / learned_rules / sqlens_checks /
+    conventions / extra_checks 全关。唯一差异是 `evidence=True`。
+
+    `evidence` 为什么开：BIRD 官方协议逐题发 evidence（榜单 Oracle Knowledge
+    列全 ✔️），`BirdDirect` 也是 `use_evidence=True`。关掉这个数就既不能跟
+    57.37 比、也不能跟榜单比。Archer 侧相反（官方设定 w/o knowledge），所以
+    这个开关只在 BIRD 档位上打开，主线 `ProTDsl` 保持 False。
+
+    对照点 = `bird-pro-t-direct` 官方 EX **57.37**（880/1534）。两臂的差值含
+    两个变量：声明层，以及 schema 表示（官方 baseline 是纯 DDL，这里是 DDL +
+    每表 3 行样本）——样本行是本项目 pipeline 的固有组成，报数时说明即可。
+
+    跑法（`--eval` 不能加，那是 archer_eval 的 VA/EX/SIM，与榜单不可比）：
+
+        python -m model --model bird-pro-t-dsl --data bird_dev
+        python -m bird eval --pred predictions/bird-pro-t-dsl_bird_dev.json --official
+    """
+
+    name = "bird-pro-t-dsl"
+    evidence = True
+    # knowledge / learned_rules 都关着，所以这个值现在是空转的；设成 bird_dev
+    # 是为了将来真开知识层时不会静默去读 data/knowledge/en.json（Archer 的）。
+    dataset = "bird_dev"
+
+
+class BirdProTDslFewShot(BirdProTDsl):
+    """BIRD no-plan DSL + 固定三条训练集 SQL 语义参考。"""
+
+    name = "bird-pro-t-dsl-fs"
+    fewshot_selection = "bird_dev_rsl_k3"

@@ -220,6 +220,52 @@ def test_runner_writes_trace_sidecar(tmp_path):
     assert write_trace([], out) is None and write_trace(None, out) is None
 
 
+def test_runner_backfills_trace_for_resumed_checkpoint(tmp_path):
+    """旧断点没有 trace 时，用模型的纯数据钩子补齐，不能重打付费 API。"""
+    import json
+
+    from model.__main__ import _checkpoint_path, _run_with_checkpoint
+
+    sample = _sample()
+    out = tmp_path / "direct-fs_en_dev.json"
+    checkpoint = _checkpoint_path(out)
+    checkpoint.write_text(
+        "\n".join(
+            (
+                json.dumps({"model": "direct-fs", "data": "en_dev", "n": 1}),
+                json.dumps({"i": 0, "sql": "SELECT 1", "trace": None}),
+            )
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    class ResumedGenerator:
+        name = "direct-fs"
+
+        def predict_all(self, *_args, **_kwargs):
+            raise AssertionError("completed checkpoint must not call the API")
+
+        def trace_for_sample(self, got):
+            assert got is sample
+            return {"question": got.question, "fewshot": {"source_ids": ["train:1"]}}
+
+    predictions, traces = _run_with_checkpoint(
+        ResumedGenerator(),
+        [sample],
+        [tmp_path / "unused.sqlite"],
+        out,
+        chunk=20,
+        alias="en_dev",
+        total=1,
+    )
+
+    assert predictions == ["SELECT 1"]
+    assert traces == [
+        {"question": sample.question, "fewshot": {"source_ids": ["train:1"]}}
+    ]
+
+
 def test_predict_all_records_llm_failure_as_empty(monkeypatch, tmp_path):
     db = _toy_db(tmp_path)
 
@@ -467,6 +513,200 @@ def test_direct_system_byte_identical_when_conventions_off():
     assert inst._system() == SYSTEM_PROMPT
 
 
+def test_direct_baseline_does_not_load_selection_or_change_prompt(monkeypatch):
+    """fewshot_selection=None 时不读文件，发出的 user 消息逐字节不变。"""
+    from pathlib import Path
+
+    import model.api as api
+    from model.fewshot.store import SelectionStore
+
+    class FakeEndpoint:
+        def __init__(self, **_kwargs):
+            self.calls = []
+
+        def chat(self, system, user, **overrides):
+            self.calls.append((system, user, overrides))
+            return "SELECT 1"
+
+    def forbid_selection_load(cls, path):
+        raise AssertionError(f"baseline touched few-shot selection: {path}")
+
+    monkeypatch.setattr(api, "ChatEndpoint", FakeEndpoint)
+    monkeypatch.setattr(api, "build_ct3_prompt", lambda _sample, _path: "BASELINE PROMPT")
+    monkeypatch.setattr(SelectionStore, "from_path", classmethod(forbid_selection_load))
+
+    generator = api.DeepSeekProThinking()
+    assert generator.predict(_sample(), Path("unused.sqlite")) == "SELECT 1"
+    assert generator._endpoint.calls == [
+        (api.SYSTEM_PROMPT, "BASELINE PROMPT", {})
+    ]
+
+
+def test_direct_fewshot_loads_named_selection_and_prefixes_ct3(monkeypatch, tmp_path):
+    """FS 档只从集中目录加载固定选择，并仍保持单次 API 调用。"""
+    from pathlib import Path
+
+    import config
+    import model.api as api
+    from model.fewshot.store import SelectionStore, sample_key
+    from model.fewshot.types import FewShotExample, SelectedExample, SelectionRecord
+
+    class FakeEndpoint:
+        def __init__(self, **_kwargs):
+            self.calls = []
+
+        def chat(self, system, user, **overrides):
+            self.calls.append((system, user, overrides))
+            return "SELECT 1"
+
+    sample = _sample()
+    key = sample_key(sample.db_id, sample.question)
+    record = SelectionRecord(
+        target_key=key,
+        corpus="archer_en_train",
+        encoder="sentence-transformers/all-mpnet-base-v2",
+        k=3,
+        examples=tuple(
+            SelectedExample(
+                example=FewShotExample(
+                    source_id=f"en_train:{index}",
+                    db_id="reference_db",
+                    question=f"Reference question {index}?",
+                    sql=f"SELECT {index}",
+                ),
+                distance=float(index),
+            )
+            for index in range(3)
+        ),
+    )
+    store = SelectionStore(records={key: record})
+    loaded_paths = []
+
+    def fake_from_path(cls, path):
+        loaded_paths.append(path)
+        return store
+
+    def fake_build_prompt(_sample, _path, *, examples=""):
+        return f"{examples}\n\nBASELINE PROMPT" if examples else "BASELINE PROMPT"
+
+    monkeypatch.setattr(config, "FEWSHOT_DIR", tmp_path)
+    monkeypatch.setattr(api, "ChatEndpoint", FakeEndpoint)
+    monkeypatch.setattr(api, "build_ct3_prompt", fake_build_prompt)
+    monkeypatch.setattr(SelectionStore, "from_path", classmethod(fake_from_path))
+
+    generator = api.DeepSeekProThinkingFewShot()
+    assert generator.predict(sample, Path("unused.sqlite")) == "SELECT 1"
+
+    assert loaded_paths == [
+        tmp_path / "selections" / "archer_en_dev_rsl_k3.json"
+    ]
+    assert len(generator._endpoint.calls) == 1
+    sent = generator._endpoint.calls[0][1]
+    assert sent.startswith("### Retrieved examples")
+    assert sent.endswith("BASELINE PROMPT")
+
+
+def test_direct_fewshot_predict_all_records_retrieval_trace(monkeypatch, tmp_path):
+    """Direct FS 也必须逐题记录固定示例元数据，便于配对翻转分析。"""
+    from pathlib import Path
+
+    import model.api as api
+    from model.fewshot.store import SelectionStore, sample_key
+    from model.fewshot.types import FewShotExample, SelectedExample, SelectionRecord
+
+    class FakeEndpoint:
+        def chat(self, _system, _user, **_overrides):
+            return "SELECT 1"
+
+    sample = _sample()
+    key = sample_key(sample.db_id, sample.question)
+    record = SelectionRecord(
+        target_key=key,
+        corpus="archer_en_train",
+        encoder="sentence-transformers/all-mpnet-base-v2",
+        k=3,
+        examples=tuple(
+            SelectedExample(
+                example=FewShotExample(
+                    source_id=f"en_train:{index}",
+                    db_id="reference_db",
+                    question=f"Reference question {index}?",
+                    sql=f"SELECT {index}",
+                ),
+                distance=index + 0.25,
+            )
+            for index in range(3)
+        ),
+    )
+    generator = object.__new__(api.DeepSeekProThinkingFewShot)
+    generator._endpoint = FakeEndpoint()
+    generator._fewshot_store = SelectionStore(
+        records={key: record}, corpus_sha256="b" * 64
+    )
+    generator.concurrency = 1
+    monkeypatch.setattr(api, "build_ct3_prompt", lambda *_args, **_kwargs: "PROMPT")
+
+    predictions = generator.predict_all(
+        [sample], [Path("unused.sqlite")], progress=False
+    )
+
+    assert predictions == ["SELECT 1"]
+    assert generator.trace_records == [
+        {
+            "question": sample.question,
+            "fewshot": {
+                "selection": "archer_en_dev_rsl_k3",
+                "corpus": "archer_en_train",
+                "corpus_sha256": "b" * 64,
+                "encoder": "sentence-transformers/all-mpnet-base-v2",
+                "k": 3,
+                "source_ids": ["en_train:0", "en_train:1", "en_train:2"],
+                "distances": [0.25, 1.25, 2.25],
+            },
+        }
+    ]
+
+
+def test_direct_fewshot_fails_when_fixed_selection_has_no_target():
+    """固定选择缺题说明 artifact/数据集漂移，绝不能静默退回 baseline。"""
+    from model.api import DeepSeekProThinkingFewShot
+    from model.fewshot.store import SelectionStore, sample_key
+
+    sample = _sample()
+    generator = object.__new__(DeepSeekProThinkingFewShot)
+    generator._fewshot_store = SelectionStore(records={})
+    expected_key = sample_key(sample.db_id, sample.question)
+
+    with pytest.raises(KeyError) as exc_info:
+        generator._fewshot_examples(sample)
+
+    message = str(exc_info.value)
+    assert generator.fewshot_selection in message
+    assert sample.db_id in message
+    assert expected_key in message
+
+
+def test_direct_fewshot_variant_is_single_variable_and_registered():
+    from model import MODELS
+    from model.api import DeepSeekProThinking, DeepSeekProThinkingFewShot
+
+    assert MODELS["pro-t-direct-fs"] is DeepSeekProThinkingFewShot
+    assert issubclass(DeepSeekProThinkingFewShot, DeepSeekProThinking)
+    assert {
+        key for key in DeepSeekProThinkingFewShot.__dict__ if not key.startswith("_")
+    } == {"name", "fewshot_selection"}
+    for attr in (
+        "base_url",
+        "model",
+        "key_env",
+        "request_params",
+        "conventions",
+    ):
+        assert getattr(DeepSeekProThinkingFewShot, attr) == getattr(
+            DeepSeekProThinking, attr
+        ), attr
+
+
 def test_direct_conv_system_carries_all_conventions():
     from model.api import SYSTEM_PROMPT, DeepSeekProThinkingConv
     from model.pipeline.conventions import CONVENTIONS
@@ -512,6 +752,120 @@ def test_pipeline_context_carries_evidence():
     assert ctx.evidence == ""
     ctx.evidence = "E"
     assert ctx.to_trace()["evidence"] == "E"
+
+
+def test_dsl_fewshot_loads_fixed_selection_and_records_trace(monkeypatch, tmp_path):
+    """DSL FS 在 stages 前绑定固定三例，并把可复现实验元数据写进 trace。"""
+    import model.pipeline.models as pipeline_models
+    from archer_eval.data import Sample
+    from model.fewshot.store import SelectionStore, sample_key
+    from model.fewshot.types import FewShotExample, SelectedExample, SelectionRecord
+    from model.pipeline.models import ProTDslFewShot
+
+    sample = Sample(db_id="target_db", query="SELECT 1", question="Target?")
+    key = sample_key(sample.db_id, sample.question)
+    record = SelectionRecord(
+        target_key=key,
+        corpus="archer_en_train",
+        encoder="sentence-transformers/all-mpnet-base-v2",
+        k=3,
+        examples=tuple(
+            SelectedExample(
+                example=FewShotExample(
+                    source_id=f"en_train:{index}",
+                    db_id="reference_db",
+                    question=f"Reference {index}?",
+                    sql=f"SELECT {index}",
+                ),
+                distance=index + 0.25,
+            )
+            for index in range(3)
+        ),
+    )
+    store = SelectionStore(records={key: record}, corpus_sha256="b" * 64)
+    generator = ProTDslFewShot.__new__(ProTDslFewShot)
+    generator._fewshot_store = store
+    generator.trace_records = []
+    generator.concurrency = 1
+    seen_contexts = []
+
+    class FinishStage:
+        def run(self, ctx):
+            seen_contexts.append(ctx)
+            ctx.final_sql = "SELECT 1"
+
+    monkeypatch.setattr(pipeline_models, "schema_with_rows", lambda _path: "SCHEMA")
+    monkeypatch.setattr(generator, "_stages", lambda: [FinishStage()])
+
+    predictions = generator.predict_all(
+        [sample], [tmp_path / "target.sqlite"], progress=False
+    )
+    [ctx] = seen_contexts
+    [trace] = generator.trace_records
+
+    assert predictions == ["SELECT 1"]
+    assert ctx.fewshot_block.startswith("### Retrieved examples")
+    assert trace["fewshot"] == {
+        "selection": "archer_en_dev_rsl_k3",
+        "corpus": "archer_en_train",
+        "corpus_sha256": "b" * 64,
+        "encoder": "sentence-transformers/all-mpnet-base-v2",
+        "k": 3,
+        "source_ids": ["en_train:0", "en_train:1", "en_train:2"],
+        "distances": [0.25, 1.25, 2.25],
+    }
+    assert ctx.final_sql == "SELECT 1"
+
+
+def test_dsl_baseline_does_not_load_selection(monkeypatch):
+    """fewshot_selection=None 是严格基线：构造时完全不碰选择文件。"""
+    import model.pipeline.models as pipeline_models
+    from model.fewshot.store import SelectionStore
+    from model.pipeline.models import ProTDsl
+
+    class FakeEndpoint:
+        def __init__(self, **_kwargs):
+            pass
+
+    def forbid_selection_load(cls, path):
+        raise AssertionError(f"baseline touched few-shot selection: {path}")
+
+    monkeypatch.setattr(pipeline_models, "ChatEndpoint", FakeEndpoint)
+    monkeypatch.setattr(SelectionStore, "from_path", classmethod(forbid_selection_load))
+
+    generator = ProTDsl()
+    assert generator._fewshot_store is None
+
+
+def test_dsl_fewshot_missing_fixed_selection_fails_clearly(monkeypatch, tmp_path):
+    import model.pipeline.models as pipeline_models
+    from archer_eval.data import Sample
+    from model.fewshot.store import SelectionStore, sample_key
+    from model.pipeline.models import ProTDslFewShot
+
+    sample = Sample(db_id="target_db", query="SELECT 1", question="Missing?")
+    generator = ProTDslFewShot.__new__(ProTDslFewShot)
+    generator._fewshot_store = SelectionStore(records={})
+    monkeypatch.setattr(pipeline_models, "schema_with_rows", lambda _path: "SCHEMA")
+
+    with pytest.raises(KeyError) as exc_info:
+        generator._run(sample, tmp_path / "target.sqlite")
+
+    message = str(exc_info.value)
+    assert generator.fewshot_selection in message
+    assert sample.db_id in message
+    assert sample_key(sample.db_id, sample.question) in message
+
+
+def test_dsl_fewshot_variant_is_single_variable_and_registered():
+    from model import MODELS
+    from model.pipeline.models import ProTDsl, ProTDslFewShot
+
+    assert MODELS["pro-t-dsl-fs"] is ProTDslFewShot
+    assert issubclass(ProTDslFewShot, ProTDsl)
+    assert {
+        key for key in ProTDslFewShot.__dict__ if not key.startswith("_")
+    } == {"name", "fewshot_selection"}
 
 
 def test_archer_arms_keep_evidence_off():

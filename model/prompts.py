@@ -63,6 +63,7 @@ def build_ct3_prompt(
     with_knowledge: bool = False,
     cot: bool = False,
     with_reasoning_type: bool = False,
+    examples: str = "",
 ) -> str:
     question = sample.question
     if with_knowledge and sample.commonsense_knowledge:
@@ -79,7 +80,8 @@ def build_ct3_prompt(
             prompt += f"-- Hint: {hint}\n"
     if cot:
         prompt += "-- Let's think step by step.\n"
-    return prompt + "SELECT"
+    prompt += "SELECT"
+    return f"{examples}\n\n{prompt}" if examples else prompt
 
 
 def _main() -> None:

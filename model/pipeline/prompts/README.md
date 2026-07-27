@@ -20,6 +20,8 @@ sqlgen.user.md ────┤  {schema} {question} + {plan} ◀┘
 
 dslgen.system.md ──┐  M2 dslsql 用 dslgen 替换 sqlgen：
 dslgen.user.md ────┤  同样吃 {schema} {question} {plan}，产出 SQL+声明表 JSON；
+dslgen.user.noplan.fewshot.md
+                    ├  no-plan FS 档位在目标格式不变的前提下追加 SQL 语义参考；
 dslgen.repair.md ──┘  校验不过时把 {issues} 发回模型定向修复（≤2 轮）
 ```
 
@@ -33,7 +35,8 @@ dslgen.repair.md ──┘  校验不过时把 {issues} 发回模型定向修复
 | sqlgen.user.md | `{schema}` `{question}` `{plan}` | 同上 + planner 的输出 |
 | dslgen.system.md | （无） | 声明层生成的角色设定 + JSON 格式说明 |
 | dslgen.user.md | `{schema}` `{question}` `{plan}` `{profile}` | 同 sqlgen.user + 库画像 |
-| dslgen.user.noplan.md | `{schema}` `{question}` `{profile}` | 去 plan 主线（dsl 系）用，无 `{plan}` |
+| dslgen.user.noplan.md | `{schema}` `{question}` `{evidence}` | 去 plan 主线（dsl 系）用，无 `{plan}` |
+| dslgen.user.noplan.fewshot.md | `{examples}` `{schema}` `{question}` `{evidence}` | few-shot 去 plan 档位；示例只提供 SQL 语义，目标仍输出 SQL+声明表 JSON |
 | dslgen.repair.md | `{issues}` | 校验器产出的失败项列表（每行 `- ...`） |
 | dslgen.conventions.md | `{conventions}` | K1–K11 约定块（conv 开时追加进 dslgen system） |
 | dslgen.knowledge.md | `{knowledge}` | data/knowledge/<数据集>.json 蒸馏条目块（knowledge 开时追加进 dslgen system，约定附录之后） |

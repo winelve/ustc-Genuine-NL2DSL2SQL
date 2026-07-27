@@ -12,15 +12,18 @@
 """
 
 from model.api import (DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro,
-                       DeepSeekProThinking, DeepSeekProThinkingConv)
+                       DeepSeekProThinking, DeepSeekProThinkingConv,
+                       DeepSeekProThinkingFewShot)
 from model.base import SQLGenerator
-from model.bird import BirdDirect
+from model.bird import (BirdDirect, BirdDirectFewShot, BirdProTDsl,
+                        BirdProTDslFewShot)
 from model.example import FirstTableBaseline
 from model.pipeline.archive import (ProTPlanDslConv, ProTPlanDslConvCchk,
                                     ProTPlanDslProf, ProTPlanDslProfForce,
                                     ProTPlanDslProfForceChk)
 from model.pipeline.models import (ProTDsl, ProTDslChk, ProTDslConv,
                                    ProTDslConvChk, ProTDslConvChkR0,
+                                   ProTDslFewShot,
                                    ProTDslKnowledge, ProTDslKnowledgeRules,
                                    ProTDslKnowledgeRulesSqlens,
                                    ProTPlan, ProTPlanDsl)
@@ -35,11 +38,13 @@ MODELS: dict[str, type[SQLGenerator]] = {
     DeepSeekFlashThinking.name: DeepSeekFlashThinking,  # flash-t-direct
     DeepSeekPro.name: DeepSeekPro,                      # pro-direct
     DeepSeekProThinking.name: DeepSeekProThinking,      # pro-t-direct
+    DeepSeekProThinkingFewShot.name: DeepSeekProThinkingFewShot,  # pro-t-direct-fs
 
     # 主线加法阶梯：plan → plandsl → dsl(去plan) → +conv → +chk
     ProTPlan.name: ProTPlan,                # pro-t-plan
     ProTPlanDsl.name: ProTPlanDsl,          # pro-t-plandsl
     ProTDsl.name: ProTDsl,                  # pro-t-dsl
+    ProTDslFewShot.name: ProTDslFewShot,    # pro-t-dsl-fs
     ProTDslConv.name: ProTDslConv,          # pro-t-dsl-conv
     ProTDslConvChk.name: ProTDslConvChk,    # pro-t-dsl-conv-chk  ★满配·最终
 
@@ -48,8 +53,12 @@ MODELS: dict[str, type[SQLGenerator]] = {
     ProTDslConvChkR0.name: ProTDslConvChkR0,            # pro-t-dsl-conv-chk-r0（−重试）
     DeepSeekProThinkingConv.name: DeepSeekProThinkingConv,  # pro-t-direct-conv（−声明层）
 
-    # BIRD 跑分档位：官方 baseline 口径的单次调用直出（见 model/bird.py）
-    BirdDirect.name: BirdDirect,            # bird-pro-t-direct
+    # BIRD 跑分档位（见 model/bird.py）：官方 baseline 口径的直出对照，
+    # 以及把 Archer 主线声明层原样搬过去的泛化臂（唯一差异 = evidence 开）
+    BirdDirect.name: BirdDirect,            # bird-pro-t-direct   EX 57.37（官方脚本）
+    BirdDirectFewShot.name: BirdDirectFewShot,  # bird-pro-t-direct-fs
+    BirdProTDsl.name: BirdProTDsl,          # bird-pro-t-dsl
+    BirdProTDslFewShot.name: BirdProTDslFewShot,  # bird-pro-t-dsl-fs
 
     # 存档：带 plan 注知识的探索支（已被 no-plan 线取代，多数判负，保留以可复现）
     ProTPlanDslProf.name: ProTPlanDslProf,                  # pro-t-plandsl-prof

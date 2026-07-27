@@ -13,10 +13,13 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import config
 from archer_eval.data import Sample
 from archer_eval.progress import Progress
 from config import API_CONCURRENCY
 from model.base import SQLGenerator
+from model.fewshot.render import render_reference_examples
+from model.fewshot.store import SelectionStore, sample_key
 from model.llm import ChatEndpoint
 from model.pipeline.context import PipelineContext
 from model.pipeline.stages.declare import DeclareStage
@@ -35,10 +38,20 @@ class PlanSQL(SQLGenerator):
     # 唯一事实源：no-plan 档位（ProTDsl 系）覆写为 False。--list 与 _stages()
     # 都读这个类属性，不靠实例化判断（实例化会撞真实 ChatEndpoint 构造）。
     use_plan = True
+    # 仅显式 few-shot 档位设置。None 时严格不读选择文件、不改 prompt。
+    fewshot_selection: str | None = None
 
     def __init__(self) -> None:
         self.endpoint = ChatEndpoint(**self.endpoint_spec)
         self.trace_records: list[dict] = []   # predict_all 后与预测同序的调试记录
+        self._fewshot_store = None
+        if self.fewshot_selection is not None:
+            path = (
+                config.FEWSHOT_DIR
+                / "selections"
+                / f"{self.fewshot_selection}.json"
+            )
+            self._fewshot_store = SelectionStore.from_path(path)
 
     def _stages(self) -> list:
         # 每次调用现取参数，实例上改 n_plans 立即生效
@@ -53,6 +66,28 @@ class PlanSQL(SQLGenerator):
         ctx = PipelineContext(question=sample.question, db_path=Path(db_path))
         ctx.evidence = sample.commonsense_knowledge or ""
         ctx.schema = schema_with_rows(db_path)   # [0] 上下文准备：全量 schema+样本行
+        if self.fewshot_selection is not None:
+            record = self._fewshot_store.for_sample(sample.db_id, sample.question)
+            if record is None:
+                target_key = sample_key(sample.db_id, sample.question)
+                raise KeyError(
+                    f"fixed few-shot selection {self.fewshot_selection!r} has no "
+                    f"record for db_id={sample.db_id!r}, sample_key={target_key}"
+                )
+            ctx.fewshot_block = render_reference_examples(record)
+            ctx.fewshot_trace = {
+                "selection": self.fewshot_selection,
+                "corpus": record.corpus,
+                "corpus_sha256": self._fewshot_store.corpus_sha256,
+                "encoder": record.encoder,
+                "k": record.k,
+                "source_ids": [
+                    selected.example.source_id for selected in record.examples
+                ],
+                "distances": [
+                    selected.distance for selected in record.examples
+                ],
+            }
         for stage in self._stages():
             stage.run(ctx)
         return ctx
@@ -199,6 +234,13 @@ class ProTDsl(ProTPlanDsl):
                 sqlens_checks=self.sqlens_checks,
                 use_plan=self.use_plan)
         return [declare, VoteStage()]
+
+
+class ProTDslFewShot(ProTDsl):
+    """No-plan DSL + 固定 RSL 风格的三条 SQL 语义参考。"""
+
+    name = "pro-t-dsl-fs"
+    fewshot_selection = "archer_en_dev_rsl_k3"
 
 
 class ProTDslConv(ProTDsl):

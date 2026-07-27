@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 
 DATA_DIR = ROOT / "data"
+FEWSHOT_DIR = DATA_DIR / "fewshot"
 DB_DIR = ROOT / "database"
 PREDICTIONS_DIR = ROOT / "predictions"
 RESULTS_DIR = ROOT / "results"
