@@ -1,0 +1,6 @@
+# Optional low-cost DPC pilot dependencies. The official repository is not a
+# pip-installable package (its flat layout trips setuptools discovery), so
+# `python -m model.dpc_pilot bootstrap` checks out the pinned source separately.
+chardet==7.4.0.post2
+scipy==1.17.1
+tabulate==0.10.0

@@ -3,7 +3,7 @@
 > 新会话入口文档。读完本文件 → `docs/DEVELOPMENT.md`（铁律）→ `README.md`（命令）即可开工。
 > **每次会话结束时更新本文件**：完成了什么 / 决策了什么（附原因）/ 下一步。
 >
-> 最后更新：2026-07-28
+> 最后更新：2026-07-29
 
 ## 目标
 
@@ -70,6 +70,137 @@
 +3 题（+0.20 EX），不足本轮 +1–2 分目标，也不单独并入主线。若未来重开，
 必须使用有监督/校准过的 selector 或独立 verifier；不能继续修改零样本
 pairwise prompt 反复烧 token。
+
+## 2026-07-29 · BIRD DPC-1x1 低成本 Pilot
+
+- 调研官方 DPC（ACL 2026）论文与
+  `HKUSTDial/DPC@f75c759e58cc5b2b2a0d9b5227e38536e9a248ad`：官方
+  Tester 构造 Minimal Distinguishing Database，Solver 独立生成 Pandas
+  程序，再用 BS-F1 比较两个 SQL 结果；不需要 train 或本地大模型。
+- 官方仓库可以复用核心代码，但当前不是可直接 `pip install git+...` 的包：
+  flat layout 同时包含 `dpc/results/baseline/evaluation`，setuptools package
+  discovery 会失败。新增 `python -m model.dpc_pilot bootstrap`，将固定 commit
+  检出到 gitignored 的 `data/dpc/official/`；`requirements-dpc.txt` 只安装
+  `chardet/scipy/tabulate` 三个缺失依赖。
+- 新增 `model.dpc_pilot` 薄适配层：
+  - 读取上一轮 selector trace 的 391 道 `pairwise` 题，按 difficulty
+    分层、稳定 hash 固定抽 80 道；实际配额 simple 33 / moderate 25 /
+    challenging 22；
+  - 输入候选固定为 `[DSL+FS, Direct+FS]`，让 1-vs-1 执行聚类平票时更强的
+    DSL 成为 champion；DPC 失败或证据不足均安全保留 DSL；
+  - 官方 LLM Slicer 改为 sqlglot AST 的物理表切片并保留对应完整列，省去
+    每题一次 API；官方 Tester、Solver、pipeline、execution clustering 和
+    BS-F1 保持复用；
+  - 默认 `DPC-1x1`：1 test data、1 solver、最多一次纠错、DeepSeek V4 Pro
+    关闭 thinking，每题通常两次 API；逐题原子 checkpoint、耗时、调用次数和
+    全部 token usage 均写入 trace；
+  - 官方生成 Python 原本在子进程中开放完整 builtins。适配层增加 AST 限制，
+    禁止 import、dunder、文件/网络/进程及 pandas I/O，再用最小 builtins 的
+    spawn 子进程执行并保留超时。
+- 输出把 pilot 决策合回完整 1534 条 DSL+FS baseline，现有
+  `python -m bird eval` 可直接评分。预注册停止规则：相对 960/1534 净增至少
+  4 题才扩大；净增 1–3 只定向复核；持平/下降立即收档。
+- 已验证官方 checkout、依赖安装、80 题 manifest、无 key 安全回退 smoke、
+  `git diff --check`、`compileall`；全量回归 **489 passed**。没有替用户调用
+  付费 API。
+
+**下一步：**用户按 README 先跑 `python -m model.dpc_pilot run --limit 5`；
+检查 fallback、trace 与 token 后去掉 `--limit` 断点续跑 80 题，最后评测完整
+输出。不要直接扩大到剩余 391 题。
+
+### DPC 首次 5 题 smoke 暴露的问题与修复
+
+- 首次付费 smoke 的 5 题中，官方 Solver 生成了 `import pandas` 和纯辅助函数，
+  但适配层 AST 同时禁止 `Import` / `FunctionDef`，导致 4/5 题
+  `Verification Error (All Data Failed)`，只有 1 题完成有效验证。该结果不能
+  用于判断 DPC 效果。
+- 首次 trace 的 usage 全为 null 并不代表没有 API 消耗。官方 pipeline 在内部
+  ThreadPoolExecutor 中调用 Tester/Solver，项目 ContextVar 计量器没有传播到
+  新线程；同时 runner 丢弃了 LLM 自己已累计的 usage。`fallbacks=0` 也只统计
+  Python exception，没有识别官方 pipeline 返回的内部 fallback。
+- 修复后：
+  - Solver system prompt 明确 `pd`/DataFrame 已预载、禁止外部访问；执行器只
+    允许冗余的 `import pandas as pd`，允许经过完整 AST 检查的无 decorator
+    纯辅助函数，其他 import、文件/网络/进程、dunder 和 pandas I/O 仍禁止；
+  - DeepSeek wrapper 独立、线程安全地记录每次调用的 elapsed/usage/error，
+    runner 从 wrapper 合并逐题 API calls、cache/reasoning token，不再依赖
+    ContextVar 跨线程传播；
+  - `Verification Error` / `Slicer Error` 现在正确标为 `fallback`，
+    `No Challenger` 标为 `no_duel`；
+  - checkpoint 升级为 `bird-dpc-run-v2`，首次 5 条旧记录会自动重跑，其他
+    固定题不受影响。
+- 新增 `python -m model.dpc_pilot self-test`：移除 API key 后，用脚本化
+  Tester/Solver 回复实际跑官方 pipeline、SQLite MDD、受限 Python executor
+  和 BS-F1。实测输出为 `winner=direct`、
+  `Challenger Won Duel (Votes: 1/1)`、`scripted_calls=2`，全程无网络/API。
+
+**下一步：**重新执行相同的 `python -m model.dpc_pilot run --limit 5`；
+runner 会自动重跑旧 5 条。确认本次 `fallbacks` 与非 null usage 后才继续 80 题。
+
+### DPC 修复后 5 题付费 smoke
+
+- 无 key `self-test` 按预期通过；修复后的 5 题均完成有效验证，
+  `fallbacks=0`，旧 checkpoint 已正确重跑。
+- 共 14 次 API：102,592 prompt / 24,831 completion / 127,423 total tokens，
+  cache hit 68,992、miss 33,600。平均每题 25,485 token、2.8 次 API；按当前
+  样本线性外推，80 题约 204 万 total token，明显高于最初依据论文均值的估计。
+- 消耗归因：Tester 9 次调用占 96,179 token（75.5%），Solver 5 次占
+  31,244（24.5%）；4/5 题首次 MDD 无效而触发 Tester correction，四次重试
+  单独占 53,333 token（41.9%）。DPC 理论下限是 Tester+Solver 两次调用，
+  本次实际均值为 2.8 次。
+- 当前零 API table-level slicer 是主要放大器：California Schools 前 5 题每题
+  保留 40–89 列、schema text 6.7k–23.3k chars，而两条 SQL 实际显式引用只有
+  10–26 个不同列。官方 Tester 又要求每个合成 row 补齐 slice 中的所有列，
+  因而同时放大 Tester 输入、MDD JSON 输出、retry 历史和 Solver 的 test-data
+  输入。省掉一次官方 LLM Slicer 调用的简化在宽表上反而可能提高总 token。
+- DPC 在 #2/#5/#18/#37 切到 Direct，#11 保留 DSL。复用已经完成的两臂官方
+  评测逐题标签核对：
+  - #37：DSL 错、Direct 对，净增 1；
+  - #2/#5/#18：两臂都错，切换不改变 EX；
+  - #11：两臂都错，保留不改变 EX。
+  因此这 5 题相对 DSL+FS 是 **+1 / −0**，完整预测的反事实总分为
+  961/1534（62.65%），但样本太小且前四题都是同一库的 challenging，不能作为
+  80 题效果结论。
+- #18 的 challenger BS-F1 仅 0.0588、champion 为 0，刚越过 epsilon=0.05；
+  说明当前 1x1 选择仍会在两路都与 proxy 很差时切换。为避免看过 smoke 后改
+  阈值造成实验口径漂移，暂不调整 epsilon。
+
+**下一步：**考虑成本，不直接从 5 跳到 80；先运行
+`python -m model.dpc_pilot run --limit 20`（只新增 15 题，预计约 38 万
+token）。在运行前固定中间停止规则：累计 20 题净增至少 2 且无明显 DSL→错
+破坏才继续 80；净增不超过 0 或 verifier fallback 明显则停止。
+
+### DPC 累计 20 题 Pilot：触发停止规则
+
+- 20/20 均完成有效验证，`fallbacks=0`；累计 399,895 total token
+  （317,071 prompt / 82,824 completion，cache hit 168,960、miss 148,111）。
+  DPC 切到 Direct 13 题，保留 DSL 7 题。
+- #96/#97 的首次 Solver Pandas 程序在 merge 时错误使用缺失的
+  `district_id`，触发 `KeyError`。这是 LLM 生成程序的运行错误，不是 SQLite
+  或安全执行器故障；官方 self-correction 捕获 traceback 后各追加一次 Solver
+  调用并成功完成。两次纠错分别增加 6,960 / 6,750 token，共 13,710。
+- 复用固定 Direct/DSL 两臂既有官方逐题评测核对最终选择：
+  - DPC gain：#37、#42，共 2；
+  - DPC loss：#65、#73、#107，共 3；
+  - 其余 15 题不改变 EX。
+  因此相对 DSL+FS 为 **2 gain / 3 loss，净 −1**，反事实全量分数
+  959/1534（62.52%），低于 DSL+FS 的 960/1534。
+
+**决策：**累计 20 题净增不超过 0，且已经出现 3 个 DSL→错破坏，明确触发
+预注册中间停止规则。停止 DPC pilot，不继续跑 80。运行时 `KeyError` 已由
+预期的自纠错机制恢复，不需要为该错误重跑；即使进一步压缩 token，也不会改变
+当前选择质量判负的事实。
+
+## 2026-07-29 · BIRD Direct+FS / DSL+FS 分歧题导出
+
+- 新增 `scripts/export_bird_disagreements.py`，将 selector trace 中全部
+  `pairwise` 路由导出为 `analysis/bird_direct_dsl_fs_disagreements.json`。
+- artifact 共 391 条；每条包含 1-based `question_no`、官方 `question_id`、
+  dataset index、db/difficulty、question/evidence、`direct-fs`、
+  `direct-dsl-fs`、gold `answer` 和两臂 correctness/label。
+- 与既有逐题评测对齐验证：Direct+FS 独对 83、DSL+FS 独对 120、两者都错
+  188，总计 391；没有同为正确的分歧题。JSON 结构、题号对齐和必需字段均已
+  机械校验通过。
 
 ## 2026-07-28 · CHESS-IR Value Evidence 实现
 

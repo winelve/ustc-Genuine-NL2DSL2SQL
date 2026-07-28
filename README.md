@@ -441,6 +441,63 @@ python -m model --model pro-t-direct-ve2-r --data en_dev --eval
 两者都以 `pro-t-direct` 为 baseline。先看 `ve2` 是否恢复/超过 baseline，
 再用 `ve2 - ve2-r` 判断收益是否来自值的相关性；Direct 没有正信号时不跑 DSL/BIRD。
 
+### DPC-1x1：低成本候选验证 Pilot
+
+DPC pilot 不重新生成 SQL。它复用已有 BIRD Direct+FS / DSL+FS，只从上一轮
+391 道真实执行分歧题中按 difficulty 分层、固定 hash 抽 80 道。DSL+FS 作为
+champion；DPC 只有在 Minimal Distinguishing Database 上得到更强的独立
+Pandas 证据时才切到 Direct+FS，失败或平票保持 DSL。
+
+官方 DPC 仓库不能直接 `pip install git+...`（flat layout 会触发 setuptools
+package discovery 错误），因此首次使用时检出已审查的官方 commit，再安装三个
+额外依赖：
+
+```powershell
+python -m model.dpc_pilot bootstrap
+python -m pip install -r requirements-dpc.txt
+```
+
+先运行不需要 API key、不会产生费用的完整链路自检。它使用脚本化回复实际执行
+官方 Tester → Solver → BS-F1 → selection pipeline：
+
+```powershell
+python -m model.dpc_pilot self-test
+```
+
+预期输出包含 `winner=direct`、`Challenger Won Duel` 和
+`scripted_calls=2`。
+
+准备固定 pilot；此步不调用 API：
+
+```powershell
+python -m model.dpc_pilot prepare
+```
+
+先跑 5 题 API smoke。正常后原命令去掉 `--limit 5`，会从 checkpoint 续跑到
+固定 80 题：
+
+```powershell
+# 5 题 smoke
+python -m model.dpc_pilot run --limit 5
+
+# 80 题 pilot（自动复用前 5 题）
+python -m model.dpc_pilot run
+```
+
+输出是完整 1534 条预测：非 pilot 题保持 DSL+FS，pilot 题采用 DPC 选择，因此
+直接使用现有 BIRD evaluator：
+
+```powershell
+python -m bird eval --data bird_dev `
+  --pred predictions\bird\bird-pro-t-dpc80_bird_dev.json
+```
+
+这是低成本 `DPC-1x1`：确定性 SQL AST schema slicing（零 API）+
+1 个 test data + 1 个 solver，DeepSeek 默认关闭 thinking；每题通常两次 API。
+逐题耗时、调用和 token 写入 trace，生成 Python 在 AST 限制后的子进程执行。
+旧版 checkpoint 缺少可靠 token/fallback 信息时会自动重跑，不需要手动删文件。
+相对 DSL+FS 的 960/1534，80 题 pilot 净增至少 4 题才扩大；持平或下降立即收档。
+
 ---
 
 ## 5. 输出
