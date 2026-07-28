@@ -7,6 +7,33 @@ model/pipeline（多阶段生成）共用。密钥只走环境变量（铁律 #2
 from __future__ import annotations
 
 import os
+from time import perf_counter
+
+from model.metrics import record_api_call
+
+
+def _response_usage(response) -> dict[str, int | None] | None:
+    """Flatten an OpenAI-compatible usage object without depending on its type."""
+
+    def value(obj, name: str):
+        if obj is None:
+            return None
+        if isinstance(obj, dict):
+            return obj.get(name)
+        return getattr(obj, name, None)
+
+    usage = value(response, "usage")
+    if usage is None:
+        return None
+    details = value(usage, "completion_tokens_details")
+    return {
+        "prompt_tokens": value(usage, "prompt_tokens"),
+        "completion_tokens": value(usage, "completion_tokens"),
+        "total_tokens": value(usage, "total_tokens"),
+        "prompt_cache_hit_tokens": value(usage, "prompt_cache_hit_tokens"),
+        "prompt_cache_miss_tokens": value(usage, "prompt_cache_miss_tokens"),
+        "reasoning_tokens": value(details, "reasoning_tokens"),
+    }
 
 
 class ChatEndpoint:
@@ -30,8 +57,20 @@ class ChatEndpoint:
     def chat_messages(self, messages: list[dict], **overrides) -> str:
         """发一段完整对话（修复循环需要带历史），返回回复正文。"""
         params = {**self.request_params, **overrides}
-        response = self._client.chat.completions.create(
-            model=self.model, messages=messages, **params,
+        started_at = perf_counter()
+        try:
+            response = self._client.chat.completions.create(
+                model=self.model, messages=messages, **params,
+            )
+        except Exception as exc:
+            record_api_call(
+                perf_counter() - started_at,
+                error=type(exc).__name__,
+            )
+            raise
+        record_api_call(
+            perf_counter() - started_at,
+            usage=_response_usage(response),
         )
         # 思维链在 message.reasoning_content，与 content 同级；这里只要最终答案
         return response.choices[0].message.content or ""

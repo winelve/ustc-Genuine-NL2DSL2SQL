@@ -1,0 +1,41 @@
+{
+ "dataset": "en_train",
+ "distilled_by": "deepseek-v4-pro-thinking",
+ "distilled_at": "2026-07-27",
+ "source_pred": "predictions/plandsl/pro-t-plandsl_en_train",
+ "gate": {
+  "min_trigger": 5,
+  "min_precision": 0.7
+ },
+ "rules": [
+  {
+   "id": "L7",
+   "when": {
+    "question": "(?i)age|older|younger",
+    "sql_has": [
+     "Div"
+    ],
+    "sql_has_literal": [
+     "365.25"
+    ]
+   },
+   "message": "Using division by 365.25 for age calculation can be imprecise due to leap years. Consider using a date difference function like 'strftime(\"%Y\", ...) - ...' with day/month comparison for exact age.",
+   "evidence": [
+    108,
+    109,
+    114,
+    115,
+    139,
+    150,
+    151
+   ],
+   "needs_decl": false,
+   "measured": {
+    "trigger": 11,
+    "useful": 10,
+    "harmful": 1,
+    "precision": 0.9090909090909091
+   }
+  }
+ ]
+}

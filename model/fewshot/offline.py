@@ -10,11 +10,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import statistics
 from typing import Any, Mapping, Sequence
 
 from .store import FORMAT_VERSION, sample_key
+from .structure import multiset_jaccard, rank_fusion, sql_structure_features
 from .types import FewShotExample
 
 
@@ -351,6 +353,252 @@ def build_selection(
     return payload
 
 
+def build_sfs_selection(
+    *,
+    semantic_selection_path: Path,
+    targets_path: Path,
+    draft_predictions_path: Path,
+    output_path: Path,
+    candidate_k: int = 30,
+    k: int = 3,
+) -> dict[str, Any]:
+    """Rerank a semantic candidate pool with frozen draft-SQL structure."""
+    if (
+        isinstance(candidate_k, bool)
+        or not isinstance(candidate_k, int)
+        or candidate_k <= 0
+    ):
+        raise ValueError("candidate_k must be a positive integer")
+    if isinstance(k, bool) or not isinstance(k, int) or k <= 0:
+        raise ValueError("k must be a positive integer")
+    if k > candidate_k:
+        raise ValueError("k must not exceed candidate_k")
+
+    semantic_selection_path = Path(semantic_selection_path)
+    targets_path = Path(targets_path)
+    draft_predictions_path = Path(draft_predictions_path)
+    output_path = Path(output_path)
+
+    semantic_payload = _read_json(semantic_selection_path)
+    if not isinstance(semantic_payload, dict):
+        raise ValueError("semantic selection JSON must contain an object")
+    format_version = semantic_payload.get("format_version")
+    if (
+        isinstance(format_version, bool)
+        or not isinstance(format_version, int)
+        or format_version != FORMAT_VERSION
+    ):
+        raise ValueError("unsupported semantic selection format_version")
+    corpus = _required_string(
+        semantic_payload.get("corpus"), "corpus", "semantic selection"
+    )
+    corpus_sha256 = _required_string(
+        semantic_payload.get("corpus_sha256"),
+        "corpus_sha256",
+        "semantic selection",
+    )
+    encoder = _required_string(
+        semantic_payload.get("encoder"), "encoder", "semantic selection"
+    )
+    raw_records = semantic_payload.get("records")
+    if not isinstance(raw_records, list):
+        raise ValueError("semantic selection records must be a list")
+    records_by_key: dict[str, dict[str, Any]] = {}
+    for index, raw_record in enumerate(raw_records):
+        if not isinstance(raw_record, dict):
+            raise ValueError(f"semantic selection record {index} must be an object")
+        target_key = _required_string(
+            raw_record.get("target_key"),
+            "target_key",
+            f"semantic selection record {index}",
+        )
+        if target_key in records_by_key:
+            raise ValueError(f"duplicate semantic target_key: {target_key}")
+        records_by_key[target_key] = raw_record
+
+    target_rows = _read_target_rows(targets_path, "archer-json")
+    predictions = _read_prediction_sqls(draft_predictions_path)
+    if len(predictions) != len(target_rows):
+        raise ValueError(
+            f"prediction count ({len(predictions)}) does not match "
+            f"target count ({len(target_rows)})"
+        )
+
+    drafts_by_key: dict[str, str] = {}
+    target_order: list[str] = []
+    for index, (target, draft_sql) in enumerate(
+        zip(target_rows, predictions, strict=True)
+    ):
+        context = f"target row {index}"
+        db_id = _required_string(target.get("db_id"), "db_id", context)
+        question = _required_string(target.get("question"), "question", context)
+        target_key = sample_key(db_id, question)
+        normalized_draft = _normalize_sql_text(draft_sql)
+        previous = drafts_by_key.get(target_key)
+        if previous is not None:
+            if previous != normalized_draft:
+                raise ValueError(
+                    f"conflicting draft SQL for duplicate target_key: {target_key}"
+                )
+            continue
+        drafts_by_key[target_key] = normalized_draft
+        target_order.append(target_key)
+
+    fallback_count = 0
+    semantic_top_k_similarities: list[float] = []
+    sfs_top_k_similarities: list[float] = []
+    output_records: list[dict[str, Any]] = []
+    feature_cache: dict[tuple[str, str], Mapping[str, int]] = {}
+    for target_key in target_order:
+        raw_record = records_by_key.get(target_key)
+        if raw_record is None:
+            raise ValueError(
+                f"semantic selection is missing target_key: {target_key}"
+            )
+        raw_examples = raw_record.get("examples")
+        if not isinstance(raw_examples, list):
+            raise ValueError(
+                f"semantic selection target {target_key} examples must be a list"
+            )
+        if len(raw_examples) < candidate_k:
+            raise ValueError(
+                f"semantic selection target {target_key} has {len(raw_examples)} "
+                f"examples, fewer than candidate_k={candidate_k}"
+            )
+
+        candidates: list[dict[str, Any]] = []
+        seen_source_ids: set[str] = set()
+        for index, raw_example in enumerate(raw_examples[:candidate_k]):
+            context = f"semantic target {target_key} example {index}"
+            if not isinstance(raw_example, dict):
+                raise ValueError(f"{context} must be an object")
+            source_id = _required_string(
+                raw_example.get("source_id"), "source_id", context
+            )
+            if source_id in seen_source_ids:
+                raise ValueError(f"{context} has duplicate source_id: {source_id}")
+            seen_source_ids.add(source_id)
+            candidate = {
+                "source_id": source_id,
+                "db_id": _required_string(
+                    raw_example.get("db_id"), "db_id", context
+                ),
+                "question": _required_string(
+                    raw_example.get("question"), "question", context
+                ),
+                "sql": _required_string(raw_example.get("sql"), "sql", context),
+                "distance": _required_finite_number(
+                    raw_example.get("distance"), "distance", context
+                ),
+            }
+            candidates.append(candidate)
+
+        target_features = sql_structure_features(drafts_by_key[target_key])
+        if not target_features:
+            fallback_count += 1
+        structure_scores: dict[str, float] = {}
+        for candidate in candidates:
+            cache_key = (candidate["source_id"], candidate["sql"])
+            candidate_features = feature_cache.get(cache_key)
+            if candidate_features is None:
+                candidate_features = sql_structure_features(candidate["sql"])
+                feature_cache[cache_key] = candidate_features
+            structure_scores[candidate["source_id"]] = multiset_jaccard(
+                target_features, candidate_features
+            )
+
+        semantic_order = tuple(candidate["source_id"] for candidate in candidates)
+        fused = rank_fusion(semantic_order, structure_scores)
+        semantic_top_k_similarities.extend(
+            structure_scores[source_id] for source_id in semantic_order[:k]
+        )
+        sfs_top_k_similarities.extend(
+            candidate.structure_similarity for candidate in fused[:k]
+        )
+        candidates_by_id = {
+            candidate["source_id"]: candidate for candidate in candidates
+        }
+        output_examples: list[dict[str, Any]] = []
+        for fused_candidate in fused[:k]:
+            output_example = dict(candidates_by_id[fused_candidate.source_id])
+            output_example.update(
+                {
+                    "semantic_rank": fused_candidate.semantic_rank,
+                    "structure_rank": fused_candidate.structure_rank,
+                    "structure_similarity": fused_candidate.structure_similarity,
+                    "fusion_score": fused_candidate.fusion_score,
+                }
+            )
+            output_examples.append(output_example)
+
+        output_record: dict[str, Any] = {
+            "target_key": target_key,
+            "examples": output_examples,
+        }
+        if "target_source_id" in raw_record:
+            output_record["target_source_id"] = raw_record["target_source_id"]
+        output_records.append(output_record)
+
+    payload = {
+        "format_version": FORMAT_VERSION,
+        "corpus": corpus,
+        "corpus_sha256": corpus_sha256,
+        "encoder": encoder,
+        "k": k,
+        "retrieval": {
+            "strategy": "sfs-v1",
+            "structure_features": "sqlglot-multiset-v1",
+            "semantic_selection_sha256": _sha256(semantic_selection_path),
+            "draft_predictions_sha256": _sha256(draft_predictions_path),
+            "targets_sha256": _sha256(targets_path),
+            "candidate_k": candidate_k,
+            "semantic_weight": 0.5,
+            "structure_weight": 0.5,
+            "fallback_count": fallback_count,
+            "mean_structure_similarity_semantic_top_k": statistics.fmean(
+                semantic_top_k_similarities
+            ),
+            "mean_structure_similarity_sfs_top_k": statistics.fmean(
+                sfs_top_k_similarities
+            ),
+        },
+        "records": output_records,
+    }
+    _write_json(output_path, payload)
+    return payload
+
+
+def _read_prediction_sqls(path: Path) -> list[str]:
+    payload = _read_json(path)
+    if not isinstance(payload, list):
+        raise ValueError("draft prediction JSON must contain a list")
+    predictions: list[str] = []
+    for index, item in enumerate(payload):
+        if isinstance(item, str):
+            predictions.append(item)
+        elif isinstance(item, dict) and isinstance(item.get("predicted_sql"), str):
+            predictions.append(item["predicted_sql"])
+        else:
+            raise ValueError(
+                f"draft prediction entry {index} must be a string or contain "
+                "string predicted_sql"
+            )
+    return predictions
+
+
+def _normalize_sql_text(sql: str) -> str:
+    return sql.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+def _required_finite_number(value: Any, field: str, context: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{context} requires numeric {field}")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{context} requires finite {field}")
+    return number
+
+
 def _parse_corpus(payload: Any) -> tuple[str, list[FewShotExample]]:
     if not isinstance(payload, dict):
         raise ValueError("corpus JSON must contain an object")
@@ -426,6 +674,7 @@ def audit_selection(selection_path: Path) -> dict[str, Any]:
     duplicate_count = 0
     self_selection_count = 0
     distances: list[float] = []
+    structure_similarities: list[float] = []
     for record in records:
         examples = _record_examples(record)
         source_ids = [
@@ -442,6 +691,12 @@ def audit_selection(selection_path: Path) -> dict[str, Any]:
                 distance = example.get("distance")
                 if isinstance(distance, (int, float)) and not isinstance(distance, bool):
                     distances.append(float(distance))
+                structure_similarity = example.get("structure_similarity")
+                if (
+                    isinstance(structure_similarity, (int, float))
+                    and not isinstance(structure_similarity, bool)
+                ):
+                    structure_similarities.append(float(structure_similarity))
 
     if distances:
         distance_summary: dict[str, float | None] = {
@@ -451,6 +706,14 @@ def audit_selection(selection_path: Path) -> dict[str, Any]:
         }
     else:
         distance_summary = {"minimum": None, "median": None, "maximum": None}
+    if structure_similarities:
+        structure_summary: dict[str, float | None] = {
+            "minimum": min(structure_similarities),
+            "median": statistics.median(structure_similarities),
+            "maximum": max(structure_similarities),
+        }
+    else:
+        structure_summary = {"minimum": None, "median": None, "maximum": None}
     samples = sorted(
         records,
         key=lambda record: str(record.get("target_key", "")),
@@ -464,6 +727,10 @@ def audit_selection(selection_path: Path) -> dict[str, Any]:
         "distance": distance_summary,
         "sample_selections": samples,
     }
+    retrieval = payload.get("retrieval")
+    if isinstance(retrieval, dict):
+        report["retrieval"] = retrieval
+        report["structure_similarity"] = structure_summary
 
     print(f"record count: {report['record_count']}")
     print(f"records with fewer than 3 examples: {fewer}")
@@ -475,6 +742,19 @@ def audit_selection(selection_path: Path) -> dict[str, Any]:
         f"{distance_summary['minimum']} / {distance_summary['median']} / "
         f"{distance_summary['maximum']}"
     )
+    if isinstance(retrieval, dict):
+        print(f"retrieval strategy: {retrieval.get('strategy')}")
+        if "mean_structure_similarity_semantic_top_k" in retrieval:
+            print(
+                "mean structure similarity semantic/SFS top-k: "
+                f"{retrieval['mean_structure_similarity_semantic_top_k']} / "
+                f"{retrieval['mean_structure_similarity_sfs_top_k']}"
+            )
+        print(
+            "structure similarity min/median/max: "
+            f"{structure_summary['minimum']} / {structure_summary['median']} / "
+            f"{structure_summary['maximum']}"
+        )
     print("deterministic sample selections:")
     print(json.dumps(samples, ensure_ascii=False, indent=2, sort_keys=True))
     return report
@@ -565,6 +845,17 @@ def _parser() -> argparse.ArgumentParser:
     select.add_argument("--k", type=int, default=3)
     select.add_argument("--output", type=Path, required=True)
 
+    rerank_sfs = commands.add_parser(
+        "rerank-sfs",
+        help="rerank a semantic candidate pool by draft SQL structure",
+    )
+    rerank_sfs.add_argument("--selection", type=Path, required=True)
+    rerank_sfs.add_argument("--targets", type=Path, required=True)
+    rerank_sfs.add_argument("--draft-predictions", type=Path, required=True)
+    rerank_sfs.add_argument("--candidate-k", type=int, default=30)
+    rerank_sfs.add_argument("--k", type=int, default=3)
+    rerank_sfs.add_argument("--output", type=Path, required=True)
+
     audit = commands.add_parser("audit", help="audit a selection artifact")
     audit.add_argument("--selection", type=Path, required=True)
     return parser
@@ -593,6 +884,39 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"wrote {args.output} "
             f"({len(payload['records'])} unique records, k={args.k})"
         )
+    elif args.command == "rerank-sfs":
+        payload = build_sfs_selection(
+            semantic_selection_path=args.selection,
+            targets_path=args.targets,
+            draft_predictions_path=args.draft_predictions,
+            output_path=args.output,
+            candidate_k=args.candidate_k,
+            k=args.k,
+        )
+        retrieval = payload["retrieval"]
+        print(
+            f"wrote {args.output} "
+            f"({len(payload['records'])} unique records, k={args.k}, "
+            f"fallbacks={retrieval['fallback_count']})"
+        )
+        print(
+            "semantic selection sha256: "
+            f"{retrieval['semantic_selection_sha256']}"
+        )
+        print(
+            "draft predictions sha256: "
+            f"{retrieval['draft_predictions_sha256']}"
+        )
+        print(f"targets sha256: {retrieval['targets_sha256']}")
+        print(
+            "mean structure similarity semantic/SFS top-k: "
+            f"{retrieval['mean_structure_similarity_semantic_top_k']} / "
+            f"{retrieval['mean_structure_similarity_sfs_top_k']}"
+        )
     else:
         audit_selection(args.selection)
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

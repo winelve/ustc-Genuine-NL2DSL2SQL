@@ -26,12 +26,15 @@ DATASETS = {
     # BIRD dev（官方 2025-11-06 清洗版，1534 题）：
     # python -m bird fetch && python -m bird convert
     "bird_dev": DATA_DIR / "bird" / "dev.json",
+    # BIRD 旧版 dev（2024-06-27）；与新版共用数据库，但题面和 gold 不同。
+    "bird_dev_20240627": DATA_DIR / "bird" / "dev_20240627.json",
 }
 
 # 自带数据库的数据集，在这里登记它的 SQLite 根目录（布局同样是
 # <root>/<db_id>/<db_id>.sqlite）；没登记的数据集一律用 DB_DIR。
 DATASET_DB_DIRS = {
     "bird_dev": DATA_DIR / "bird" / "dev_databases",
+    "bird_dev_20240627": DATA_DIR / "bird" / "dev_databases",
 }
 
 

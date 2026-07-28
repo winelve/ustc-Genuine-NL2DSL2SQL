@@ -1,6 +1,7 @@
 """Few-shot retrieval 基础数据契约测试。"""
 
 from dataclasses import FrozenInstanceError
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -80,6 +81,374 @@ def test_fewshot_contract_and_path():
         example.sql = "SELECT 2"
 
 
+def test_sql_structure_features_ignore_identifiers_and_literals():
+    from model.fewshot.structure import sql_structure_features
+
+    left = sql_structure_features(
+        "SELECT customer_id FROM orders WHERE amount > 10"
+    )
+    right = sql_structure_features(
+        "SELECT student_id FROM grades WHERE score > 90"
+    )
+
+    assert left
+    assert left == right
+
+
+def test_sql_structure_features_distinguish_grouped_aggregation():
+    from model.fewshot.structure import sql_structure_features
+
+    plain = sql_structure_features("SELECT city FROM people")
+    grouped = sql_structure_features(
+        "SELECT city, COUNT(*) FROM people GROUP BY city"
+    )
+
+    assert grouped["clause:group"] == 1
+    assert grouped["aggregate:count"] == 1
+    assert grouped["projection_count"] == 2
+    assert plain != grouped
+
+
+def test_sql_structure_features_cover_join_nesting_set_order_and_limit():
+    from model.fewshot.structure import sql_structure_features
+
+    features = sql_structure_features(
+        """
+        SELECT a.id
+        FROM a JOIN b ON a.id = b.a_id
+        WHERE a.id IN (SELECT c.a_id FROM c)
+        UNION
+        SELECT d.id FROM d
+        ORDER BY id
+        LIMIT 5
+        """
+    )
+
+    assert features["join:inner"] == 1
+    assert features["subquery"] >= 1
+    assert features["setop:union"] == 1
+    assert features["clause:order"] == 1
+    assert features["clause:limit"] == 1
+
+
+def test_sql_structure_features_invalid_sql_is_empty():
+    from model.fewshot.structure import sql_structure_features
+
+    assert not sql_structure_features("")
+    assert not sql_structure_features("SELECT FROM WHERE")
+
+
+def test_sql_structure_features_accept_sqlite_backtick_identifiers():
+    from model.fewshot.structure import sql_structure_features
+
+    features = sql_structure_features(
+        "SELECT `Name` FROM `country` WHERE `LifeExpectancy` >= 1.5 * "
+        "(SELECT `LifeExpectancy` FROM `country` WHERE `Name` = 'Zambia')"
+    )
+
+    assert features["query:select"] == 2
+    assert features["subquery"] == 1
+
+
+def test_multiset_jaccard_counts_feature_multiplicity():
+    from collections import Counter
+
+    from model.fewshot.structure import multiset_jaccard
+
+    assert multiset_jaccard(Counter({"join": 2}), Counter({"join": 1})) == 0.5
+    assert multiset_jaccard(Counter(), Counter()) == 0.0
+
+
+def test_rank_fusion_combines_semantic_and_structure_ranks():
+    from model.fewshot.structure import rank_fusion
+
+    fused = rank_fusion(
+        ("semantic-first", "balanced", "structure-first"),
+        {
+            "semantic-first": 0.1,
+            "balanced": 1.0,
+            "structure-first": 0.8,
+        },
+    )
+
+    assert [candidate.source_id for candidate in fused] == [
+        "balanced",
+        "semantic-first",
+        "structure-first",
+    ]
+    assert fused[0].semantic_rank == 2
+    assert fused[0].structure_rank == 1
+
+
+def test_rank_fusion_all_structure_ties_preserve_semantic_order():
+    from model.fewshot.structure import rank_fusion
+
+    semantic_order = ("z", "a", "m")
+    fused = rank_fusion(
+        semantic_order,
+        {source_id: 0.0 for source_id in semantic_order},
+    )
+
+    assert [candidate.source_id for candidate in fused] == list(semantic_order)
+    assert [candidate.structure_rank for candidate in fused] == [1, 2, 3]
+
+
+def test_rank_fusion_is_deterministic_and_validates_inputs():
+    from model.fewshot.structure import rank_fusion
+
+    semantic_order = ("b", "a", "c")
+    scores = {"b": 0.4, "a": 0.9, "c": 0.4}
+
+    assert rank_fusion(semantic_order, scores) == rank_fusion(
+        semantic_order, scores
+    )
+    with pytest.raises(ValueError, match="semantic_weight"):
+        rank_fusion(semantic_order, scores, semantic_weight=1.1)
+    with pytest.raises(ValueError, match="same source IDs"):
+        rank_fusion(semantic_order, {"b": 0.4, "a": 0.9})
+    with pytest.raises(ValueError, match="unique"):
+        rank_fusion(("a", "a"), {"a": 0.4})
+
+
+def _write_sfs_inputs(
+    tmp_path: Path,
+    *,
+    target_rows: list[dict] | None = None,
+    predictions: list | None = None,
+    candidate_count: int = 4,
+) -> tuple[Path, Path, Path]:
+    from model.fewshot.store import sample_key
+
+    target_rows = target_rows or [
+        {"db_id": "target_db", "question": "Count rows by category.", "query": "SELECT 1"}
+    ]
+    predictions = predictions or [
+        "SELECT category, COUNT(*) FROM target_table GROUP BY category"
+    ]
+    candidate_sql = [
+        "SELECT name FROM people",
+        "SELECT name FROM people WHERE age > 10",
+        "SELECT city, COUNT(*) FROM people GROUP BY city",
+        "SELECT COUNT(*) FROM people",
+    ]
+    examples = [
+        {
+            "source_id": f"en_train:{index}",
+            "db_id": "train_db",
+            "question": f"Training question {index}",
+            "sql": candidate_sql[index % len(candidate_sql)],
+            "distance": float(index) / 10,
+        }
+        for index in range(candidate_count)
+    ]
+    unique_target_keys = list(
+        dict.fromkeys(
+            sample_key(row["db_id"], row["question"]) for row in target_rows
+        )
+    )
+    selection = {
+        "format_version": 1,
+        "corpus": "archer_en_train",
+        "corpus_sha256": "c" * 64,
+        "encoder": "sentence-transformers/all-mpnet-base-v2",
+        "k": candidate_count,
+        "records": [
+            {"target_key": target_key, "examples": examples}
+            for target_key in unique_target_keys
+        ],
+    }
+    selection_path = tmp_path / "semantic.json"
+    targets_path = tmp_path / "targets.json"
+    predictions_path = tmp_path / "predictions.json"
+    selection_path.write_text(json.dumps(selection), encoding="utf-8")
+    targets_path.write_text(json.dumps(target_rows), encoding="utf-8")
+    predictions_path.write_text(json.dumps(predictions), encoding="utf-8")
+    return selection_path, targets_path, predictions_path
+
+
+def test_build_sfs_selection_reranks_and_records_provenance(tmp_path):
+    from model.fewshot.offline import build_sfs_selection
+
+    selection_path, targets_path, predictions_path = _write_sfs_inputs(tmp_path)
+    output_path = tmp_path / "sfs.json"
+
+    payload = build_sfs_selection(
+        semantic_selection_path=selection_path,
+        targets_path=targets_path,
+        draft_predictions_path=predictions_path,
+        output_path=output_path,
+        candidate_k=4,
+        k=2,
+    )
+
+    examples = payload["records"][0]["examples"]
+    assert [example["source_id"] for example in examples] == [
+        "en_train:0",
+        "en_train:2",
+    ]
+    assert examples[1]["semantic_rank"] == 3
+    assert examples[1]["structure_rank"] == 1
+    assert examples[1]["structure_similarity"] > 0
+    assert 0 <= examples[1]["fusion_score"] <= 1
+    assert {
+        key: payload["retrieval"][key]
+        for key in (
+            "candidate_k",
+            "draft_predictions_sha256",
+            "fallback_count",
+            "semantic_selection_sha256",
+            "semantic_weight",
+            "strategy",
+            "structure_features",
+            "structure_weight",
+            "targets_sha256",
+        )
+    } == {
+        "candidate_k": 4,
+        "draft_predictions_sha256": hashlib.sha256(
+            predictions_path.read_bytes()
+        ).hexdigest(),
+        "fallback_count": 0,
+        "semantic_selection_sha256": hashlib.sha256(
+            selection_path.read_bytes()
+        ).hexdigest(),
+        "semantic_weight": 0.5,
+        "strategy": "sfs-v1",
+        "structure_features": "sqlglot-multiset-v1",
+        "structure_weight": 0.5,
+        "targets_sha256": hashlib.sha256(targets_path.read_bytes()).hexdigest(),
+    }
+    assert (
+        payload["retrieval"]["mean_structure_similarity_sfs_top_k"]
+        >= payload["retrieval"]["mean_structure_similarity_semantic_top_k"]
+    )
+
+
+def test_build_sfs_selection_invalid_draft_falls_back_to_semantic_order(tmp_path):
+    from model.fewshot.offline import build_sfs_selection
+
+    selection_path, targets_path, predictions_path = _write_sfs_inputs(
+        tmp_path,
+        predictions=["SELECT FROM WHERE"],
+    )
+    payload = build_sfs_selection(
+        semantic_selection_path=selection_path,
+        targets_path=targets_path,
+        draft_predictions_path=predictions_path,
+        output_path=tmp_path / "sfs.json",
+        candidate_k=4,
+        k=3,
+    )
+
+    assert [
+        example["source_id"] for example in payload["records"][0]["examples"]
+    ] == ["en_train:0", "en_train:1", "en_train:2"]
+    assert payload["retrieval"]["fallback_count"] == 1
+
+
+def test_build_sfs_selection_is_byte_deterministic(tmp_path):
+    from model.fewshot.offline import build_sfs_selection
+
+    selection_path, targets_path, predictions_path = _write_sfs_inputs(tmp_path)
+    first = tmp_path / "first.json"
+    second = tmp_path / "second.json"
+    kwargs = {
+        "semantic_selection_path": selection_path,
+        "targets_path": targets_path,
+        "draft_predictions_path": predictions_path,
+        "candidate_k": 4,
+        "k": 2,
+    }
+
+    build_sfs_selection(output_path=first, **kwargs)
+    build_sfs_selection(output_path=second, **kwargs)
+
+    assert first.read_bytes() == second.read_bytes()
+
+
+def test_build_sfs_selection_validates_alignment_pool_and_duplicate_drafts(tmp_path):
+    from model.fewshot.offline import build_sfs_selection
+
+    selection_path, targets_path, predictions_path = _write_sfs_inputs(tmp_path)
+    predictions_path.write_text("[]", encoding="utf-8")
+    with pytest.raises(ValueError, match="prediction count"):
+        build_sfs_selection(
+            semantic_selection_path=selection_path,
+            targets_path=targets_path,
+            draft_predictions_path=predictions_path,
+            output_path=tmp_path / "missing.json",
+            candidate_k=4,
+            k=2,
+        )
+
+    selection_path, targets_path, predictions_path = _write_sfs_inputs(
+        tmp_path,
+        candidate_count=3,
+    )
+    with pytest.raises(ValueError, match="fewer than candidate_k"):
+        build_sfs_selection(
+            semantic_selection_path=selection_path,
+            targets_path=targets_path,
+            draft_predictions_path=predictions_path,
+            output_path=tmp_path / "short.json",
+            candidate_k=4,
+            k=2,
+        )
+
+    duplicate_targets = [
+        {"db_id": "db", "question": "same", "query": "SELECT 1"},
+        {"db_id": "db", "question": "same", "query": "SELECT 1"},
+    ]
+    selection_path, targets_path, predictions_path = _write_sfs_inputs(
+        tmp_path,
+        target_rows=duplicate_targets,
+        predictions=["SELECT 1", "SELECT 2"],
+    )
+    with pytest.raises(ValueError, match="conflicting draft SQL"):
+        build_sfs_selection(
+            semantic_selection_path=selection_path,
+            targets_path=targets_path,
+            draft_predictions_path=predictions_path,
+            output_path=tmp_path / "conflict.json",
+            candidate_k=4,
+            k=2,
+        )
+
+
+def test_rerank_sfs_cli_builds_artifact_and_reports_fallbacks(
+    tmp_path, capsys
+):
+    from model.fewshot import offline
+
+    selection_path, targets_path, predictions_path = _write_sfs_inputs(tmp_path)
+    output_path = tmp_path / "sfs.json"
+
+    assert offline.main(
+        [
+            "rerank-sfs",
+            "--selection",
+            str(selection_path),
+            "--targets",
+            str(targets_path),
+            "--draft-predictions",
+            str(predictions_path),
+            "--output",
+            str(output_path),
+            "--candidate-k",
+            "4",
+            "--k",
+            "2",
+        ]
+    ) == 0
+
+    output = capsys.readouterr().out
+    assert "1 unique records" in output
+    assert "fallbacks=0" in output
+    assert "semantic selection sha256:" in output
+    assert "targets sha256:" in output
+    assert output_path.exists()
+
+
 def test_retrieval_dependency_manifest_targets_cpu_python_311_or_312():
     """Torch 2.5.1 的 Windows CPU wheel 必须从官方索引、独立兼容解释器取得。"""
     manifest = (Path(config.ROOT) / "requirements-fewshot.txt").read_text(encoding="utf-8")
@@ -93,6 +462,14 @@ def test_retrieval_manifest_pins_transformers_compatible_with_torch_251():
     manifest = (Path(config.ROOT) / "requirements-fewshot.txt").read_text(encoding="utf-8")
 
     assert "transformers==4.46.3" in manifest.splitlines()
+
+
+def test_retrieval_manifest_includes_sfs_parser_dependency():
+    manifest = (Path(config.ROOT) / "requirements-fewshot.txt").read_text(
+        encoding="utf-8"
+    )
+
+    assert "sqlglot==30.13.0" in manifest.splitlines()
 
 
 def test_sample_key_is_stable_and_question_sensitive():
@@ -174,6 +551,130 @@ def test_selection_store_round_trip_and_lookup(tmp_path):
     assert record.examples[2].distance == 2.0
     assert store.corpus_sha256 == "a" * 64
     assert store.for_sample("bike_1", "missing") is None
+
+
+def test_selection_store_loads_sfs_metadata_and_example_scores(tmp_path):
+    from model.fewshot.store import SelectionStore
+
+    path = tmp_path / "sfs-selection.json"
+    payload = _selection_payload()
+    payload["retrieval"] = {
+        "strategy": "sfs-v1",
+        "structure_features": "sqlglot-multiset-v1",
+        "semantic_selection_sha256": "b" * 64,
+        "draft_predictions_sha256": "d" * 64,
+        "targets_sha256": "e" * 64,
+        "candidate_k": 30,
+        "semantic_weight": 0.5,
+        "structure_weight": 0.5,
+        "fallback_count": 0,
+    }
+    for rank, example in enumerate(payload["records"][0]["examples"], start=1):
+        example.update(
+            {
+                "semantic_rank": rank,
+                "structure_rank": 4 - rank,
+                "structure_similarity": rank / 4,
+                "fusion_score": 1 - rank / 10,
+            }
+        )
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    store = SelectionStore.from_path(path)
+    selected = store.records["target-key"].examples[0]
+
+    assert dict(store.retrieval) == payload["retrieval"]
+    assert selected.semantic_rank == 1
+    assert selected.structure_rank == 3
+    assert selected.structure_similarity == 0.25
+    assert selected.fusion_score == 0.9
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("semantic_rank", 0, "positive integer semantic_rank"),
+        ("structure_rank", True, "positive integer structure_rank"),
+        ("structure_similarity", float("nan"), "finite structure_similarity"),
+        ("fusion_score", 1.5, "fusion_score.*within"),
+    ],
+)
+def test_selection_store_rejects_invalid_sfs_example_scores(
+    tmp_path, field, value, message
+):
+    from model.fewshot.store import SelectionStore
+
+    path = tmp_path / "invalid-sfs.json"
+    payload = _selection_payload()
+    payload["retrieval"] = {
+        "strategy": "sfs-v1",
+        "structure_features": "sqlglot-multiset-v1",
+        "semantic_selection_sha256": "b" * 64,
+        "draft_predictions_sha256": "d" * 64,
+        "targets_sha256": "e" * 64,
+        "candidate_k": 30,
+        "semantic_weight": 0.5,
+        "structure_weight": 0.5,
+        "fallback_count": 0,
+    }
+    for rank, example in enumerate(payload["records"][0]["examples"], start=1):
+        example.update(
+            {
+                "semantic_rank": rank,
+                "structure_rank": rank,
+                "structure_similarity": 0.5,
+                "fusion_score": 0.5,
+            }
+        )
+    payload["records"][0]["examples"][0][field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=message):
+        SelectionStore.from_path(path)
+
+
+def test_selection_store_rejects_unknown_retrieval_strategy(tmp_path):
+    from model.fewshot.store import SelectionStore
+
+    path = tmp_path / "unknown-strategy.json"
+    payload = _selection_payload()
+    payload["retrieval"] = {"strategy": "future-sfs"}
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unsupported retrieval strategy"):
+        SelectionStore.from_path(path)
+
+
+def test_selection_store_rejects_sfs_rank_outside_candidate_pool(tmp_path):
+    from model.fewshot.store import SelectionStore
+
+    path = tmp_path / "invalid-rank.json"
+    payload = _selection_payload()
+    payload["retrieval"] = {
+        "strategy": "sfs-v1",
+        "structure_features": "sqlglot-multiset-v1",
+        "semantic_selection_sha256": "b" * 64,
+        "draft_predictions_sha256": "d" * 64,
+        "targets_sha256": "e" * 64,
+        "candidate_k": 3,
+        "semantic_weight": 0.5,
+        "structure_weight": 0.5,
+        "fallback_count": 0,
+    }
+    for rank, example in enumerate(payload["records"][0]["examples"], start=1):
+        example.update(
+            {
+                "semantic_rank": rank,
+                "structure_rank": rank,
+                "structure_similarity": 0.5,
+                "fusion_score": 0.5,
+            }
+        )
+    payload["records"][0]["examples"][0]["semantic_rank"] = 4
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="semantic_rank.*candidate_k"):
+        SelectionStore.from_path(path)
 
 
 @pytest.mark.parametrize(
@@ -759,6 +1260,28 @@ def test_audit_reports_required_counts_and_deterministic_samples(tmp_path, capsy
     assert "distance min/median/max: 0.0 / 1.0 / 2.0" in output
 
 
+def test_audit_reports_sfs_metadata_and_similarity(tmp_path, capsys):
+    from model.fewshot.offline import audit_selection
+
+    selection = tmp_path / "selection.json"
+    payload = _selection_payload()
+    payload["retrieval"] = {
+        "strategy": "sfs-v1",
+        "fallback_count": 2,
+    }
+    for index, example in enumerate(payload["records"][0]["examples"]):
+        example["structure_similarity"] = index / 2
+    selection.write_text(json.dumps(payload), encoding="utf-8")
+
+    report = audit_selection(selection)
+    output = capsys.readouterr().out
+
+    assert report["retrieval"]["strategy"] == "sfs-v1"
+    assert report["structure_similarity"]["median"] == 0.5
+    assert "retrieval strategy: sfs-v1" in output
+    assert "structure similarity min/median/max: 0.0 / 0.5 / 1.0" in output
+
+
 def test_direct_cli_help_works_without_loading_optional_dependencies():
     script = Path(config.ROOT) / "scripts" / "build_fewshot.py"
 
@@ -771,4 +1294,17 @@ def test_direct_cli_help_works_without_loading_optional_dependencies():
     )
 
     assert result.returncode == 0, result.stderr
-    assert "{corpus,select,audit}" in result.stdout
+    assert "{corpus,select,rerank-sfs,audit}" in result.stdout
+
+
+def test_module_cli_help_invokes_main():
+    result = subprocess.run(
+        [sys.executable, "-m", "model.fewshot.offline", "--help"],
+        cwd=config.ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "{corpus,select,rerank-sfs,audit}" in result.stdout

@@ -19,6 +19,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import config
@@ -31,6 +32,25 @@ _COUNT_LINE = re.compile(r"^count\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)", re.MULTILINE
 _ACC_LINE = re.compile(
     r"^accuracy\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)", re.MULTILINE)
 _LEVELS = ("simple", "moderate", "challenging")
+
+
+def _run_with_heartbeat(
+    cmd: list[str],
+    *,
+    heartbeat_s: float = 30.0,
+) -> subprocess.CompletedProcess[str]:
+    """捕获官方输出，同时定期说明子进程仍在运行。"""
+    started = time.monotonic()
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, encoding="utf-8")
+    while True:
+        try:
+            stdout, stderr = proc.communicate(timeout=heartbeat_s)
+            return subprocess.CompletedProcess(cmd, proc.returncode, stdout, stderr)
+        except subprocess.TimeoutExpired:
+            elapsed = round(time.monotonic() - started)
+            print(f"official-eval: 官方脚本仍在运行（已用时 {elapsed}s）", flush=True)
 
 
 def strip_sql_comments(sql: str) -> str:
@@ -161,7 +181,8 @@ def run_official(
         "--num_cpus", str(num_cpus),
         "--meta_time_out", str(timeout_s),
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+    print("official-eval: 开始运行官方脚本（串行评测）", flush=True)
+    proc = _run_with_heartbeat(cmd)
     if proc.returncode != 0:
         raise RuntimeError(
             f"官方脚本退出码 {proc.returncode}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}")

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import json
 import math
@@ -44,6 +44,7 @@ class SelectionStore:
 
     records: Mapping[str, SelectionRecord]
     corpus_sha256: str = ""
+    retrieval: Mapping[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_path(cls, path: Path) -> "SelectionStore":
@@ -69,6 +70,11 @@ class SelectionStore:
         )
         encoder = _required_string(payload, "encoder", context="selection metadata")
         k = _required_positive_int(payload, "k", context="selection metadata")
+        retrieval = _parse_retrieval(payload.get("retrieval"))
+        if retrieval and retrieval["candidate_k"] < k:
+            raise ValueError(
+                "selection retrieval candidate_k must be at least top-level k"
+            )
         raw_records = payload.get("records")
         if not isinstance(raw_records, list):
             raise ValueError("selection metadata records must be a list")
@@ -104,7 +110,60 @@ class SelectionStore:
                     sql=_required_string(raw_example, "sql", context=example_context),
                 )
                 distance = _required_distance(raw_example, context=example_context)
-                examples.append(SelectedExample(example=example, distance=distance))
+                has_sfs_metadata = bool(retrieval)
+                semantic_rank = _optional_positive_int(
+                    raw_example,
+                    "semantic_rank",
+                    context=example_context,
+                    required=has_sfs_metadata,
+                )
+                structure_rank = _optional_positive_int(
+                    raw_example,
+                    "structure_rank",
+                    context=example_context,
+                    required=has_sfs_metadata,
+                )
+                structure_similarity = _optional_unit_float(
+                    raw_example,
+                    "structure_similarity",
+                    context=example_context,
+                    required=has_sfs_metadata,
+                )
+                fusion_score = _optional_unit_float(
+                    raw_example,
+                    "fusion_score",
+                    context=example_context,
+                    required=has_sfs_metadata,
+                )
+                examples.append(
+                    SelectedExample(
+                        example=example,
+                        distance=distance,
+                        semantic_rank=semantic_rank,
+                        structure_rank=structure_rank,
+                        structure_similarity=structure_similarity,
+                        fusion_score=fusion_score,
+                    )
+                )
+
+            if retrieval:
+                candidate_k = retrieval["candidate_k"]
+                for rank_name, ranks in (
+                    (
+                        "semantic_rank",
+                        [selected.semantic_rank for selected in examples],
+                    ),
+                    (
+                        "structure_rank",
+                        [selected.structure_rank for selected in examples],
+                    ),
+                ):
+                    if any(rank > candidate_k for rank in ranks):
+                        raise ValueError(
+                            f"{context} {rank_name} must not exceed candidate_k"
+                        )
+                    if len(set(ranks)) != len(ranks):
+                        raise ValueError(f"{context} has duplicate {rank_name}")
 
             records[target_key] = SelectionRecord(
                 target_key=target_key,
@@ -114,9 +173,15 @@ class SelectionStore:
                 examples=tuple(examples),
             )
 
+        if retrieval and retrieval["fallback_count"] > len(records):
+            raise ValueError(
+                "selection retrieval fallback_count exceeds record count"
+            )
+
         return cls(
             records=MappingProxyType(records),
             corpus_sha256=corpus_sha256,
+            retrieval=MappingProxyType(retrieval),
         )
 
     def for_sample(self, db_id: str, question: str) -> SelectionRecord | None:
@@ -146,3 +211,125 @@ def _required_distance(payload: Mapping[str, Any], *, context: str) -> float:
     if not math.isfinite(distance):
         raise ValueError(f"{context} requires finite distance")
     return distance
+
+
+def _parse_retrieval(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError("selection retrieval metadata must be an object")
+    strategy = value.get("strategy")
+    if strategy != "sfs-v1":
+        raise ValueError(f"unsupported retrieval strategy: {strategy!r}")
+    structure_features = value.get("structure_features")
+    if structure_features != "sqlglot-multiset-v1":
+        raise ValueError(
+            f"unsupported structure feature version: {structure_features!r}"
+        )
+    for key in (
+        "semantic_selection_sha256",
+        "draft_predictions_sha256",
+        "targets_sha256",
+    ):
+        _required_sha256(value, key, context="selection retrieval metadata")
+    candidate_k = _required_positive_int(
+        value, "candidate_k", context="selection retrieval metadata"
+    )
+    fallback_count = value.get("fallback_count")
+    if (
+        isinstance(fallback_count, bool)
+        or not isinstance(fallback_count, int)
+        or fallback_count < 0
+    ):
+        raise ValueError(
+            "selection retrieval metadata requires non-negative integer "
+            "fallback_count"
+        )
+    semantic_weight = _required_unit_float(
+        value, "semantic_weight", context="selection retrieval metadata"
+    )
+    structure_weight = _required_unit_float(
+        value, "structure_weight", context="selection retrieval metadata"
+    )
+    if not math.isclose(semantic_weight + structure_weight, 1.0):
+        raise ValueError("selection retrieval weights must sum to 1")
+    retrieval = {
+        "strategy": strategy,
+        "structure_features": structure_features,
+        "semantic_selection_sha256": value["semantic_selection_sha256"],
+        "draft_predictions_sha256": value["draft_predictions_sha256"],
+        "targets_sha256": value["targets_sha256"],
+        "candidate_k": candidate_k,
+        "semantic_weight": semantic_weight,
+        "structure_weight": structure_weight,
+        "fallback_count": fallback_count,
+    }
+    mean_keys = (
+        "mean_structure_similarity_semantic_top_k",
+        "mean_structure_similarity_sfs_top_k",
+    )
+    present_mean_keys = [key for key in mean_keys if key in value]
+    if present_mean_keys and len(present_mean_keys) != len(mean_keys):
+        raise ValueError(
+            "selection retrieval metadata must provide both mean structure "
+            "similarities"
+        )
+    for key in present_mean_keys:
+        retrieval[key] = _required_unit_float(
+            value, key, context="selection retrieval metadata"
+        )
+    return retrieval
+
+
+def _required_unit_float(
+    payload: Mapping[str, Any], key: str, *, context: str
+) -> float:
+    value = payload.get(key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{context} requires numeric {key}")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"{context} requires finite {key}")
+    if not 0.0 <= number <= 1.0:
+        raise ValueError(f"{context} requires {key} within [0, 1]")
+    return number
+
+
+def _required_sha256(
+    payload: Mapping[str, Any], key: str, *, context: str
+) -> str:
+    value = _required_string(payload, key, context=context)
+    is_hex = all(
+        character in "0123456789abcdefABCDEF" for character in value
+    )
+    if len(value) != 64 or not is_hex:
+        raise ValueError(f"{context} requires 64-character hexadecimal {key}")
+    return value
+
+
+def _optional_positive_int(
+    payload: Mapping[str, Any],
+    key: str,
+    *,
+    context: str,
+    required: bool,
+) -> int | None:
+    value = payload.get(key)
+    if value is None and not required:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(f"{context} requires positive integer {key}")
+    return value
+
+
+def _optional_unit_float(
+    payload: Mapping[str, Any],
+    key: str,
+    *,
+    context: str,
+    required: bool,
+) -> float | None:
+    value = payload.get(key)
+    if value is None and not required:
+        return None
+    return _required_unit_float(payload, key, context=context)

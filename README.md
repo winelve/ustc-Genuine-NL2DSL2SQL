@@ -121,6 +121,18 @@ BIRD（https://bird-bench.github.io/）是第二块跑分场地，dev 集 **1534
 `DeepSeek-R1 (Baseline)` Dev **61.67** 那一行——reasoning 骨干、单模型、单次调用，
 与本档位形态一致。另一版 `dev_20240627`（主榜那些行用的）也留着记录，两版**分数不可互比**。
 
+旧版已单独注册为 `bird_dev_20240627`，并使用独立的 top-3 selection 和模型档位：
+
+```bash
+# 旧版 BIRD dev：生成
+python -m model --model bird-pro-t-dsl-fs-20240627 --data bird_dev_20240627
+
+# 旧版 BIRD dev：官方评测 + 交叉验证
+python -m bird eval --official --cross-check \
+    --data bird_dev_20240627 \
+    --pred predictions/bird-pro-t-dsl-fs-20240627_bird_dev_20240627.json
+```
+
 ### 准备（一次性）
 
 库若已解压在 `data/bird/dev_databases/` 就跳过第 0 步。
@@ -197,7 +209,8 @@ few-shot 使用 RSL-SQL 相同的 `all-mpnet-base-v2` 问题向量和欧氏距�
 
 ```powershell
 py -3.12 -m venv ..\.venv-ustc-fewshot
-..\.venv-ustc-fewshot\Scripts\python.exe -m pip install -r requirements-fewshot.txt
+..\.venv-ustc-fewshot\Scripts\python.exe -m pip install `
+  -r requirements.txt -r requirements-fewshot.txt
 ```
 
 Archer 英文训练集转 corpus、检索 dev、审计：
@@ -240,9 +253,75 @@ BIRD 训练 Parquet 转 corpus 后，用同一条 `select` 命令检索；目标
   --output data\fewshot\selections\bird_dev_rsl_k3.json
 ```
 
+旧版 BIRD dev 必须按旧题面重建 selection，不能复用新版文件：
+
+```powershell
+..\.venv-ustc-fewshot\Scripts\python.exe scripts\build_fewshot.py select `
+  --corpus data\fewshot\corpora\bird_train.json `
+  --targets data\bird\dev_20240627.json `
+  --target-format bird-json `
+  --encoder data\fewshot\models\all-mpnet-base-v2 `
+  --k 3 `
+  --output data\fewshot\selections\bird_dev_20240627_rsl_k3.json
+```
+
 选择文件记录 encoder、corpus SHA-256、`k`、逐题近邻和距离；重复运行应产生
 逐字节相同的 JSON。若 corpus 与 targets 是同一文件，目标必须带 `source_id`，
 对应训练项会被强制排除，避免把答案本身作为示例。
+
+### SFS：结构感知 few-shot
+
+SFS（Structure-aware Few-Shot）先按问题语义召回 top-30，再用一份冻结的
+zero-shot Direct 草案 SQL 与候选 gold SQL 做结构匹配，最后以固定
+`0.5 × semantic rank + 0.5 × structure rank` 选出 top-3。结构由 SQLite
+方言的 sqlglot AST 提取；无法解析草案时严格退回原语义顺序。
+
+Direct 与 DSL 必须共用同一份 draft 和 selection。Archer `en_dev` 的构建命令：
+
+```powershell
+..\.venv-ustc-fewshot\Scripts\python.exe -m model.fewshot.offline select `
+  --corpus data\fewshot\corpora\archer_en_train.json `
+  --targets data\en_data\dev.json `
+  --target-format archer-json `
+  --encoder data\fewshot\models\all-mpnet-base-v2 `
+  --k 30 `
+  --output data\fewshot\selections\archer_en_dev_rsl_k30.json
+
+python -m model.fewshot.offline rerank-sfs `
+  --selection data\fewshot\selections\archer_en_dev_rsl_k30.json `
+  --targets data\en_data\dev.json `
+  --draft-predictions predictions\direct\pro-t-direct_en_dev.json `
+  --candidate-k 30 `
+  --k 3 `
+  --output data\fewshot\selections\archer_en_dev_sfs_k3.json
+
+python -m model.fewshot.offline audit `
+  --selection data\fewshot\selections\archer_en_dev_sfs_k3.json
+```
+
+先跑 10 题冒烟，确认 API、trace 和评测链路：
+
+```powershell
+# Direct + SFS
+python -m model --model pro-t-direct-sfs --data en_dev --limit 10 --eval
+
+# DSL + SFS
+python -m model --model pro-t-dsl-sfs --data en_dev --limit 10 --eval
+```
+
+冒烟正常后去掉 `--limit` 跑 104 题全量；断点会自动复用已完成的前 10 题：
+
+```powershell
+# Direct + SFS 全量
+python -m model --model pro-t-direct-sfs --data en_dev --eval
+
+# DSL + SFS 全量
+python -m model --model pro-t-dsl-sfs --data en_dev --eval
+```
+
+selection trace 会额外记录 target/draft/语义 selection 的 SHA-256、语义名次、
+结构名次、结构相似度与融合分数。SFS artifact 与其他 few-shot 数据一样位于
+`data/fewshot/`，不进入 git。
 
 ---
 
@@ -259,6 +338,16 @@ predictions/
 results/
 	en_dev_pro-t-dsl-conv-chk.json # 经过判题系统, 评测后的反馈结果.
 ```
+
+每道题的 `.trace.json` 都包含 `metrics`：
+
+- `elapsed_seconds`：该题从上下文准备到最终 SQL 的端到端耗时；
+- `api_calls` / `api_elapsed_seconds`：API 调用次数与累计等待时间；
+- `usage`：该题所有调用汇总后的输入、输出、总量、缓存命中/未命中及 reasoning token；
+- `calls`：每次 API 调用的耗时与 token 明细。
+
+token 数量直接读取 DeepSeek 返回的 `usage`，不做本地估算。DSL 的修复调用会计入
+同一道题的汇总；API 未返回的字段记为 `null`。
 
 
 

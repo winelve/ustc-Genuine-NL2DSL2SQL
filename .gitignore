@@ -33,3 +33,5 @@ data/fewshot/
 CLAUDE.md
 !database.zip
 README.bk.md
+sentence_transformers
+tmp/

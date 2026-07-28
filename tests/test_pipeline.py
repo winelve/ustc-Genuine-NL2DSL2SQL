@@ -204,7 +204,52 @@ def test_predict_all_collects_aligned_trace(monkeypatch, tmp_path):
     assert len(trace) == 2 and trace[0]["question"] == "q1"
     assert trace[0]["plans"] and trace[0]["candidates"][0]["ok"] is True
     assert trace[0]["winner"] == 0
+    assert trace[0]["metrics"]["elapsed_seconds"] >= 0
     json.dumps(trace)  # trace 必须可直接落盘
+
+
+def test_pipeline_trace_aggregates_multiple_api_calls(monkeypatch, tmp_path):
+    from model.metrics import record_api_call
+    from model.pipeline.models import PlanSQL
+
+    db = _toy_db(tmp_path)
+    generator = object.__new__(PlanSQL)
+    generator._fewshot_store = None
+    generator.trace_records = []
+    generator.concurrency = 1
+
+    class RecordedCallsStage:
+        def run(self, ctx):
+            record_api_call(
+                0.4,
+                usage={
+                    "prompt_tokens": 10,
+                    "completion_tokens": 2,
+                    "total_tokens": 12,
+                    "reasoning_tokens": 1,
+                },
+            )
+            record_api_call(
+                0.6,
+                usage={
+                    "prompt_tokens": 20,
+                    "completion_tokens": 3,
+                    "total_tokens": 23,
+                    "reasoning_tokens": 2,
+                },
+            )
+            ctx.final_sql = "SELECT 1"
+
+    monkeypatch.setattr(generator, "_stages", lambda: [RecordedCallsStage()])
+    assert generator.predict_all([_sample()], [db], progress=False) == ["SELECT 1"]
+
+    metrics = generator.trace_records[0]["metrics"]
+    assert metrics["api_calls"] == 2
+    assert metrics["api_elapsed_seconds"] == 1.0
+    assert metrics["usage"]["prompt_tokens"] == 30
+    assert metrics["usage"]["completion_tokens"] == 5
+    assert metrics["usage"]["total_tokens"] == 35
+    assert metrics["usage"]["reasoning_tokens"] == 3
 
 
 def test_runner_writes_trace_sidecar(tmp_path):
@@ -232,7 +277,12 @@ def test_runner_backfills_trace_for_resumed_checkpoint(tmp_path):
     checkpoint.write_text(
         "\n".join(
             (
-                json.dumps({"model": "direct-fs", "data": "en_dev", "n": 1}),
+                json.dumps({
+                    "model": "direct-fs",
+                    "data": "en_dev",
+                    "n": 1,
+                    "trace_schema": "question-metrics-v1",
+                }),
                 json.dumps({"i": 0, "sql": "SELECT 1", "trace": None}),
             )
         )
@@ -276,6 +326,7 @@ def test_predict_all_records_llm_failure_as_empty(monkeypatch, tmp_path):
     preds = generator.predict_all([_sample()], [db], progress=False)
     assert preds == [""]  # 框架约定：LLM 调用失败记空串
     assert generator.trace_records[0]["error"]
+    assert generator.trace_records[0]["metrics"]["elapsed_seconds"] >= 0
 
 
 # ---------------------------------------------------------- 消融档位
@@ -637,20 +688,124 @@ def test_direct_fewshot_predict_all_records_retrieval_trace(monkeypatch, tmp_pat
     )
 
     assert predictions == ["SELECT 1"]
-    assert generator.trace_records == [
-        {
-            "question": sample.question,
-            "fewshot": {
-                "selection": "archer_en_dev_rsl_k3",
-                "corpus": "archer_en_train",
-                "corpus_sha256": "b" * 64,
-                "encoder": "sentence-transformers/all-mpnet-base-v2",
-                "k": 3,
-                "source_ids": ["en_train:0", "en_train:1", "en_train:2"],
-                "distances": [0.25, 1.25, 2.25],
-            },
-        }
-    ]
+    [trace] = generator.trace_records
+    assert trace["question"] == sample.question
+    assert trace["fewshot"] == {
+        "selection": "archer_en_dev_rsl_k3",
+        "corpus": "archer_en_train",
+        "corpus_sha256": "b" * 64,
+        "encoder": "sentence-transformers/all-mpnet-base-v2",
+        "k": 3,
+        "source_ids": ["en_train:0", "en_train:1", "en_train:2"],
+        "distances": [0.25, 1.25, 2.25],
+    }
+    assert trace["metrics"]["elapsed_seconds"] >= 0
+
+
+def test_direct_predict_all_records_question_token_totals(monkeypatch):
+    from pathlib import Path
+
+    import model.api as api
+    from model.metrics import record_api_call
+
+    class FakeEndpoint:
+        def chat(self, _system, _user, **_overrides):
+            record_api_call(
+                0.5,
+                usage={
+                    "prompt_tokens": 12,
+                    "completion_tokens": 3,
+                    "total_tokens": 15,
+                    "prompt_cache_hit_tokens": 2,
+                    "prompt_cache_miss_tokens": 10,
+                    "reasoning_tokens": 1,
+                },
+            )
+            return "SELECT 1"
+
+    generator = object.__new__(api.APIModel)
+    generator._endpoint = FakeEndpoint()
+    generator._fewshot_store = None
+    generator.trace_records = []
+    generator.concurrency = 1
+    monkeypatch.setattr(api, "build_ct3_prompt", lambda *_args, **_kwargs: "PROMPT")
+
+    sample = _sample()
+    assert generator.predict_all(
+        [sample], [Path("unused.sqlite")], progress=False
+    ) == ["SELECT 1"]
+
+    [trace] = generator.trace_records
+    assert trace["question"] == sample.question
+    assert trace["metrics"]["api_calls"] == 1
+    assert trace["metrics"]["usage"]["total_tokens"] == 15
+
+
+def test_sfs_metadata_is_identical_in_direct_and_dsl_trace(monkeypatch, tmp_path):
+    import model.api as api
+    import model.pipeline.models as pipeline_models
+    from model.fewshot.store import SelectionStore, sample_key
+    from model.fewshot.types import FewShotExample, SelectedExample, SelectionRecord
+    from model.pipeline.models import ProTDslFewShot
+
+    sample = _sample()
+    key = sample_key(sample.db_id, sample.question)
+    record = SelectionRecord(
+        target_key=key,
+        corpus="archer_en_train",
+        encoder="sentence-transformers/all-mpnet-base-v2",
+        k=3,
+        examples=tuple(
+            SelectedExample(
+                example=FewShotExample(
+                    source_id=f"en_train:{index}",
+                    db_id="reference_db",
+                    question=f"Reference question {index}?",
+                    sql=f"SELECT {index}",
+                ),
+                distance=index + 0.25,
+                semantic_rank=index + 1,
+                structure_rank=3 - index,
+                structure_similarity=0.2 + index / 10,
+                fusion_score=0.9 - index / 10,
+            )
+            for index in range(3)
+        ),
+    )
+    retrieval = {
+        "strategy": "sfs-v1",
+        "structure_features": "sqlglot-multiset-v1",
+        "semantic_selection_sha256": "a" * 64,
+        "draft_predictions_sha256": "d" * 64,
+        "targets_sha256": "e" * 64,
+        "candidate_k": 30,
+        "semantic_weight": 0.5,
+        "structure_weight": 0.5,
+        "fallback_count": 0,
+    }
+    store = SelectionStore(
+        records={key: record},
+        corpus_sha256="b" * 64,
+        retrieval=retrieval,
+    )
+
+    direct = object.__new__(api.DeepSeekProThinkingFewShot)
+    direct._fewshot_store = store
+    direct.fewshot_selection = "archer_en_dev_sfs_k3"
+    direct_trace = direct.trace_for_sample(sample)["fewshot"]
+
+    dsl = ProTDslFewShot.__new__(ProTDslFewShot)
+    dsl._fewshot_store = store
+    dsl.fewshot_selection = "archer_en_dev_sfs_k3"
+    monkeypatch.setattr(pipeline_models, "schema_with_rows", lambda _path: "SCHEMA")
+    dsl_trace = dsl._prepare_context(sample, tmp_path / "target.sqlite").fewshot_trace
+
+    assert direct_trace == dsl_trace
+    assert direct_trace["retrieval"] == retrieval
+    assert direct_trace["semantic_ranks"] == [1, 2, 3]
+    assert direct_trace["structure_ranks"] == [3, 2, 1]
+    assert direct_trace["structure_similarities"] == pytest.approx([0.2, 0.3, 0.4])
+    assert direct_trace["fusion_scores"] == pytest.approx([0.9, 0.8, 0.7])
 
 
 def test_direct_fewshot_fails_when_fixed_selection_has_no_target():
@@ -950,6 +1105,40 @@ def test_dsl_fewshot_variant_is_single_variable_and_registered():
     assert {
         key for key in ProTDslFewShot.__dict__ if not key.startswith("_")
     } == {"name", "fewshot_selection"}
+
+
+def test_sfs_variants_are_single_variable_registered_and_share_selection():
+    from model import MODELS
+    from model.api import DeepSeekProThinking, DeepSeekProThinkingSFS
+    from model.pipeline.models import ProTDsl, ProTDslSFS
+
+    assert MODELS["pro-t-direct-sfs"] is DeepSeekProThinkingSFS
+    assert MODELS["pro-t-dsl-sfs"] is ProTDslSFS
+    assert issubclass(DeepSeekProThinkingSFS, DeepSeekProThinking)
+    assert issubclass(ProTDslSFS, ProTDsl)
+    assert (
+        DeepSeekProThinkingSFS.fewshot_selection
+        == ProTDslSFS.fewshot_selection
+        == "archer_en_dev_sfs_k3"
+    )
+    assert {
+        key for key in DeepSeekProThinkingSFS.__dict__ if not key.startswith("_")
+    } == {"name", "fewshot_selection"}
+    assert {
+        key for key in ProTDslSFS.__dict__ if not key.startswith("_")
+    } == {"name", "fewshot_selection"}
+    for attr in (
+        "base_url",
+        "model",
+        "key_env",
+        "request_params",
+        "conventions",
+    ):
+        assert getattr(DeepSeekProThinkingSFS, attr) == getattr(
+            DeepSeekProThinking, attr
+        ), attr
+    for attr in ("endpoint_spec", "use_plan", "max_repairs", "evidence"):
+        assert getattr(ProTDslSFS, attr) == getattr(ProTDsl, attr), attr
 
 
 def test_archer_arms_keep_evidence_off():

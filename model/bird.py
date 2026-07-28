@@ -98,3 +98,11 @@ class BirdProTDslFewShot(BirdProTDsl):
 
     name = "bird-pro-t-dsl-fs"
     fewshot_selection = "bird_dev_rsl_k3"
+
+
+class BirdProTDslFewShot20240627(BirdProTDslFewShot):
+    """BIRD 2024-06-27 dev + 对应版本的固定 top-3。"""
+
+    name = "bird-pro-t-dsl-fs-20240627"
+    fewshot_selection = "bird_dev_20240627_rsl_k3"
+    dataset = "bird_dev_20240627"

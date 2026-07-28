@@ -25,7 +25,9 @@ from archer_eval.progress import Progress
 from model.base import SQLGenerator
 from model.fewshot.render import render_reference_examples
 from model.fewshot.store import SelectionStore, sample_key
+from model.fewshot.trace import fewshot_trace
 from model.llm import ChatEndpoint
+from model.metrics import question_metrics
 from model.prompts import build_ct3_prompt
 from config import API_CONCURRENCY
 
@@ -114,19 +116,11 @@ class APIModel(SQLGenerator):
             return None
         return {
             "question": sample.question,
-            "fewshot": {
-                "selection": self.fewshot_selection,
-                "corpus": record.corpus,
-                "corpus_sha256": self._fewshot_store.corpus_sha256,
-                "encoder": record.encoder,
-                "k": record.k,
-                "source_ids": [
-                    selected.example.source_id for selected in record.examples
-                ],
-                "distances": [
-                    selected.distance for selected in record.examples
-                ],
-            },
+            "fewshot": fewshot_trace(
+                selection=self.fewshot_selection,
+                record=record,
+                store=self._fewshot_store,
+            ),
         }
 
     def predict(self, sample: Sample, db_path: Path) -> str:
@@ -146,18 +140,23 @@ class APIModel(SQLGenerator):
 
         def one(
             indexed: tuple[int, tuple[Sample, Path]]
-        ) -> tuple[str, dict | None, str | None]:
+        ) -> tuple[str, dict, str | None]:
             i, (sample, db_path) = indexed
             trace = None
-            try:
-                trace = self.trace_for_sample(sample)
-                return self.predict(sample, db_path), trace, None
-            except Exception as e:
-                # 失败消息带回主线程统一打印，工作线程不碰终端
-                error = f"  sample {i} failed: {type(e).__name__}: {e}"
-                if trace is not None:
-                    trace = {**trace, "error": error}
-                return "", trace, error
+            sql = ""
+            error = None
+            with question_metrics() as metrics:
+                try:
+                    trace = self.trace_for_sample(sample)
+                    sql = self.predict(sample, db_path)
+                except Exception as e:
+                    # 失败消息带回主线程统一打印，工作线程不碰终端
+                    error = f"  sample {i} failed: {type(e).__name__}: {e}"
+            trace = trace or {"question": sample.question}
+            if error is not None:
+                trace = {**trace, "error": error}
+            trace = {**trace, "metrics": metrics.to_dict()}
+            return sql, trace, error
 
         bar = Progress(len(samples), "generate", enabled=progress)
         preds = []
@@ -219,6 +218,11 @@ class DeepSeekProThinking(DeepSeekPro):
 class DeepSeekProThinkingFewShot(DeepSeekProThinking):
     name = "pro-t-direct-fs"
     fewshot_selection = "archer_en_dev_rsl_k3"
+
+
+class DeepSeekProThinkingSFS(DeepSeekProThinking):
+    name = "pro-t-direct-sfs"
+    fewshot_selection = "archer_en_dev_sfs_k3"
 
 
 class DeepSeekProThinkingConv(DeepSeekProThinking):

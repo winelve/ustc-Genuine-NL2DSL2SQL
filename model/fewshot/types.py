@@ -15,6 +15,10 @@ class FewShotExample:
 class SelectedExample:
     example: FewShotExample
     distance: float
+    semantic_rank: int | None = None
+    structure_rank: int | None = None
+    structure_similarity: float | None = None
+    fusion_score: float | None = None
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,89 @@
+{
+ "dataset": "en_train",
+ "distilled_by": "deepseek-v4-pro-thinking",
+ "distilled_at": "2026-07-27",
+ "source_pred": "predictions/plandsl/pro-t-plandsl_en_train",
+ "items": [
+  {
+   "id": "D1",
+   "text": "When a query conditionally modifies column values for different subsets of rows, use UNION ALL of separate SELECT statements for each subset rather than embedding the logic in CASE expressions within a single SELECT.",
+   "evidence": [
+    70,
+    71,
+    78,
+    79,
+    98,
+    99,
+    100,
+    101,
+    132,
+    136,
+    148,
+    149,
+    289,
+    339,
+    381,
+    384,
+    388,
+    400,
+    409,
+    412
+   ]
+  },
+  {
+   "id": "D3",
+   "text": "If a question mentions an exact numeric constant or widely known value (e.g., a world record), use that literal constant directly in the query rather than computing it from the database.",
+   "evidence": [
+    15,
+    44,
+    45,
+    92,
+    93,
+    183,
+    190,
+    191
+   ]
+  },
+  {
+   "id": "D4",
+   "text": "When determining the current value of a metric for an entity that has multiple historical records, use an aggregate function such as MAX on the computed expression over all records, without first filtering to the most recent record.",
+   "evidence": [
+    310,
+    311,
+    312,
+    313,
+    318,
+    319,
+    320,
+    321,
+    330,
+    331,
+    352
+   ]
+  },
+  {
+   "id": "D6",
+   "text": "When computing counts that may be zero for some groups, ensure all groups appear by using UNION ALL to supply rows for missing groups with a count of zero, rather than relying on a LEFT JOIN to generate nulls.",
+   "evidence": [
+    94,
+    95,
+    96,
+    97,
+    114,
+    115,
+    116,
+    117,
+    286,
+    287
+   ]
+  },
+  {
+   "id": "D10",
+   "text": "When asked 'how much more likely' one event is than another, compute the arithmetic difference between the two probabilities, not their ratio.",
+   "evidence": [
+    306,
+    309
+   ]
+  }
+ ]
+}

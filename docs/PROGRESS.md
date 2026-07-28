@@ -35,6 +35,66 @@
 - 该修复只作用于后续生成时的检查与修复循环，不会改变已经生成的预测文件。
   若要衡量 EX 影响，需要重新生成一个实验臂。
 
+## 2026-07-28 · BIRD 旧版 dev 与输出归档
+
+- 旧版 `dev_20240627` 单独转换并注册为 `bird_dev_20240627`，与新版
+  `bird_dev` 共用同一批 11 个数据库。
+- 旧版题面与新版有 182 题不同，fixed few-shot 按题目哈希查找，因此不能复用
+  `bird_dev_rsl_k3.json`；已重建独立的 `bird_dev_20240627_rsl_k3.json`。
+- 新增旧版专用档位 `bird-pro-t-dsl-fs-20240627`，保留 BIRD evidence 协议并读取
+  旧版 selection。`pro-t-dsl-fs` 仍只用于 Archer `en_dev`。
+- `predictions/` 和 `results/` 根目录中的现有产物已按 bird/direct/dsl/gold 分类；
+  同名但内容不同的早期产物保存在各分类的 `_archive/`，没有覆盖或删除。
+
+**下一步：**运行旧版全量生成，再用 `python -m bird eval --official --cross-check`
+按 `bird_dev_20240627` 评测；该分数只与旧版 BIRD 主榜比较。
+
+## 2026-07-28 · BIRD 两版难度分布与旧版结果复盘
+
+- 旧版 `bird_dev_20240627` 正确评测为 **61.60%（945/1534）**：
+  simple 68.43%（925 题）、moderate 52.16%（464 题）、challenging
+  48.28%（145 题）。
+- 曾得到的 60.10% 使用旧版预测却漏传 `--data bird_dev_20240627`，实际按新版
+  `bird_dev` gold 评测；其 860/443/231 分布也证明了错配，该报告不可用于结论。
+- 两版难度迁移不是简单减少 hard：新版 challenging = 旧版 challenging 145 题
+  + 旧版 moderate 21 题 + 旧版 simple 65 题。后两组被大幅改写后，在两次新版
+  运行中仅命中 2/21 和 0–1/65，直接把新版 challenging 拉到 29.87–33.77%；
+  原有 145 道 challenging 上三次为 48.28% / 51.72% / 46.21%。
+- 旧版 moderate 的 308 道题面与 gold 均未变化题，三次分别为
+  57.79% / 58.77% / 57.79%，没有模型级退化。111 道题面相同但 gold 后来修改的题，
+  同一份旧预测按旧 gold 为 39.64%，按新 gold 为 53.15%，说明旧标注本身是主要拖累。
+- 旧版 moderate 的 222 道错题只有 5 道执行/gold 错误；128 道最终 SELECT 输出列数
+  与 gold 不同。correct/wrong 的 few-shot 最近邻距离与修复率近似，暂无证据表明
+  top-3 检索或 DSL 修复协议是这次分桶差异的主因。
+
+**决策：**两版只各自对齐各自榜单，不横比难度桶；旧版 61.60% 作为
+`dev_20240627` 正式结果，60.10% 错配报告标记无效。
+
+## 2026-07-28 · BIRD 定向错题归因
+
+- 2025-11 challenging：153 道错题中，88 道输出列集合/数量不符，38 道聚合或
+  结果粒度不符，15 道过滤值/时间条件不符，9 道执行错误/超时，其余 3 道。
+  新版从旧 simple/moderate 升入 challenging 的 86 道重写题只对 3 道；其中
+  83 道错题有 67 道属于输出列覆盖失败。原有 145 道 challenging 仍有
+  51.72% EX，故低分主因是新版多字段综合报告题，而非普通 hard SQL 全面失效。
+- 2024-06 moderate：222 道错题中，106 道聚合/去重/分母/结果粒度不符，
+  54 道过滤值或时间条件不符，43 道输出列不符，5 道执行错误/超时，其余
+  14 道为表示、连接或排序问题。另有旧 gold 与题面/evidence 矛盾的标注噪声，
+  调方法时不能反向拟合这些错误答案。
+- 现有检查器的盲点已量化：2025 challenging 错题仍有 149/153（97.39%）最终
+  checks passed；旧 moderate 错题为 221/222（99.55%）。C1–C4 主要验证
+  “声明与 SQL 自洽/引用存在”，不能验证问题要求的输出覆盖、实体粒度、分子分母、
+  去重口径和过滤语义。
+- 2025 challenging 典型 trace：#0 模型只声明并输出 4 个“characteristics”，
+  但 gold 输出 10 列；模型已在 CTE 中算出 free rate 与 county average，却没有
+  暴露到最终 SELECT，单轮无 issue 通过。#1189 把阈值写成全表
+  `AVG(aCL IgM)`，而 gold 要求在 `Thrombosis=2 AND ANA Pattern='S'` 子群内求平均；
+  声明只写最终 COUNT、未声明阈值总体，单轮无 issue 通过，实际结果 0 vs 3。
+
+**后续方法调整优先级：**先增加 question→输出清单覆盖校验；再把
+`result_grain / numerator / denominator / deduplicate_by / filters` 纳入声明与校验。
+继续加普通 few-shot 或只修 SQL 语法不是这两组错题的首要方向。
+
 ## 2026-07-28 · 模型级提示词精确预览
 
 - `model.pipeline` 新增必填 `--model`，只输出所选 no-plan DSL 模型实际发送的
@@ -44,6 +104,153 @@
 - 命令：
   `python -m model.pipeline --model pro-t-dsl-fs --data en_dev --preview 0`
   或将模型和数据换成 `bird-pro-t-dsl-fs` / `bird_dev`。
+
+## 2026-07-28 · 结构感知 few-shot 检索调研
+
+- 已核查 [DAIL-SQL](https://arxiv.org/abs/2308.15363)、
+  [RB-SQL](https://arxiv.org/abs/2407.08273) 和
+  [DCG-SQL](https://aclanthology.org/2025.acl-long.748/)：
+  - DAIL 先生成草案 SQL，用去实体后的 SQL skeleton Jaccard 过滤问题语义近邻；
+    是三者中最容易接入现有 fixed-selection 契约的方案，但会增加一遍草案生成。
+  - RB-SQL 训练 question→SQL-skeleton 的双塔/MaxSim 检索器；能保持最终生成单次
+    LLM 调用，但论文每个检索器约 2.2 亿参数，BIRD skeleton 训练对约 94 万，
+    单 V100 训练 3–6 小时。其 BIRD 消融中 skeleton retriever 的独立增益仅
+    +0.71 EX，完整复现的性价比不高。
+  - DCG-SQL 还需 schema pruner、schema-link graph、对比学习 graph encoder 和
+    Llama-3.1-8B 似然标注的 hard negatives；论文用 A100 80GB，两个检索模块约
+    3+8 小时训练。论文给出的 GitHub 仓库目前只有 README，无法直接复现。
+- 对 Archer `en_dev` 做了不改代码的离线诊断：沿用现有 all-mpnet 语义 top-30，
+  用 sqlglot 算子多重集衡量 gold SQL 与候选 SQL 的结构相似度。
+  - 当前语义 top-3 的平均结构相似度为 0.300；
+  - 用 gold 结构做 oracle top-30 重排后，最佳三例均值为 0.470，104 题中
+    79 题存在更好的结构候选，最佳结构候选的中位语义名次是第 12；
+  - 用现有 Direct/DSL 草案 SQL 代替 gold 重排，均值仍可到 0.384/0.391，
+    但分别有 23/22 题被错误草案带偏。
+  这些数只证明检索池中存在结构 headroom；自定义相似度不是论文指标，也不能用
+  gold 结构作为真实方法。
+- **建议（待确认）：**第一步做 DAIL-lite 的离线两阶段混合重排，而不是纯结构替换：
+  现有语义检索召回 top-30 → 共享的 zero-shot Direct 草案 SQL →
+  sqlglot 规范化结构特征 → 语义/结构 rank fusion → 固定 top-3 selection JSON。
+  Direct 与 DSL 必须共用同一份草案和 selection，避免把 DSL 能力偷渡进 DSL+FS；
+  selection trace 增加草案来源、语义名次、结构分和最终名次。结构特征优先覆盖
+  当前错题主因：输出列数、聚合/分组粒度、子查询/CTE 深度、集合运算、排序限制、
+  算术与谓词形态。连续融合优于 DAIL 的硬阈值，避免错误草案把正确语义近邻全部滤掉。
+- **备选路线：**若两阶段方法有效但不接受额外草案成本，再做 RB-lite：
+  在 BIRD 9428 条 train 上训练轻量 question↔skeleton 对比检索器，用语义近邻中的
+  错结构样本作 hard negatives；Archer 仅 414 条，不足以单独训练。完整 DCG-SQL
+  当前不进入实现路线。
+
+**下一步：**路线已确认并实现，见下面的 SFS 进度；本阶段明确不加入 RB-lite。
+
+## 2026-07-28 · SFS（Structure-aware Few-Shot）实现
+
+- 命名冻结为 `pro-t-direct-sfs` / `pro-t-dsl-sfs`，不使用
+  `pro-t-direct-struct-fs`；两者只覆盖 `name` 和 `fewshot_selection`，
+  共用 `archer_en_dev_sfs_k3`。
+- 新增 SQLite/sqlglot AST 结构签名、多重集 Jaccard 与等权 normalized-rank
+  fusion。特征忽略标识符/字面量，覆盖投影、聚合/分组、join、谓词、子查询/CTE、
+  set-op、排序/limit、算术与 window；草案解析失败时严格保持语义顺序。
+- 新增离线 `rerank-sfs`：
+  semantic top-30 + frozen zero-shot Direct predictions → fixed SFS top-3。
+  artifact 记录 target/semantic/draft 三个输入 SHA-256、固定权重、fallback 数，
+  以及逐例语义/结构名次、
+  结构相似度和融合分；Direct/DSL trace 共用同一序列化函数，旧 RSL trace 不变。
+- 补齐 `python -m model.fewshot.offline` 入口；`requirements-fewshot.txt`
+  增加 `sqlglot==30.13.0`。真实 draft 暴露默认 sqlglot 不接受 SQLite 反引号，
+  已通过失败测试把解析方言固定为 `sqlite`，最终 104 题 0 fallback。
+- Archer 真实 artifact：
+  - semantic top-30 SHA-256
+    `BCE07E58CBE0DB4397A691807BE69846FE1233E4494145E62CD36BD046516F79`；
+  - frozen `pro-t-direct` draft SHA-256
+    `D6EA9904C7D6B39BB36C2BB65075379A9509D8F85035BA71F173CEDB01F1C434`；
+  - Archer `en_dev` target SHA-256
+    `865DF28A35EA86D04C572C17C2C949860394B1A28B18818175BB1C554E7EDFD1`；
+  - SFS top-3 SHA-256
+    `4045B19B77A88468B64C39C459D2C4C4E43E1617809FA7C3C8491C3380261322`，
+    重建前后逐字节一致。
+- Audit：104 records、每题恰好 3 例、0 duplicate、0 self-selection；
+  proxy draft-structure 均值 0.3372→0.4613。诊断-only 的 gold-structure
+  均值 0.3399→0.3962（73 提升/9 持平/22 下降），未用于调参。
+- exact prompt preview 已确认 Direct/DSL 第 0 题使用相同 source IDs
+  `en_train:357 / 302 / 300`，DSL 仍要求 SQL+declarations JSON，Direct 仍为 CT-3。
+- 效果实验现已运行：Direct 104 题与 DSL 10 题 smoke 均未显示增益；
+  具体结果与归因见后面的“SFS 首轮真实结果与负结果归因”。
+- 设计与执行计划：
+  `docs/superpowers/specs/2026-07-28-sfs-structural-fewshot-design.md`、
+  `docs/superpowers/plans/2026-07-28-sfs-structural-fewshot.md`。
+
+**结论：**Archer 首轮未成立，不扩到 BIRD，也不先做 RB-lite。
+
+## 2026-07-28 · 逐题耗时与 Token 统计
+
+- 新增并发安全的逐题 metrics collector；每个 worker 用独立 `ContextVar`，
+  不会在 Direct/DSL 并发生成时串题。
+- `ChatEndpoint` 直接读取 DeepSeek 非流式响应的 `usage`，记录并汇总：
+  `prompt_tokens`、`completion_tokens`、`total_tokens`、缓存命中/未命中 token
+  以及 `reasoning_tokens`；不做本地估算。
+- 每题 trace 新增 `metrics`：端到端 `elapsed_seconds`、调用次数、
+  API 累计耗时、逐题 usage 总量和每次调用明细。DSL 的初次生成及修复轮次全部计入
+  同一题；API 失败仍记录耗时和异常类型，未返回的 token 字段为 `null`。
+- 端到端计时覆盖上下文与 prompt 准备、全部 API 调用、DSL 校验/修复和最终选择。
+  预测 JSON 格式不变，统计只进入 `.trace.json` 与断点 trace。
+- checkpoint stamp 升级为 `question-metrics-v1`，不会静默复用缺少 metrics 的旧断点。
+- README 已补 SFS 10 题 smoke、104 题全量命令和 trace 字段说明。
+- 验证：新增测试经过 RED→GREEN；最终
+  `.venv\Scripts\python.exe -m pytest -q` 为 **428 passed**。
+
+**结果：**metrics 已随 Direct 104 题全量验证；SFS 效果结论见下一节。
+
+## 2026-07-28 · SFS 首轮真实结果与负结果归因
+
+- `pro-t-direct-sfs` 104 题全量：VA 99.04%、EX **42.31%（44/104）**、
+  SIM 47.30%；语义 top-3 为 EX 44.23%（46/104）、SIM 48.86%，因此 SFS
+  点估计少 2 题、EX −1.92。
+- 配对结果：语义 FS 独对 8 题、SFS 独对 6 题（双侧精确检验 `p=0.791`）。
+  这不是显著退化，但明确没有取得正向证据。
+- thinking 随机性不可忽略：示例及顺序完全不变的 4 题，生成 SQL 文本仍 4/4
+  改变。因此单次运行的 −2 题不能全部归因于检索；后续方法比较需重复运行，
+  或换非 thinking 的确定性骨干。
+- 根因证据：
+  - frozen zero-shot draft 只正确 38/104；draft 正确子集 SFS 净 +1，
+    draft 错误子集净 −3；
+  - SFS 将 312 个示例位置中的 161 个替换为原语义 top-3 外候选，42 个来自
+    rank ≥10；算子多重集把语义完全不同但 SELECT/JOIN/算术外形相近的题拉入；
+  - proxy 结构均值 0.3372→0.4613 是对优化目标本身的提升，并不预测 EX。
+- DSL SFS 的前 10 题 smoke 为 4/10；旧语义 FS 同一前 10 题为 6/10。
+  当前没有理由继续支付剩余 94 题成本。
+- 新 metrics 在真实全量中工作正常：104 个 API calls；总计
+  117,225 prompt / 140,609 completion / 257,834 total /
+  130,217 reasoning tokens；逐题平均 22.71 秒，中位 17.91 秒。
+
+**决策：**`sfs-v1` 作为负结果收档，不调 dev 权重、不跑 DSL 全量。若重开，
+先设计能区分“逻辑变换”而非 AST 外形的表示，并处理错误草案传播；RB-lite
+仍不因本次失败自动进入实现。
+
+## 2026-07-28 · Value Evidence 调研（待讨论，未实现）
+
+- 对齐 CHESS、SEED、SQL-R1 的消融口径：
+  - CHESS 在 subsampled BIRD dev 上，相关 entity/context retrieval 相对
+    “随机示例 + 全列描述”为 64.62 vs 59.86，净 **+4.76 EX**；但同时包含
+    value 与 description retrieval，不是纯 value-only。
+  - SEED 没有随机值对照；自动 evidence 相对无 evidence 的 BIRD dev 收益随
+    下游模型从 **−0.58 到 +17.73 EX**，说明 evidence 格式和兼容性同样关键。
+  - SQL-R1 的任意 representative values 在 RL 训练消融中为 63.1 vs 61.9，
+    仅 **+1.2 EX** 且论文称不显著、会增加序列长度与训练成本。
+- 代码核查：
+  - CHESS 完整版需要 LSH、edit/embedding 重排、关键词 LLM 和列描述向量库；
+  - SEED 还需 schema 摘要、BIRD train evidence few-shot、探索 SQL 和 evidence
+    生成，每题约多 3–4 次 LLM 调用，Archer 无人工 evidence 可直接复用；
+  - SQL-R1 只是每列无排序 `SELECT DISTINCT ... LIMIT N`，实际主路径没有启用
+    question-relevant hits。
+- 本仓库 `schema_with_rows()` 已经给每表无排序 `LIMIT 3`，等价于更重的任意值
+  baseline。较可行的是 CHESS-lite：对小型 Archer 库只读扫描 distinct text values，
+  用 exact/substring/edit similarity 选问题相关值，并让 Direct/DSL 共用固定 artifact。
+  正式实验必须让相关值与任意值保持相同数量或近似 token 预算，只改变 value selection。
+- 完整调研记录：
+  `docs/analysis/2026-07-28-value-evidence-research.md`。
+
+**下一步：**停在研究阶段，与用户确认是否采用 CHESS-lite 以及实验对照后再写设计；
+当前没有实现新模型或运行 API。
 
 ## 当前工作：RSL-SQL 风格 fixed few-shot 消融（2026-07-27）
 

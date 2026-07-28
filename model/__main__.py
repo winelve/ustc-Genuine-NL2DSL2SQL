@@ -27,6 +27,7 @@ from archer_eval.report import make_meta, report_name, write_report
 from model import MODELS
 
 DEFAULT_CHUNK = 50
+TRACE_SCHEMA = "question-metrics-v1"
 
 SWITCH_COLUMNS = ("plan", "声明层", "知识", "evidence", "L2规则", "SQLens", "重试")
 
@@ -115,7 +116,12 @@ def _run_with_checkpoint(
     断点文件只在整个数据集都跑完后才删。
     """
     total = len(samples) if total is None else total
-    stamp = {"model": generator.name, "data": alias, "n": total}
+    stamp = {
+        "model": generator.name,
+        "data": alias,
+        "n": total,
+        "trace_schema": TRACE_SCHEMA,
+    }
     ckpt = _checkpoint_path(out)
     done = _read_checkpoint(ckpt, stamp) if chunk else {}
     done = {i: r for i, r in done.items() if i < len(samples)}   # 本次只关心这一段

@@ -20,7 +20,9 @@ from config import API_CONCURRENCY
 from model.base import SQLGenerator
 from model.fewshot.render import render_reference_examples
 from model.fewshot.store import SelectionStore, sample_key
+from model.fewshot.trace import fewshot_trace
 from model.llm import ChatEndpoint
+from model.metrics import question_metrics
 from model.pipeline.context import PipelineContext
 from model.pipeline.stages.declare import DeclareStage
 from model.pipeline.stages.generate import GenerateStage
@@ -83,19 +85,11 @@ class PlanSQL(SQLGenerator):
                     f"record for db_id={sample.db_id!r}, sample_key={target_key}"
                 )
             ctx.fewshot_block = render_reference_examples(record)
-            ctx.fewshot_trace = {
-                "selection": self.fewshot_selection,
-                "corpus": record.corpus,
-                "corpus_sha256": self._fewshot_store.corpus_sha256,
-                "encoder": record.encoder,
-                "k": record.k,
-                "source_ids": [
-                    selected.example.source_id for selected in record.examples
-                ],
-                "distances": [
-                    selected.distance for selected in record.examples
-                ],
-            }
+            ctx.fewshot_trace = fewshot_trace(
+                selection=self.fewshot_selection,
+                record=record,
+                store=self._fewshot_store,
+            )
         return ctx
 
     def _stages(self) -> list:
@@ -138,13 +132,22 @@ class PlanSQL(SQLGenerator):
 
         def one(indexed: tuple[int, tuple[Sample, Path]]) -> tuple[str, dict, str | None]:
             i, (sample, db_path) = indexed
-            try:
-                ctx = self._run(sample, db_path)
-                return ctx.final_sql, ctx.to_trace(), None
-            except Exception as e:
-                error = f"{type(e).__name__}: {e}"
-                return "", {"question": sample.question, "error": error}, \
-                    f"  sample {i} failed: {error}"
+            ctx = None
+            error = None
+            with question_metrics() as metrics:
+                try:
+                    ctx = self._run(sample, db_path)
+                except Exception as e:
+                    error = f"{type(e).__name__}: {e}"
+            if ctx is None:
+                trace = {"question": sample.question, "error": error}
+                sql = ""
+            else:
+                trace = ctx.to_trace()
+                sql = ctx.final_sql
+            trace["metrics"] = metrics.to_dict()
+            display_error = f"  sample {i} failed: {error}" if error else None
+            return sql, trace, display_error
 
         bar = Progress(len(samples), "generate", enabled=progress)
         preds, traces = [], []
@@ -277,6 +280,13 @@ class ProTDslFewShot(ProTDsl):
 
     name = "pro-t-dsl-fs"
     fewshot_selection = "archer_en_dev_rsl_k3"
+
+
+class ProTDslSFS(ProTDsl):
+    """No-plan DSL + fixed structure-aware SQL references."""
+
+    name = "pro-t-dsl-sfs"
+    fewshot_selection = "archer_en_dev_sfs_k3"
 
 
 class ProTDslConv(ProTDsl):

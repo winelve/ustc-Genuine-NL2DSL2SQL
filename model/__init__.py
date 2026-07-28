@@ -13,17 +13,17 @@
 
 from model.api import (DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro,
                        DeepSeekProThinking, DeepSeekProThinkingConv,
-                       DeepSeekProThinkingFewShot)
+                       DeepSeekProThinkingFewShot, DeepSeekProThinkingSFS)
 from model.base import SQLGenerator
 from model.bird import (BirdDirect, BirdDirectFewShot, BirdProTDsl,
-                        BirdProTDslFewShot)
+                        BirdProTDslFewShot, BirdProTDslFewShot20240627)
 from model.example import FirstTableBaseline
 from model.pipeline.archive import (ProTPlanDslConv, ProTPlanDslConvCchk,
                                     ProTPlanDslProf, ProTPlanDslProfForce,
                                     ProTPlanDslProfForceChk)
 from model.pipeline.models import (ProTDsl, ProTDslChk, ProTDslConv,
                                    ProTDslConvChk, ProTDslConvChkR0,
-                                   ProTDslFewShot,
+                                   ProTDslFewShot, ProTDslSFS,
                                    ProTDslKnowledge, ProTDslKnowledgeRules,
                                    ProTDslKnowledgeRulesSqlens,
                                    ProTPlan, ProTPlanDsl)
@@ -39,12 +39,14 @@ MODELS: dict[str, type[SQLGenerator]] = {
     DeepSeekPro.name: DeepSeekPro,                      # pro-direct
     DeepSeekProThinking.name: DeepSeekProThinking,      # pro-t-direct
     DeepSeekProThinkingFewShot.name: DeepSeekProThinkingFewShot,  # pro-t-direct-fs
+    DeepSeekProThinkingSFS.name: DeepSeekProThinkingSFS,  # pro-t-direct-sfs
 
     # 主线加法阶梯：plan → plandsl → dsl(去plan) → +conv → +chk
     ProTPlan.name: ProTPlan,                # pro-t-plan
     ProTPlanDsl.name: ProTPlanDsl,          # pro-t-plandsl
     ProTDsl.name: ProTDsl,                  # pro-t-dsl
     ProTDslFewShot.name: ProTDslFewShot,    # pro-t-dsl-fs
+    ProTDslSFS.name: ProTDslSFS,            # pro-t-dsl-sfs
     ProTDslConv.name: ProTDslConv,          # pro-t-dsl-conv
     ProTDslConvChk.name: ProTDslConvChk,    # pro-t-dsl-conv-chk  ★满配·最终
 
@@ -59,6 +61,7 @@ MODELS: dict[str, type[SQLGenerator]] = {
     BirdDirectFewShot.name: BirdDirectFewShot,  # bird-pro-t-direct-fs
     BirdProTDsl.name: BirdProTDsl,          # bird-pro-t-dsl
     BirdProTDslFewShot.name: BirdProTDslFewShot,  # bird-pro-t-dsl-fs
+    BirdProTDslFewShot20240627.name: BirdProTDslFewShot20240627,
 
     # 存档：带 plan 注知识的探索支（已被 no-plan 线取代，多数判负，保留以可复现）
     ProTPlanDslProf.name: ProTPlanDslProf,                  # pro-t-plandsl-prof

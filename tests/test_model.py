@@ -63,6 +63,73 @@ def test_chat_endpoint_sends_messages_and_params(monkeypatch):
     assert seen["extra_body"] == {"a": 1}
 
 
+def test_chat_endpoint_records_deepseek_usage(monkeypatch):
+    pytest.importorskip("openai")
+    from model.llm import ChatEndpoint
+    from model.metrics import question_metrics
+
+    monkeypatch.setenv("FAKE_KEY_ENV", "sk-test")
+    endpoint = ChatEndpoint(base_url="http://x", model="m", key_env="FAKE_KEY_ENV")
+    usage = SimpleNamespace(
+        prompt_tokens=16,
+        completion_tokens=10,
+        total_tokens=26,
+        prompt_cache_hit_tokens=6,
+        prompt_cache_miss_tokens=10,
+        completion_tokens_details=SimpleNamespace(reasoning_tokens=4),
+    )
+    endpoint._client = SimpleNamespace(
+        chat=SimpleNamespace(
+            completions=SimpleNamespace(
+                create=lambda **_kwargs: SimpleNamespace(
+                    choices=[SimpleNamespace(
+                        message=SimpleNamespace(content="SELECT 1")
+                    )],
+                    usage=usage,
+                )
+            )
+        )
+    )
+
+    with question_metrics() as metrics:
+        assert endpoint.chat("sys", "usr") == "SELECT 1"
+
+    result = metrics.to_dict()
+    assert result["api_calls"] == 1
+    assert result["usage"] == {
+        "prompt_tokens": 16,
+        "completion_tokens": 10,
+        "total_tokens": 26,
+        "prompt_cache_hit_tokens": 6,
+        "prompt_cache_miss_tokens": 10,
+        "reasoning_tokens": 4,
+    }
+
+
+def test_chat_endpoint_records_failed_call_and_reraises(monkeypatch):
+    pytest.importorskip("openai")
+    from model.llm import ChatEndpoint
+    from model.metrics import question_metrics
+
+    monkeypatch.setenv("FAKE_KEY_ENV", "sk-test")
+    endpoint = ChatEndpoint(base_url="http://x", model="m", key_env="FAKE_KEY_ENV")
+
+    def fail(**_kwargs):
+        raise TimeoutError("too slow")
+
+    endpoint._client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=fail))
+    )
+
+    with question_metrics() as metrics:
+        with pytest.raises(TimeoutError, match="too slow"):
+            endpoint.chat("sys", "usr")
+
+    [call] = metrics.to_dict()["calls"]
+    assert call["error"] == "TimeoutError"
+    assert all(value is None for value in call["usage"].values())
+
+
 def test_api_model_without_key_fails_loudly(monkeypatch):
     pytest.importorskip("openai")
     from model.api import DeepSeekFlash

@@ -11,6 +11,7 @@ import io
 import json
 import re
 import sqlite3
+import sys
 import zipfile
 from pathlib import Path
 
@@ -670,6 +671,19 @@ def test_adapter_refuses_to_guess_on_unparsable_output():
         parse_output("something went wrong")
 
 
+def test_official_subprocess_prints_heartbeat_while_waiting(capsys):
+    from bird.official_eval.adapter import _run_with_heartbeat
+
+    proc = _run_with_heartbeat(
+        [sys.executable, "-c", "import time; time.sleep(0.08); print('done')"],
+        heartbeat_s=0.02,
+    )
+
+    assert proc.returncode == 0
+    assert proc.stdout.strip() == "done"
+    assert "官方脚本仍在运行" in capsys.readouterr().out
+
+
 # ---------------------------------------------------------- scores
 
 def test_scores_renders_table(tmp_path):
@@ -860,6 +874,16 @@ def test_bird_dsl_fewshot_variant_is_single_variable_and_registered():
     } == {"name", "fewshot_selection"}
     assert BirdProTDslFewShot.evidence is True
     assert BirdProTDslFewShot.use_plan is False
+
+
+def test_bird_20240627_dataset_and_fewshot_variant_are_versioned():
+    from model import MODELS
+    from model.bird import BirdProTDslFewShot20240627
+
+    assert config.DATASETS["bird_dev_20240627"].name == "dev_20240627.json"
+    assert config.db_dir_for("bird_dev_20240627") == config.DATASET_DB_DIRS["bird_dev"]
+    assert MODELS["bird-pro-t-dsl-fs-20240627"] is BirdProTDslFewShot20240627
+    assert BirdProTDslFewShot20240627.fewshot_selection == "bird_dev_20240627_rsl_k3"
 
 
 def test_bird_dsl_switch_matrix_is_pro_t_dsl_plus_evidence():

@@ -7,3 +7,4 @@ transformers==4.46.3
 torch==2.5.1
 numpy==2.1.3
 pyarrow==18.0.0
+sqlglot==30.13.0
