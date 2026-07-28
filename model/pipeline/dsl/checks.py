@@ -70,20 +70,130 @@ def _c2_consistency(decl: Declarations, tree: exp.Expression) -> list[str]:
 
 # ---------------------------------------------------------------- C3 接地
 
+def _normalize_identifier(identifier: str) -> str:
+    """按 SQLite 规则去掉一层标识符引号，并统一成 schema 的小写口径。"""
+    identifier = identifier.strip()
+    pairs = {'"': '"', "`": "`", "[": "]"}
+    if len(identifier) >= 2 and pairs.get(identifier[0]) == identifier[-1]:
+        identifier = identifier[1:-1]
+    return identifier.lower()
+
+
+def _c3_relation_columns(tree: exp.Expression,
+                         schema_info: SchemaInfo) -> SchemaInfo:
+    """返回 SQL 中可按关系名/别名访问的列，包含物理表、CTE 与子查询。"""
+    relations = {table: set(columns) for table, columns in schema_info.items()}
+    derived_queries: list[tuple[str, exp.Query]] = []
+
+    for cte in tree.find_all(exp.CTE):
+        if isinstance(cte.this, exp.Query):
+            name = _normalize_identifier(cte.alias_or_name)
+            output_names = cte.alias_column_names or cte.this.named_selects
+            relations[name] = {
+                _normalize_identifier(output_name)
+                for output_name in output_names
+                if output_name != "*"
+            }
+            derived_queries.append((name, cte.this))
+
+    for index, subquery in enumerate(tree.find_all(exp.Subquery)):
+        if isinstance(subquery.this, exp.Query):
+            name = (
+                _normalize_identifier(subquery.alias)
+                if subquery.alias
+                else f"__anonymous_subquery_{index}"
+            )
+            relations[name] = {
+                _normalize_identifier(output_name)
+                for output_name in subquery.this.named_selects
+                if output_name != "*"
+            }
+            derived_queries.append((name, subquery.this))
+
+    def bind_relation_aliases() -> bool:
+        changed = False
+        # CTE 本身在 AST 里也是 Table；等 CTE 输出收集完再绑定 `rates AS r`。
+        for table in tree.find_all(exp.Table):
+            source = _normalize_identifier(table.name)
+            alias = _normalize_identifier(table.alias)
+            if not alias or source not in relations:
+                continue
+            before = relations.get(alias, set())
+            after = before | relations[source]
+            if after != before:
+                relations[alias] = after
+                changed = True
+        return changed
+
+    def query_sources(query: exp.Query) -> list[exp.Expression]:
+        sources: list[exp.Expression] = []
+        from_ = query.args.get("from_")
+        if from_ is not None:
+            if from_.this is not None:
+                sources.append(from_.this)
+            sources.extend(from_.expressions)
+        sources.extend(join.this for join in query.args.get("joins") or [])
+        return sources
+
+    def source_columns(source: exp.Expression) -> set[str]:
+        if isinstance(source, exp.Table):
+            key = _normalize_identifier(source.alias_or_name)
+            return relations.get(key, relations.get(
+                _normalize_identifier(source.name), set()
+            ))
+        if isinstance(source, exp.Subquery) and source.alias:
+            return relations.get(_normalize_identifier(source.alias), set())
+        return set()
+
+    # `SELECT *` 会把上游关系列继续输出；多层 CTE 需要迭代到不再增长。
+    for _ in range(len(derived_queries) + 2):
+        changed = bind_relation_aliases()
+        for name, query in derived_queries:
+            expanded = set(relations[name])
+            sources = query_sources(query)
+            for select in query.selects:
+                if not _is_star(select):
+                    continue
+                inner = select.unalias()
+                qualifier = (
+                    _normalize_identifier(inner.table)
+                    if isinstance(inner, exp.Column) and inner.table
+                    else ""
+                )
+                if qualifier:
+                    expanded.update(relations.get(qualifier, set()))
+                else:
+                    for source in sources:
+                        expanded.update(source_columns(source))
+            if expanded != relations[name]:
+                relations[name] = expanded
+                changed = True
+        if not changed:
+            break
+    bind_relation_aliases()
+
+    return relations
+
+
 def _c3_grounding(decl: Declarations, tree: exp.Expression,
                   schema_info: SchemaInfo, db_path: Path) -> list[str]:
     """声明引用的表/列必须真实存在；等值比较的字面值给近邻提示。"""
     issues: list[str] = []
-    all_columns = {c for cols in schema_info.values() for c in cols}
+    relation_columns = _c3_relation_columns(tree, schema_info)
+    visible_columns = {c for cols in relation_columns.values() for c in cols}
 
-    def check_column(ref: str, owner: str) -> None:
+    def check_column(ref: str, owner: str, *,
+                     relations: SchemaInfo = relation_columns) -> None:
         table, _, column = ref.rpartition(".")
         if table:
-            if table.lower() not in schema_info:
+            table_key = _normalize_identifier(table)
+            column_key = _normalize_identifier(column)
+            if table_key not in relations:
                 issues.append(f"{owner} 引用的表 {table!r} 不在 schema 里")
-            elif column.lower() not in schema_info[table.lower()]:
+            elif column_key not in relations[table_key]:
                 issues.append(f"{owner} 引用的列 {ref!r} 不在 schema 里")
-        elif column.lower() not in all_columns:
+        elif _normalize_identifier(column) not in {
+                c for cols in relations.values() for c in cols}:
             issues.append(f"{owner} 引用的列 {column!r} 不在 schema 的任何表里")
 
     for output in decl.outputs:
@@ -95,11 +205,12 @@ def _c3_grounding(decl: Declarations, tree: exp.Expression,
                 issues.append(f"输出列 {output.name!r} 的 expr 无法按 SQLite 表达式"
                               f"解析: {output.expr!r}")
                 continue
-            for c in sorted(columns - all_columns):
+            for c in sorted(columns - visible_columns):
                 issues.append(f"输出列 {output.name!r} 的 expr 引用的列 {c!r} "
                               "不在 schema 的任何表里")
     for a in decl.assumptions:
-        check_column(a.target, f"假设 target {a.target!r}")
+        check_column(a.target, f"假设 target {a.target!r}",
+                     relations=schema_info)
     issues += _c3_literal_neighbors(tree, schema_info, db_path)
     return issues
 

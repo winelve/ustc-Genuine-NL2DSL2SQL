@@ -289,6 +289,9 @@ python -m archer_eval --data en_dev --pred predictions/pro-t-dsl-conv-chk_en_dev
 # 预览/导出 CT-3 prompt（第 0 题）
 python -m model.prompts --data en_dev --index 0
 
-# 预览 pipeline 发给各 LLM 的完整消息（第 0 题）
-python -m model.pipeline --data en_dev --preview 0
+# 预览所选 pipeline 模型实际发送的首轮消息（第 0 题，不调用 API）
+python -m model.pipeline --model pro-t-dsl-fs --data en_dev --preview 0
+
+# BIRD DSL + few-shot 的实际首轮消息（第 0 题）
+python -m model.pipeline --model bird-pro-t-dsl-fs --data bird_dev --preview 0
 ```

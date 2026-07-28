@@ -44,28 +44,36 @@ class PlanSQL(SQLGenerator):
     def __init__(self) -> None:
         self.endpoint = ChatEndpoint(**self.endpoint_spec)
         self.trace_records: list[dict] = []   # predict_all 后与预测同序的调试记录
-        self._fewshot_store = None
-        if self.fewshot_selection is not None:
-            path = (
-                config.FEWSHOT_DIR
-                / "selections"
-                / f"{self.fewshot_selection}.json"
-            )
-            self._fewshot_store = SelectionStore.from_path(path)
+        self._fewshot_store = self._load_fewshot_store()
 
-    def _stages(self) -> list:
-        # 每次调用现取参数，实例上改 n_plans 立即生效
-        return [
-            PlanStage(self.endpoint, self.n_plans, self.plan_temperature,
-                      use_profile=self.use_profile),
-            GenerateStage(self.endpoint),
-            VoteStage(),
-        ]
+    @classmethod
+    def _load_fewshot_store(cls) -> SelectionStore | None:
+        """按模型类加载固定选择；预览与正式生成共用。"""
+        if cls.fewshot_selection is None:
+            return None
+        path = (
+            config.FEWSHOT_DIR
+            / "selections"
+            / f"{cls.fewshot_selection}.json"
+        )
+        return SelectionStore.from_path(path)
 
-    def _run(self, sample: Sample, db_path: Path) -> PipelineContext:
+    @classmethod
+    def for_preview(cls) -> PlanSQL:
+        """构造不含 API client 的模型实例，仅用于确定性消息预览。"""
+        instance = cls.__new__(cls)
+        instance.endpoint = None
+        instance.trace_records = []
+        instance._fewshot_store = cls._load_fewshot_store()
+        return instance
+
+    def _prepare_context(
+        self, sample: Sample, db_path: Path
+    ) -> PipelineContext:
+        """准备正式生成和预览共同使用的确定性上下文。"""
         ctx = PipelineContext(question=sample.question, db_path=Path(db_path))
         ctx.evidence = sample.commonsense_knowledge or ""
-        ctx.schema = schema_with_rows(db_path)   # [0] 上下文准备：全量 schema+样本行
+        ctx.schema = schema_with_rows(db_path)
         if self.fewshot_selection is not None:
             record = self._fewshot_store.for_sample(sample.db_id, sample.question)
             if record is None:
@@ -88,9 +96,37 @@ class PlanSQL(SQLGenerator):
                     selected.distance for selected in record.examples
                 ],
             }
+        return ctx
+
+    def _stages(self) -> list:
+        # 每次调用现取参数，实例上改 n_plans 立即生效
+        return [
+            PlanStage(self.endpoint, self.n_plans, self.plan_temperature,
+                      use_profile=self.use_profile),
+            GenerateStage(self.endpoint),
+            VoteStage(),
+        ]
+
+    def _run(self, sample: Sample, db_path: Path) -> PipelineContext:
+        ctx = self._prepare_context(sample, db_path)
         for stage in self._stages():
             stage.run(ctx)
         return ctx
+
+    def preview_messages(
+        self, sample: Sample, db_path: Path
+    ) -> list[dict[str, str]]:
+        """返回 no-plan DSL 档位首轮实际消息，不执行任何 LLM。"""
+        if self.use_plan:
+            raise ValueError(
+                f"model {self.name!r} needs planner output before its DSL prompt "
+                "can be constructed; exact no-API preview is unavailable"
+            )
+        ctx = self._prepare_context(sample, db_path)
+        for stage in self._stages():
+            if isinstance(stage, DeclareStage):
+                return stage.initial_messages(ctx, None)
+        raise ValueError(f"model {self.name!r} has no DSL declare stage to preview")
 
     def predict(self, sample: Sample, db_path: Path) -> str:
         return self._run(sample, db_path).final_sql

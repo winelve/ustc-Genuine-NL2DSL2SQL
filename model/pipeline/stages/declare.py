@@ -97,35 +97,44 @@ class DeclareStage:
                 issues += found[name]
         return issues
 
+    def initial_messages(
+        self, ctx: PipelineContext, plan: str | None
+    ) -> list[dict[str, str]]:
+        """构造首轮实际请求；正式生成与 CLI 预览共用这一条路径。"""
+        if plan is None:
+            if ctx.fewshot_block:
+                user = render(
+                    "dslgen.user.noplan.fewshot",
+                    schema=ctx.schema,
+                    question=ctx.question,
+                    evidence=self._evidence_block(ctx),
+                    examples=ctx.fewshot_block,
+                )
+            else:
+                user = render(
+                    "dslgen.user.noplan",
+                    schema=ctx.schema,
+                    question=ctx.question,
+                    evidence=self._evidence_block(ctx),
+                )
+        else:
+            items = self._profile_items(ctx)
+            user = render(
+                "dslgen.user",
+                schema=ctx.schema,
+                question=ctx.question,
+                plan=plan,
+                profile=render_profile(items),
+            )
+        return [
+            {"role": "system", "content": self._system()},
+            {"role": "user", "content": user},
+        ]
+
     def run(self, ctx: PipelineContext) -> None:
         schema_info = load_schema_info(ctx.db_path)
-        items = self._profile_items(ctx)
-        system = self._system()
         for plan in (ctx.plans if self.use_plan else [None]):
-            if plan is None:
-                if ctx.fewshot_block:
-                    user = render(
-                        "dslgen.user.noplan.fewshot",
-                        schema=ctx.schema,
-                        question=ctx.question,
-                        evidence=self._evidence_block(ctx),
-                        examples=ctx.fewshot_block,
-                    )
-                else:
-                    user = render(
-                        "dslgen.user.noplan",
-                        schema=ctx.schema,
-                        question=ctx.question,
-                        evidence=self._evidence_block(ctx),
-                    )
-            else:
-                user = render("dslgen.user", schema=ctx.schema,
-                              question=ctx.question, plan=plan,
-                              profile=render_profile(items))
-            messages = [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ]
+            messages = self.initial_messages(ctx, plan)
             sql, declarations, rounds, passed = "", None, [], False
             for _ in range(1 + self.max_repairs):
                 reply = self.endpoint.chat_messages(messages, temperature=0.0)

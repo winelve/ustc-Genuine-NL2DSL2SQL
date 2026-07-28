@@ -317,20 +317,6 @@ def test_m3_variants_share_the_m2_backbone():
         assert cls.max_repairs == ProTPlanDsl.max_repairs
 
 
-def test_preview_renders_every_shipped_template(capsys, monkeypatch):
-    """预览工具必须能渲染所有模板——加占位符时最容易漏掉这里。"""
-    import sys
-
-    from model.pipeline.__main__ import main
-
-    monkeypatch.setattr(sys, "argv",
-                        ["model.pipeline", "--data", "en_dev", "--preview", "3"])
-    main()
-    out = capsys.readouterr().out
-    assert "dslgen user" in out and "Facts derived from" in out
-    assert "P1." in out and "singer.Age" in out      # 画像真的填进去了
-
-
 def test_planner_message_byte_identical_when_profile_off():
     """use_profile=False 时 planner 消息必须与不带画像的基线逐字节相同。
 
@@ -815,6 +801,104 @@ def test_dsl_fewshot_loads_fixed_selection_and_records_trace(monkeypatch, tmp_pa
         "distances": [0.25, 1.25, 2.25],
     }
     assert ctx.final_sql == "SELECT 1"
+
+
+def test_dsl_fewshot_preview_is_exact_initial_message_without_api(monkeypatch, tmp_path):
+    """少一个 FS/证据，或混入 planner，都会让预览与正式首轮请求不一致。"""
+    import model.pipeline.models as pipeline_models
+    from archer_eval.data import Sample
+    from model.bird import BirdProTDslFewShot
+    from model.fewshot.store import SelectionStore, sample_key
+    from model.fewshot.types import FewShotExample, SelectedExample, SelectionRecord
+
+    sample = Sample(
+        db_id="target_db",
+        query="SELECT 1",
+        question="Target question?",
+        commonsense_knowledge="target evidence",
+    )
+    key = sample_key(sample.db_id, sample.question)
+    record = SelectionRecord(
+        target_key=key,
+        corpus="bird_train",
+        encoder="sentence-transformers/all-mpnet-base-v2",
+        k=1,
+        examples=(
+            SelectedExample(
+                example=FewShotExample(
+                    source_id="bird_train:7",
+                    db_id="reference_db",
+                    question="Reference question?",
+                    sql="SELECT reference_value",
+                ),
+                distance=0.25,
+            ),
+        ),
+    )
+    store = SelectionStore(records={key: record}, corpus_sha256="c" * 64)
+
+    monkeypatch.setattr(
+        SelectionStore, "from_path", classmethod(lambda cls, path: store)
+    )
+    monkeypatch.setattr(
+        pipeline_models, "schema_with_rows", lambda _path: "CREATE TABLE target(a);"
+    )
+    monkeypatch.setattr(
+        pipeline_models, "ChatEndpoint",
+        lambda **_kwargs: pytest.fail("preview initialized the API client"),
+    )
+
+    generator = BirdProTDslFewShot.for_preview()
+    messages = generator.preview_messages(sample, tmp_path / "target.sqlite")
+
+    assert [message["role"] for message in messages] == ["system", "user"]
+    assert "Reference question?" in messages[1]["content"]
+    assert "SELECT reference_value" in messages[1]["content"]
+    assert "target evidence" in messages[1]["content"]
+    assert "Target question?" in messages[1]["content"]
+    assert "planner" not in messages[1]["content"].lower()
+    assert "<planner" not in messages[1]["content"].lower()
+
+
+def test_pipeline_preview_cli_prints_only_selected_models_actual_messages(
+        monkeypatch, tmp_path, capsys):
+    import model.pipeline.__main__ as preview_cli
+    from archer_eval.data import Sample
+
+    sample = Sample(db_id="db", query="SELECT 1", question="Q")
+
+    class PreviewModel:
+        @classmethod
+        def for_preview(cls):
+            return cls()
+
+        def preview_messages(self, got_sample, db_path):
+            assert got_sample is sample
+            assert db_path == tmp_path / "db.sqlite"
+            return [
+                {"role": "system", "content": "EXACT SYSTEM"},
+                {"role": "user", "content": "EXACT USER WITH FS"},
+            ]
+
+    monkeypatch.setattr(preview_cli, "MODELS", {"pro-t-dsl-fs": PreviewModel})
+    monkeypatch.setattr(preview_cli, "load_dataset", lambda _path: [sample])
+    monkeypatch.setattr(preview_cli, "resolve_dataset", lambda value: value)
+    monkeypatch.setattr(preview_cli.config, "db_dir_for", lambda _data: tmp_path)
+    monkeypatch.setattr(
+        preview_cli, "find_db_file", lambda _db_dir, _db_id: tmp_path / "db.sqlite"
+    )
+
+    assert preview_cli.main([
+        "--model", "pro-t-dsl-fs",
+        "--data", "en_dev",
+        "--preview", "0",
+    ]) == 0
+    output = capsys.readouterr().out
+    assert "EXACT SYSTEM" in output
+    assert "EXACT USER WITH FS" in output
+    assert "planner system" not in output
+    assert "sqlgen user" not in output
+    assert "repair" not in output
 
 
 def test_dsl_baseline_does_not_load_selection(monkeypatch):

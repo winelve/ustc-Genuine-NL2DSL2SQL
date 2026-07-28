@@ -270,6 +270,197 @@ def test_c3_flags_unknown_table_and_column(toy_db):
     assert any("height" in i.lower() for i in issues)   # 幻觉列（expr 里）
 
 
+@pytest.mark.parametrize("identifier", [
+    '"Song_Name"',
+    "`Song_Name`",
+    "[Song_Name]",
+])
+def test_c3_accepts_sqlite_quoted_physical_columns(toy_db, identifier):
+    """SQL 标识符引号不是列名的一部分，不能把真实列误判为不存在。"""
+    from model.pipeline.dsl import DslOutput, _c3_grounding, load_schema_info
+
+    sql = f"SELECT {identifier} FROM singer"
+    out = DslOutput.model_validate({
+        "sql": sql,
+        "declarations": {
+            "time_context": {"displaced": False},
+            "outputs": [{
+                "name": "song",
+                "source": "column",
+                "column": f"singer.{identifier}",
+            }],
+        },
+    })
+
+    assert _c3_grounding(
+        out.declarations, _tree(sql), load_schema_info(toy_db), toy_db
+    ) == []
+
+
+def test_c3_still_rejects_quoted_unknown_physical_column(toy_db):
+    from model.pipeline.dsl import DslOutput, _c3_grounding, load_schema_info
+
+    sql = 'SELECT "Missing_Name" FROM singer'
+    out = DslOutput.model_validate({
+        "sql": sql,
+        "declarations": {
+            "time_context": {"displaced": False},
+            "outputs": [{
+                "name": "missing",
+                "source": "column",
+                "column": 'singer."Missing_Name"',
+            }],
+        },
+    })
+
+    issues = _c3_grounding(
+        out.declarations, _tree(sql), load_schema_info(toy_db), toy_db
+    )
+    assert any("Missing_Name" in issue for issue in issues)
+
+
+def test_c3_resolves_physical_table_aliases_without_hiding_unknown_names(toy_db):
+    from model.pipeline.dsl import DslOutput, _c3_grounding, load_schema_info
+
+    info = load_schema_info(toy_db)
+
+    def issues_for(sql, column):
+        out = DslOutput.model_validate({
+            "sql": sql,
+            "declarations": {
+                "time_context": {"displaced": False},
+                "outputs": [{
+                    "name": "value",
+                    "source": "column",
+                    "column": column,
+                }],
+            },
+        })
+        return _c3_grounding(out.declarations, _tree(sql), info, toy_db)
+
+    assert issues_for("SELECT f.Name FROM singer AS f", "f.Name") == []
+    assert any(
+        "ghost" in issue
+        for issue in issues_for("SELECT Name FROM singer", "ghost.Name")
+    )
+    assert any(
+        "Missing" in issue
+        for issue in issues_for("SELECT f.Name FROM singer AS f", "f.Missing")
+    )
+
+
+def test_c3_resolves_cte_and_subquery_outputs_without_accepting_missing_names(toy_db):
+    from model.pipeline.dsl import DslOutput, _c3_grounding, load_schema_info
+
+    info = load_schema_info(toy_db)
+
+    def issues_for(sql, *, source="column", ref):
+        output = {"name": "value", "source": source}
+        output["column" if source == "column" else "expr"] = ref
+        out = DslOutput.model_validate({
+            "sql": sql,
+            "declarations": {
+                "time_context": {"displaced": False},
+                "outputs": [output],
+            },
+        })
+        return _c3_grounding(out.declarations, _tree(sql), info, toy_db)
+
+    cte_sql = (
+        "WITH rates AS (SELECT Age * 2 AS doubled FROM singer) "
+        "SELECT r.doubled FROM rates AS r"
+    )
+    assert issues_for(cte_sql, ref="r.doubled") == []
+    assert any("missing" in issue.lower()
+               for issue in issues_for(cte_sql, ref="r.missing"))
+
+    subquery_sql = (
+        "SELECT q.doubled FROM "
+        "(SELECT Age * 2 AS doubled FROM singer) AS q"
+    )
+    assert issues_for(subquery_sql, ref="q.doubled") == []
+
+    anonymous_sql = (
+        "SELECT AVG(doubled) FROM "
+        "(SELECT Age * 2 AS doubled FROM singer)"
+    )
+    assert issues_for(
+        anonymous_sql, source="derived", ref="AVG(doubled)"
+    ) == []
+
+    derived_sql = (
+        "WITH rates AS (SELECT Age * 2 AS doubled FROM singer) "
+        "SELECT doubled + 1 AS adjusted FROM rates"
+    )
+    assert issues_for(derived_sql, source="derived", ref="doubled + 1") == []
+    assert any("missing" in issue.lower()
+               for issue in issues_for(
+                   derived_sql, source="derived", ref="missing + 1"
+               ))
+
+
+def test_c3_uses_recursive_cte_column_list_as_its_output_schema(toy_db):
+    from model.pipeline.dsl import DslOutput, _c3_grounding, load_schema_info
+
+    sql = (
+        "WITH RECURSIVE split(item, rest) AS ("
+        "SELECT Name, Song_Name FROM singer "
+        "UNION ALL "
+        "SELECT item, '' FROM split WHERE rest <> ''"
+        ") SELECT item FROM split"
+    )
+    out = DslOutput.model_validate({
+        "sql": sql,
+        "declarations": {
+            "time_context": {"displaced": False},
+            "outputs": [{
+                "name": "item",
+                "source": "column",
+                "column": "split.item",
+            }],
+        },
+    })
+
+    assert _c3_grounding(
+        out.declarations, _tree(sql), load_schema_info(toy_db), toy_db
+    ) == []
+
+
+def test_c3_propagates_derived_columns_through_cte_stars(toy_db):
+    """复现 BIRD #0：派生列经过多层 SELECT * 后仍是合法的关系输出。"""
+    from model.pipeline.dsl import DslOutput, _c3_grounding
+
+    sql = (
+        'WITH base AS ('
+        'SELECT "Enrollment (K-12)" AS enrollment FROM frpm'
+        '), rates AS ('
+        'SELECT *, enrollment * 1.0 AS free_meal_rate FROM base'
+        '), winner AS ('
+        'SELECT * FROM rates'
+        ') '
+        'SELECT w.free_meal_rate FROM winner AS w'
+    )
+    out = DslOutput.model_validate({
+        "sql": sql,
+        "declarations": {
+            "time_context": {"displaced": False},
+            "outputs": [{
+                "name": "free_meal_rate",
+                "source": "column",
+                "column": "w.free_meal_rate",
+            }],
+        },
+    })
+
+    issues = _c3_grounding(
+        out.declarations,
+        _tree(sql),
+        {"frpm": {"enrollment (k-12)"}},
+        toy_db,
+    )
+    assert issues == []
+
+
 def test_c3_suggests_close_value_for_missing_literal(toy_db):
     from model.pipeline.dsl import _c3_grounding, load_schema_info
 
