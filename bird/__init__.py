@@ -1,6 +1,6 @@
 """BIRD benchmark 适配层（https://bird-bench.github.io/）。
 
-    python -m bird fetch       # 下载官方题目文件（sha256 钉死版本）
+    python -m bird fetch       # 下载官方题目和数据库压缩包（sha256 钉死）
     python -m bird convert     # → data/bird/dev.json，即 --data bird_dev
     python -m bird preview --index 0          # 看某题实际发出去的提示词
     python -m bird eval --pred predictions/<模型>_bird_dev.json

@@ -11,7 +11,7 @@
 2. **Fixed semantic few-shot**：使用 `all-mpnet-base-v2` 对问题做语义检索，
    以欧氏距离固定选择 top-3 训练示例。
 
-Direct generation 只作为对照。Plan、SFS、Value Evidence、knowledge/rules、
+Direct generation 只作为对照。Plan、Structure Few-Shot、Value Evidence、knowledge/rules、
 selector 和 DPC 等方案属于探索或负结果，不进入最终方法。
 
 最终实验矩阵固定为：
@@ -143,7 +143,7 @@ database/
 检查数据库是否齐全：
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\check_databases.py
+.\.venv\Scripts\python.exe -m scripts.check_databases
 ```
 
 数据库连接必须保持只读。
@@ -168,20 +168,16 @@ database/
 
 ```powershell
 # Direct
-.\.venv\Scripts\python.exe -m model `
-  --model pro-t-direct --data en_dev --eval
+.\.venv\Scripts\python.exe -m model --model pro-t-direct --data en_dev --eval
 
 # Direct + fixed semantic few-shot
-.\.venv\Scripts\python.exe -m model `
-  --model pro-t-direct-fs --data en_dev --eval
+.\.venv\Scripts\python.exe -m model --model pro-t-direct-fs --data en_dev --eval
 
 # DSL
-.\.venv\Scripts\python.exe -m model `
-  --model pro-t-dsl --data en_dev --eval
+.\.venv\Scripts\python.exe -m model --model pro-t-dsl --data en_dev --eval
 
 # DSL + fixed semantic few-shot
-.\.venv\Scripts\python.exe -m model `
-  --model pro-t-dsl-fs --data en_dev --eval
+.\.venv\Scripts\python.exe -m model --model pro-t-dsl-fs --data en_dev --eval
 ```
 
 `pro-t-*-fs` 当前冻结的是英文 `en_dev` selection。中文 few-shot 尚未建立独立的
@@ -220,38 +216,19 @@ database/
 
 ```powershell
 # Direct
-.\.venv\Scripts\python.exe -m model `
-  --model bird-pro-t-direct --data bird_dev
+.\.venv\Scripts\python.exe -m model --model bird-pro-t-direct --data bird_dev
 
 # Direct + FS
-.\.venv\Scripts\python.exe -m model `
-  --model bird-pro-t-direct-fs --data bird_dev
+.\.venv\Scripts\python.exe -m model --model bird-pro-t-direct-fs --data bird_dev
 
 # DSL
-.\.venv\Scripts\python.exe -m model `
-  --model bird-pro-t-dsl --data bird_dev
+.\.venv\Scripts\python.exe -m model --model bird-pro-t-dsl --data bird_dev
 
 # DSL + FS
-.\.venv\Scripts\python.exe -m model `
-  --model bird-pro-t-dsl-fs --data bird_dev
+.\.venv\Scripts\python.exe -m model --model bird-pro-t-dsl-fs --data bird_dev
 ```
 
 建议先给任一命令增加 `--limit 10` 做冒烟，再去掉 `--limit` 续跑全量。
-
-### 5.3 BIRD 官方评测
-
-对外报告使用 vendor 的官方脚本，并用本项目实现做交叉验证：
-
-```powershell
-.\.venv\Scripts\python.exe -m bird eval `
-  --official `
-  --cross-check `
-  --data bird_dev `
-  --pred predictions\bird-pro-t-dsl-fs_bird_dev.json
-```
-
-判对规则为 `set(pred_rows) == set(gold_rows)`：行序无关、列序有关、重复行折叠；
-异常或超时记 0。BIRD EX 与 Archer VA/EX/SIM 是两套指标。
 
 ---
 

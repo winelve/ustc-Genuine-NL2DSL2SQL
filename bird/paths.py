@@ -77,6 +77,11 @@ SCORING = DEV_20251106
 
 # 包里 schema 元数据的成员名（只有 dev.zip 那版带它；库不变，两版通用）
 DEV_TABLES_MEMBER = "dev_tables.json"
+DEV_DATABASE_ARCHIVE_MEMBER = "dev_databases.zip"
+DEV_DATABASE_PACKAGE_URL = DEV_20240627.url
+DEV_DATABASE_ARCHIVE_SHA256 = (
+    "8132aacfe61ecec7198a62e93cb8512dac89b1d6b9922fe3c7bb94b13f317d8f"
+)
 
 
 def bird_dir() -> Path:
@@ -102,6 +107,11 @@ def dev_dataset() -> Path:
 def dev_databases_dir() -> Path:
     """SQLite 库根目录，布局 `<root>/<db_id>/<db_id>.sqlite`。两版共用。"""
     return config.DATASET_DB_DIRS["bird_dev"]
+
+
+def dev_databases_archive() -> Path:
+    """官方数据库恢复包；解压后得到 :func:`dev_databases_dir`。"""
+    return bird_dir() / DEV_DATABASE_ARCHIVE_MEMBER
 
 
 def tables_json() -> Path:

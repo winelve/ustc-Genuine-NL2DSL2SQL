@@ -142,11 +142,29 @@ class _FakeResponse:
         return False
 
 
-def _fake_dev_zip(dev_bytes: bytes) -> bytes:
+def _fake_dev_zip(
+    dev_bytes: bytes,
+    database_archive: bytes | None = None,
+) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as archive:
         archive.writestr("dev_20240627/dev.json", dev_bytes)
         archive.writestr("dev_20240627/dev_tables.json", b"[]")
+        if database_archive is not None:
+            archive.writestr(
+                "dev_20240627/dev_databases.zip",
+                database_archive,
+            )
+    return buf.getvalue()
+
+
+def _fake_database_package(database_archive: bytes) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as archive:
+        archive.writestr(
+            "dev_20240627/dev_databases.zip",
+            database_archive,
+        )
     return buf.getvalue()
 
 
@@ -164,27 +182,104 @@ def _version(tmp_name, payload, *, is_zip=False):
 
 def test_fetch_plain_json_version(tmp_path, monkeypatch):
     """计分那版（dev-1106）是 HuggingFace 上的裸 json。"""
-    from bird import dataset
+    from bird import dataset, paths
 
     payload = b'[{"question_id": 0}]'
+    database_archive = b"existing database archive"
+    database_dest = tmp_path / "dev_databases.zip"
+    database_dest.write_bytes(database_archive)
     monkeypatch.setattr(dataset.urllib.request, "urlopen",
                         lambda *a, **k: _FakeResponse(payload))
+    monkeypatch.setattr(
+        paths,
+        "DEV_DATABASE_ARCHIVE_SHA256",
+        hashlib.sha256(database_archive).hexdigest(),
+    )
+    monkeypatch.setattr(paths, "dev_databases_archive", lambda: database_dest)
 
     dest = dataset.fetch(_version("v", payload), tmp_path)
     assert dest.read_bytes() == payload
 
 
-def test_fetch_zip_version_also_extracts_tables(tmp_path, monkeypatch):
-    """另一版在官网 dev.zip 里，顺带取出 schema 元数据。"""
-    from bird import dataset
+def test_fetch_plain_json_version_also_downloads_database_archive(
+    tmp_path,
+    monkeypatch,
+):
+    """默认 fetch 还应保存官方 dev 包中的数据库压缩包。"""
+    from bird import dataset, paths
 
     payload = b'[{"question_id": 0}]'
-    monkeypatch.setattr(dataset.urllib.request, "urlopen",
-                        lambda *a, **k: _FakeResponse(_fake_dev_zip(payload)))
+    database_archive = b"fake dev database archive"
+    version = _version("v", payload)
+    database_package_url = "http://example.invalid/database-package.zip"
+    database_dest = tmp_path / "dev_databases.zip"
+    responses = {
+        version.url: payload,
+        database_package_url: _fake_database_package(database_archive),
+    }
 
-    dest = dataset.fetch(_version("v", payload, is_zip=True), tmp_path)
+    monkeypatch.setattr(
+        dataset.urllib.request,
+        "urlopen",
+        lambda url, **kwargs: _FakeResponse(responses[url]),
+    )
+    monkeypatch.setattr(
+        paths,
+        "DEV_DATABASE_PACKAGE_URL",
+        database_package_url,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        paths,
+        "DEV_DATABASE_ARCHIVE_SHA256",
+        hashlib.sha256(database_archive).hexdigest(),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        paths,
+        "dev_databases_archive",
+        lambda: database_dest,
+        raising=False,
+    )
+
+    dataset.fetch(version, tmp_path / "official")
+
+    assert database_dest.read_bytes() == database_archive
+
+
+def test_fetch_zip_version_also_extracts_tables(tmp_path, monkeypatch):
+    """另一版在官网 dev.zip 里，顺带取出 schema 元数据。"""
+    from bird import dataset, paths
+
+    payload = b'[{"question_id": 0}]'
+    database_archive = b"database archive from the same package"
+    version = _version("v", payload, is_zip=True)
+    package = _fake_dev_zip(payload, database_archive)
+    calls = []
+
+    def urlopen(url, **kwargs):
+        calls.append(url)
+        return _FakeResponse(package)
+
+    monkeypatch.setattr(dataset.urllib.request, "urlopen",
+                        urlopen)
+    monkeypatch.setattr(paths, "DEV_DATABASE_PACKAGE_URL", version.url)
+    monkeypatch.setattr(
+        paths,
+        "DEV_DATABASE_ARCHIVE_SHA256",
+        hashlib.sha256(database_archive).hexdigest(),
+    )
+    monkeypatch.setattr(
+        paths,
+        "dev_databases_archive",
+        lambda: tmp_path / "dev_databases.zip",
+    )
+
+    dest = dataset.fetch(version, tmp_path)
     assert dest.read_bytes() == payload
     assert (tmp_path / "dev_tables.json").exists()
+    assert (tmp_path / "dev_databases.zip").read_bytes() == database_archive
+    assert calls == [version.url]
 
 
 def test_fetch_rejects_wrong_sha256(tmp_path, monkeypatch):

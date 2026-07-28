@@ -1,6 +1,6 @@
 """BIRD 适配层 CLI。
 
-    python -m bird fetch                                    # 下载官方题目文件
+    python -m bird fetch                           # 下载官方题目和数据库压缩包
     python -m bird convert                                  # → data/bird/dev.json
     python -m bird preview --index 0                        # 看该题发出去的提示词
     python -m bird eval --pred predictions/xxx_bird_dev.json
@@ -143,7 +143,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="bird", description="BIRD 数据、提示词与官方口径评测")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_fetch = sub.add_parser("fetch", help="下载官方题目文件（校验 sha256）")
+    p_fetch = sub.add_parser(
+        "fetch",
+        help="下载官方题目和数据库压缩包（校验 sha256）",
+    )
     p_fetch.add_argument("--version", choices=sorted(paths.VERSIONS),
                         default=paths.SCORING.name, help="哪一版 dev（默认计分那版）")
     p_fetch.add_argument("--out-dir", type=Path, default=None)
