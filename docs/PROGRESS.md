@@ -24,6 +24,53 @@
 | M2 DSL 中间层 | planner 后加 DSL 结构化输出 → 规则校验循环 → sqlglot 编译 + LLM 降级通道 | 🔨 代码完成+测试全绿；待真实 API 冒烟与 dev 跑分 |
 | M3 增量迭代 | ASSUME 反事实算子 / 公式库 / 值链接强化 / 经验缓存 / 投票加宽 | 🔨 画像前置注入（m3a/b）判负收档；m3c 检查器族并入 M3-d 强制臂验证；M3-d 约定轴进行中 |
 
+## 2026-07-29 · BIRD Direct+FS / DSL+FS 候选选择实验
+
+- 用户批准直接复用已有 `bird-pro-t-direct-fs` 与 `bird-pro-t-dsl-fs`
+  全量预测，不重跑候选生成；固定成功线为至少 **976/1534（63.62%）**，
+  即相对当前 DSL+FS 960/1534（62.58%）净增至少 16 题。低于成功线立即收档，
+  达标才复跑 selector 一次并考虑集成。
+- 设计与实施计划分别提交为
+  `docs/superpowers/specs/2026-07-29-bird-fs-selector-design.md` 和
+  `docs/superpowers/plans/2026-07-29-bird-fs-selector.md`。
+- 新增独立 `python -m model.selection`：读取两份对齐预测，通过 SQL 规范化、
+  SQLite 只读执行结果等价和单路可执行性做零 API 路由；只有两路均可执行且
+  结果不同才调用一次 DeepSeek output-contract pairwise judge。judge 只见
+  question、evidence、DDL、匿名 A/B SQL 和执行摘要，不见 gold、评测标签或
+  完整结果行；只准选 A/B，低置信度、格式/API 失败均回退 DSL。
+- 实际全量 dry-run 路由为：`same_sql=197`、`same_result=919`、
+  `direct_only_valid=12`、`dsl_only_valid=12`、`both_invalid=4`、
+  `pairwise=390`。因此主实验无需重跑 1534×2 次生成，只需约 **390 次**
+  selector API。
+- 新增 10 个聚焦测试，最终全量回归为 **479 passed**；实现提交为
+  `c2fc855`。
+- 主实验实际路由因执行时序轻微变化为 `same_sql=197`、
+  `same_result=919`、`direct_only_valid=11`、`dsl_only_valid=13`、
+  `both_invalid=3`、`pairwise=391`；共调用 391 次 selector，消耗
+  542,410 prompt / 41,914 completion / 584,324 total tokens，其中
+  cache hit 284,672、miss 257,738。
+- 最终 `bird-pro-t-fs-sel` 为 **941/1534（61.34%）**，相对 DSL+FS
+  960/1534（62.58%）净少 19 题、−1.24 EX，未达到预设 976/1534
+  成功线。配对翻转为 selector 独对 39、DSL 独对 58，McNemar exact
+  `p=0.0671`。
+- 退化定位到 LLM pairwise，而非候选互补性或执行路由：不用 judge、分歧题
+  全回退 DSL 的规则路由反事实为 963/1534（62.78%，+3 题）；391 道
+  pairwise 中 judge 改选 Direct 196 次，只救回 36 道 Direct-only 正确题，
+  却破坏 58 道 DSL-only 正确题，净 −22。两路仅一方正确的 203 题里 judge
+  只选对 98（48.3%），低于始终选 DSL 的 120（59.1%）。
+- selector 的自报置信度不可用：390 个有效回复全部是 `high`，另 1 个解析/
+  API 错误，没有任何 medium/low 分层；原始 A/B 选择为 A 274、B 116，
+  显示明显首位偏差。损失分布在 moderate −12、challenging −7，且跨多个
+  数据库，不是单库偶然异常。定性案例显示 judge 会把“是否额外返回指标列”、
+  “是否按状态分别计数”、NULL 是否算作 other 等 BIRD 标注口径歧义，
+  自信地解释成候选错误。
+
+**决策：**按预注册 stopping rule 判负，不复跑 selector、不集成双路生成。
+保留 standalone 代码与 trace 作为负结果证据。零 API 的单路可执行路由只有
++3 题（+0.20 EX），不足本轮 +1–2 分目标，也不单独并入主线。若未来重开，
+必须使用有监督/校准过的 selector 或独立 verifier；不能继续修改零样本
+pairwise prompt 反复烧 token。
+
 ## 2026-07-28 · CHESS-IR Value Evidence 实现
 
 - 开发前已把原工作区提交为 `d320430`，并在新分支 `codex/chess-ir`
