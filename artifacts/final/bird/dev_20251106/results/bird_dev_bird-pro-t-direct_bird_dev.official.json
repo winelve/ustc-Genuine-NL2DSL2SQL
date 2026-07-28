@@ -1,0 +1,37 @@
+{
+ "meta": {
+  "protocol": "bird-official-script",
+  "script": "D:\\University\\tasks\\ustc\\bird\\official_eval\\evaluation.py",
+  "source": "AlibabaResearch/DAMO-ConvAI bird/llm/src/evaluation.py (unmodified)",
+  "timeout_s": 30.0,
+  "num_cpus": 1,
+  "db_dir": "D:\\University\\tasks\\ustc\\data\\bird\\dev_databases",
+  "note": "官方脚本只打印分档百分比，没有逐题结果；逐题明细用 bird.evaluate",
+  "dataset": "D:\\University\\tasks\\ustc\\data\\bird\\dev.json",
+  "pred": ".\\predictions\\bird-pro-t-direct_bird_dev.json"
+ },
+ "summary": {
+  "n": 1534,
+  "n_match": 880,
+  "EX": 0.5737,
+  "EX_pct": 57.37
+ },
+ "by_difficulty": {
+  "simple": {
+   "n": 860,
+   "EX_pct": 68.84,
+   "n_match": 592
+  },
+  "moderate": {
+   "n": 443,
+   "EX_pct": 50.11,
+   "n_match": 222
+  },
+  "challenging": {
+   "n": 231,
+   "EX_pct": 28.57,
+   "n_match": 66
+  }
+ },
+ "stdout": "start calculate\n                     simple               moderate             challenging          total               \ncount                860                  443                  231                  1534                \n======================================    ACCURACY    =====================================\naccuracy             68.84                50.11                28.57                57.37               \n===========================================================================================\nFinished evaluation\n"
+}

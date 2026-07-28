@@ -6,9 +6,8 @@
   2. 在下面的 MODELS 里加一行
   3. python -m model --model <name> --data en_dev --eval
 
-命名约定 `<骨干>[-t]-<配置>`（token 词表见 docs/ABLATION.md）：
-  骨干 flash/pro；`-t` = 开 thinking；配置 = pipeline 组件栈
-  direct → plan → plandsl → dsl（去 plan），可再追加 prof/force/conv/chk/cchk。
+项目收尾后，论文主线冻结为 Direct / Direct+FS / DSL / DSL+FS 四格。
+其他注册项保留用于历史复现，但统一归入 EXPERIMENT_MODELS，不再与主线混排。
 """
 
 from model.api import (DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro,
@@ -38,62 +37,81 @@ from model.pipeline.models import (ProTDsl, ProTDslChk, ProTDslConv,
                                    ProTDslKnowledgeRulesSqlens,
                                    ProTPlan, ProTPlanDsl)
 
-# 注册表：--model 参数用的名字 -> 模型类。含义见 docs/ABLATION.md。
-MODELS: dict[str, type[SQLGenerator]] = {
-    # 框架自检哑基线（无 LLM，每题取第一张表）
+# 主线注册表：唯一保留的两个 idea 是 DSL 与 fixed semantic few-shot。
+MAIN_MODELS: dict[str, type[SQLGenerator]] = {
+    # 框架自检哑基线（无 LLM）。
     FirstTableBaseline.name: FirstTableBaseline,
 
-    # 直出基线：LLM 直接出 SQL、无 pipeline（骨干 × thinking 四格对照）
-    DeepSeekFlash.name: DeepSeekFlash,                  # flash-direct
-    DeepSeekFlashThinking.name: DeepSeekFlashThinking,  # flash-t-direct
-    DeepSeekPro.name: DeepSeekPro,                      # pro-direct
-    DeepSeekProThinking.name: DeepSeekProThinking,      # pro-t-direct
-    DeepSeekProThinkingFewShot.name: DeepSeekProThinkingFewShot,  # pro-t-direct-fs
-    DeepSeekProThinkingSFS.name: DeepSeekProThinkingSFS,  # pro-t-direct-sfs
+    # Archer en_dev 四格。
+    DeepSeekProThinking.name: DeepSeekProThinking,                  # Direct
+    DeepSeekProThinkingFewShot.name: DeepSeekProThinkingFewShot,    # Direct + FS
+    ProTDsl.name: ProTDsl,                                          # DSL
+    ProTDslFewShot.name: ProTDslFewShot,                            # DSL + FS
+
+    # BIRD dev_20251106 四格。
+    BirdDirect.name: BirdDirect,
+    BirdDirectFewShot.name: BirdDirectFewShot,
+    BirdProTDsl.name: BirdProTDsl,
+    BirdProTDslFewShot.name: BirdProTDslFewShot,
+}
+
+
+# 探索/负结果/旧版复现档位。保留旧名字和运行能力，但不属于最终方法。
+EXPERIMENT_MODELS: dict[str, type[SQLGenerator]] = {
+    # 骨干与早期 Direct 对照。
+    DeepSeekFlash.name: DeepSeekFlash,
+    DeepSeekFlashThinking.name: DeepSeekFlashThinking,
+    DeepSeekPro.name: DeepSeekPro,
+
+    # 结构感知检索与 Value Evidence。
+    DeepSeekProThinkingSFS.name: DeepSeekProThinkingSFS,
     DeepSeekProThinkingValueEvidence.name: DeepSeekProThinkingValueEvidence,
     DeepSeekProThinkingValueEvidenceRandom.name: DeepSeekProThinkingValueEvidenceRandom,
     DeepSeekProThinkingValueEvidenceV2.name: DeepSeekProThinkingValueEvidenceV2,
     DeepSeekProThinkingValueEvidenceV2Random.name: DeepSeekProThinkingValueEvidenceV2Random,
 
-    # 主线加法阶梯：plan → plandsl → dsl(去plan) → +conv → +chk
-    ProTPlan.name: ProTPlan,                # pro-t-plan
-    ProTPlanDsl.name: ProTPlanDsl,          # pro-t-plandsl
-    ProTDsl.name: ProTDsl,                  # pro-t-dsl
-    ProTDslFewShot.name: ProTDslFewShot,    # pro-t-dsl-fs
-    ProTDslSFS.name: ProTDslSFS,            # pro-t-dsl-sfs
+    # Plan、旧约定/检查器与学习式知识消融。
+    ProTPlan.name: ProTPlan,
+    ProTPlanDsl.name: ProTPlanDsl,
+    ProTDslSFS.name: ProTDslSFS,
     ProTDslValueEvidence.name: ProTDslValueEvidence,
     ProTDslValueEvidenceRandom.name: ProTDslValueEvidenceRandom,
-    ProTDslConv.name: ProTDslConv,          # pro-t-dsl-conv
-    ProTDslConvChk.name: ProTDslConvChk,    # pro-t-dsl-conv-chk  ★满配·最终
+    ProTDslConv.name: ProTDslConv,
+    ProTDslConvChk.name: ProTDslConvChk,
+    ProTDslChk.name: ProTDslChk,
+    ProTDslConvChkR0.name: ProTDslConvChkR0,
+    DeepSeekProThinkingConv.name: DeepSeekProThinkingConv,
 
-    # 满配 leave-one-out 消融（对照 = pro-t-dsl-conv-chk，每臂只动一个变量）
-    ProTDslChk.name: ProTDslChk,                        # pro-t-dsl-chk（−conv）
-    ProTDslConvChkR0.name: ProTDslConvChkR0,            # pro-t-dsl-conv-chk-r0（−重试）
-    DeepSeekProThinkingConv.name: DeepSeekProThinkingConv,  # pro-t-direct-conv（−声明层）
-
-    # BIRD 跑分档位（见 model/bird.py）：官方 baseline 口径的直出对照，
-    # 以及把 Archer 主线声明层原样搬过去的泛化臂（唯一差异 = evidence 开）
-    BirdDirect.name: BirdDirect,            # bird-pro-t-direct   EX 57.37（官方脚本）
-    BirdDirectFewShot.name: BirdDirectFewShot,  # bird-pro-t-direct-fs
+    # BIRD 探索臂与旧版数据。
     BirdDirectValueEvidence.name: BirdDirectValueEvidence,
     BirdDirectValueEvidenceRandom.name: BirdDirectValueEvidenceRandom,
-    BirdProTDsl.name: BirdProTDsl,          # bird-pro-t-dsl
-    BirdProTDslFewShot.name: BirdProTDslFewShot,  # bird-pro-t-dsl-fs
     BirdProTDslValueEvidence.name: BirdProTDslValueEvidence,
     BirdProTDslValueEvidenceRandom.name: BirdProTDslValueEvidenceRandom,
     BirdProTDslFewShot20240627.name: BirdProTDslFewShot20240627,
 
-    # 存档：带 plan 注知识的探索支（已被 no-plan 线取代，多数判负，保留以可复现）
-    ProTPlanDslProf.name: ProTPlanDslProf,                  # pro-t-plandsl-prof
-    ProTPlanDslProfForce.name: ProTPlanDslProfForce,        # pro-t-plandsl-prof-force
-    ProTPlanDslProfForceChk.name: ProTPlanDslProfForceChk,  # pro-t-plandsl-prof-force-chk
-    ProTPlanDslConv.name: ProTPlanDslConv,                  # pro-t-plandsl-conv
-    ProTPlanDslConvCchk.name: ProTPlanDslConvCchk,          # pro-t-plandsl-conv-cchk
+    # 带 plan 注知识的历史探索支。
+    ProTPlanDslProf.name: ProTPlanDslProf,
+    ProTPlanDslProfForce.name: ProTPlanDslProfForce,
+    ProTPlanDslProfForceChk.name: ProTPlanDslProfForceChk,
+    ProTPlanDslConv.name: ProTPlanDslConv,
+    ProTPlanDslConvCchk.name: ProTPlanDslConvCchk,
 
-    # 学习式知识/规则阶梯（设计见 docs/superpowers/specs/2026-07-27-learned-checks-design.md）
-    ProTDslKnowledge.name: ProTDslKnowledge,                      # pro-t-dsl-knowledge
-    ProTDslKnowledgeRules.name: ProTDslKnowledgeRules,            # pro-t-dsl-knowledge-rules
-    ProTDslKnowledgeRulesSqlens.name: ProTDslKnowledgeRulesSqlens,  # ★满配
+    # 学习式知识/规则阶梯。
+    ProTDslKnowledge.name: ProTDslKnowledge,
+    ProTDslKnowledgeRules.name: ProTDslKnowledgeRules,
+    ProTDslKnowledgeRulesSqlens.name: ProTDslKnowledgeRulesSqlens,
 }
 
-__all__ = ["SQLGenerator", "MODELS"]
+
+# 向后兼容：原有命令仍通过 MODELS 找到全部档位。
+MODELS: dict[str, type[SQLGenerator]] = {
+    **MAIN_MODELS,
+    **EXPERIMENT_MODELS,
+}
+
+__all__ = [
+    "SQLGenerator",
+    "MAIN_MODELS",
+    "EXPERIMENT_MODELS",
+    "MODELS",
+]

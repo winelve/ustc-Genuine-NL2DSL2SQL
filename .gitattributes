@@ -1,0 +1,8 @@
+# 冻结实验 JSON 必须保持逐字节不变，否则 manifest 中的 SHA-256 会失效。
+artifacts/**/*.json binary
+
+# manifest 本身是人工维护的文本，保持可 diff。
+artifacts/manifest.json text eol=lf diff
+
+# SVG 是源码资产，统一为 LF 以避免 Windows CR 被误报为行尾空白。
+docs/figures/*.svg text eol=lf

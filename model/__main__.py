@@ -24,7 +24,7 @@ import config
 from archer_eval.data import load_dataset, resolve_dataset
 from archer_eval.evaluate import evaluate, find_db_file
 from archer_eval.report import make_meta, report_name, write_report
-from model import MODELS
+from model import EXPERIMENT_MODELS, MAIN_MODELS, MODELS
 
 DEFAULT_CHUNK = 50
 TRACE_SCHEMA = "question-metrics-v1"
@@ -34,10 +34,10 @@ SWITCH_COLUMNS = (
 )
 
 
-def switch_matrix() -> list[tuple[str, dict]]:
+def switch_matrix(models=MODELS) -> list[tuple[str, dict]]:
     """每个注册档位开了哪些开关。从类属性直接读，不会与代码脱节。"""
     rows = []
-    for name, cls in MODELS.items():
+    for name, cls in models.items():
         has_dsl = hasattr(cls, "max_repairs")
         rows.append((name, {
             "plan": "✓" if getattr(cls, "n_plans", 0) and _uses_plan(cls) else "-",
@@ -63,13 +63,20 @@ def _uses_plan(cls) -> bool:
     return getattr(cls, "use_plan", True)
 
 
-def print_switches() -> None:
-    rows = switch_matrix()
+def _print_switch_group(title: str, models) -> None:
+    rows = switch_matrix(models)
     width = max(len(n) for n, _ in rows) + 2
+    print(title)
     print("档位".ljust(width) + "  ".join(c.rjust(8) for c in SWITCH_COLUMNS))
     for name, flags in rows:
         print(name.ljust(width) + "  ".join(
             flags[c].rjust(8) for c in SWITCH_COLUMNS))
+
+
+def print_switches() -> None:
+    _print_switch_group("[main] DSL × fixed semantic few-shot", MAIN_MODELS)
+    print()
+    _print_switch_group("[experiments/archive]", EXPERIMENT_MODELS)
 
 
 def write_trace(traces, predictions_path: Path) -> Path | None:

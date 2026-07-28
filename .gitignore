@@ -4,7 +4,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
-.claude
+.claude/
 
 # SQLite 数据库不进 git：soccer_1.sqlite 有 300MB，超过 GitHub 单文件 100MB 上限。
 # 用 data/database.zip 或 scripts/check_databases.py 提示的 Spider 来源恢复。
@@ -12,9 +12,11 @@ database/
 
 # 原始压缩包
 *.zip
+!database.zip
 
-# 评测生成的报告（可随时重新生成；想留存某次结果就 git add -f）
-results/
+# 运行期输出不直接进 git；最终冻结产物复制到 artifacts/。
+/predictions/
+/results/
 
 # 编辑器/系统杂项
 .idea/
@@ -22,17 +24,40 @@ results/
 Thumbs.db
 .DS_Store
 
-predictions
-material
-analysis
-docs
+# Agent / planning 临时文件。所有 repo 内 superpowers 目录均忽略。
+.superpowers/
+**/.superpowers/
+**/superpowers/
+
+# 本地分析输出；可复现的轻量结论文档放 docs/analysis/。
+/analysis/
+
+# 文档默认可跟踪，只忽略原始论文、位图和生成的 HTML。
+docs/material/
+docs/*.pdf
+docs/*.png
+docs/figures/*.pdf
+docs/figures/*.png
+docs/analysis/*.html
+
 # 只忽略 BIRD 数据集，不要连顶层的 bird/ 适配模块一起吞了
 data/bird/
-data/fewshot/
+
+# few-shot 的模型、原始语料与探索 selection 不进 git；最终 fixed semantic
+# top-k 保留在原运行路径，确保模型无需改路径即可复现。
+data/fewshot/corpora/
+data/fewshot/models/
+data/fewshot/raw/
+data/fewshot/selections/*
+!data/fewshot/selections/archer_en_dev_rsl_k3.json
+!data/fewshot/selections/bird_dev_rsl_k3.json
+!data/fewshot/selections/bird_dev_20240627_rsl_k3.json
+
+# 已判负探索方案的大体积离线产物。
 data/value_evidence/
+data/dpc/
 
 CLAUDE.md
-!database.zip
 README.bk.md
-sentence_transformers
+sentence_transformers/
 tmp/

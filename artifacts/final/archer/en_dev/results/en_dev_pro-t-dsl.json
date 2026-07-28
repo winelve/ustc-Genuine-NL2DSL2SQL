@@ -1,0 +1,2433 @@
+{
+  "meta": {
+    "data": "D:\\University\\tasks\\ustc\\data\\en_data\\dev.json",
+    "predictions": "D:\\University\\tasks\\ustc\\predictions\\pro-t-dsl_en_dev.json",
+    "db_dir": "D:\\University\\tasks\\ustc\\database",
+    "timeout_s": 30.0,
+    "timestamp": "2026-07-27T11:49:05"
+  },
+  "summary": {
+    "n": 104,
+    "n_valid": 101,
+    "n_match": 55,
+    "VA": 0.9712,
+    "EX": 0.5288,
+    "SIM": 0.5776
+  },
+  "by_db": {
+    "concert_singer": {
+      "n": 52,
+      "VA": 0.9615,
+      "EX": 0.5769,
+      "SIM": 0.6252
+    },
+    "world_1": {
+      "n": 52,
+      "VA": 0.9808,
+      "EX": 0.4808,
+      "SIM": 0.5301
+    }
+  },
+  "by_reasoning_type": {
+    "A": {
+      "n": 24,
+      "VA": 0.9583,
+      "EX": 0.6667,
+      "SIM": 0.7047
+    },
+    "A+C": {
+      "n": 28,
+      "VA": 1.0,
+      "EX": 0.4286,
+      "SIM": 0.4866
+    },
+    "A+C+H": {
+      "n": 30,
+      "VA": 0.9667,
+      "EX": 0.5333,
+      "SIM": 0.5808
+    },
+    "A+H": {
+      "n": 22,
+      "VA": 0.9545,
+      "EX": 0.5,
+      "SIM": 0.5506
+    }
+  },
+  "samples": [
+    {
+      "index": 0,
+      "db_id": "concert_singer",
+      "question": "List the name and age of each singer at the time of the release of the song \"Gentleman\".",
+      "reasoning_type": "- + C",
+      "gold_sql": "SELECT Name , Age + ( SELECT Song_release_year FROM singer WHERE Song_Name = \"Gentleman\" ) - strftime ( \"%Y\" , \"now\" ) AS target_age FROM singer",
+      "pred_sql": "SELECT Name, Age - (CAST(strftime('%Y', 'now') AS INTEGER) - CAST(Song_release_year AS INTEGER)) AS age_at_release FROM singer WHERE Song_Name = 'Gentleman'",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0833,
+      "sim_row": 0.1667,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        6,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 1,
+      "db_id": "concert_singer",
+      "question": "What were the names and ages of all singers of the release of the song \"Gentleman\"",
+      "reasoning_type": "- + C",
+      "gold_sql": "SELECT Name , Age + ( SELECT Song_release_year FROM singer WHERE Song_Name = \"Gentleman\" ) - strftime ( \"%Y\" , \"now\" ) AS target_age FROM singer",
+      "pred_sql": "SELECT Name, Age - (CAST(strftime('%Y', 'now') AS INTEGER) - CAST(Song_release_year AS INTEGER)) AS Age_At_Release FROM singer WHERE Song_Name = 'Gentleman';",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0833,
+      "sim_row": 0.1667,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        6,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 2,
+      "db_id": "concert_singer",
+      "question": "If the song \"Gentleman\" was released in the first year of the 21st century, list the name and age of each singer at the time of the song's release.",
+      "reasoning_type": "- + C H",
+      "gold_sql": "SELECT Name , Age + 2001 - strftime ( \"%Y\" , \"now\" ) AS target_age FROM singer",
+      "pred_sql": "SELECT Name, Age - (strftime('%Y', 'now') - CAST(CASE WHEN Song_Name = 'Gentleman' THEN '2001' ELSE Song_release_year END AS INTEGER)) AS Age FROM singer WHERE Song_Name = 'Gentleman'",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0833,
+      "sim_row": 0.1667,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        6,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 3,
+      "db_id": "concert_singer",
+      "question": "Assuming that the song \"Gentleman\" was released in the first year of the 21st century, what were the names and ages of all its singers at the time of its release?",
+      "reasoning_type": "- + C H",
+      "gold_sql": "SELECT Name , Age + 2001 - strftime ( \"%Y\" , \"now\" ) AS target_age FROM singer",
+      "pred_sql": "SELECT Name, (Age + (2001 - CAST(song_release_year AS INTEGER))) AS Age FROM singer WHERE Song_Name = 'Gentleman';",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        6,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 4,
+      "db_id": "concert_singer",
+      "question": "What are the names and ages of the participating singers in the concert with the theme of \"Free choice\" at that time?",
+      "reasoning_type": "- + C",
+      "gold_sql": "SELECT C.Name , C.Age + ( A.Year - strftime ( \"%Y\" , \"now\" ) ) AS age_at_concert FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.Theme = \"Free choice\"",
+      "pred_sql": "SELECT s.Name, s.Age - (strftime('%Y', 'now') - CAST(c.Year AS INTEGER)) AS age_at_concert FROM singer s JOIN singer_in_concert sic ON s.Singer_ID = sic.Singer_ID JOIN concert c ON sic.concert_ID = c.concert_ID WHERE c.Theme = 'Free choice'",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        2
+      ],
+      "gold_shape": [
+        3,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 5,
+      "db_id": "concert_singer",
+      "question": "What were the names and ages of all singers who participated in the \"Free Choice\" themed concert at the time of the concert?",
+      "reasoning_type": "- + C",
+      "gold_sql": "SELECT C.Name , C.Age + ( A.Year - strftime ( \"%Y\" , \"now\" ) ) AS age_at_concert FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.Theme = \"Free choice\"",
+      "pred_sql": "SELECT s.Name, (s.Age + (CAST(c.Year AS INTEGER) - CAST(strftime('%Y', 'now') AS INTEGER))) AS Age FROM singer s JOIN singer_in_concert sic ON s.Singer_ID = sic.Singer_ID JOIN concert c ON sic.concert_ID = c.concert_ID WHERE c.Theme = 'Free choice';",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        2
+      ],
+      "gold_shape": [
+        3,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 6,
+      "db_id": "concert_singer",
+      "question": "If all singers born before 1985 participated in the \"Free Choice\" themed concert, what are the names and ages of the participating singers in the concert with the theme of \"Free choice\" at that time?",
+      "reasoning_type": "- + C H",
+      "gold_sql": "SELECT C.Name , C.Age + ( ( SELECT Year FROM concert WHERE Theme = \"Free choice\" ) - strftime ( \"%Y\" , \"now\" ) ) AS age_at_concert FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.Theme = \"Free choice\" OR strftime ( \"%Y\" , \"now\" ) - C.Age < 1985 GROUP BY C.Name",
+      "pred_sql": "WITH modified_participants AS (\n  SELECT sic.Singer_ID, sic.concert_ID\n  FROM singer_in_concert sic\n  WHERE sic.concert_ID = (SELECT concert_ID FROM concert WHERE Theme = 'Free choice')\n  UNION\n  SELECT s.Singer_ID, (SELECT concert_ID FROM concert WHERE Theme = 'Free choice') AS concert_ID\n  FROM singer s\n  WHERE CAST(strftime('%Y', 'now') AS INTEGER) - s.Age < 1985\n)\nSELECT s.Name, CAST(fc.Year AS INTEGER) - (CAST(strftime('%Y', 'now') AS INTEGER) - s.Age) AS age\nFROM singer s\nJOIN modified_participants mp ON s.Singer_ID = mp.Singer_ID\nJOIN concert fc ON fc.concert_ID = mp.concert_ID AND fc.Theme = 'Free choice';",
+      "valid": true,
+      "match": false,
+      "similarity": 0.3,
+      "sim_row": 0.6,
+      "sim_col": 0.0,
+      "pred_shape": [
+        5,
+        2
+      ],
+      "gold_shape": [
+        3,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 7,
+      "db_id": "concert_singer",
+      "question": "Assuming that all the singers born before 1985 participated in the \"Free Choice\" themed concert, what were the names and ages of all the singers who took part at the time of the concert?",
+      "reasoning_type": "- + C H",
+      "gold_sql": "SELECT C.Name , C.Age + ( ( SELECT Year FROM concert WHERE Theme = \"Free choice\" ) - strftime ( \"%Y\" , \"now\" ) ) AS age_at_concert FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.Theme = \"Free choice\" OR strftime ( \"%Y\" , \"now\" ) - C.Age < 1985 GROUP BY C.Name",
+      "pred_sql": "WITH free_choice_concert AS (\n    SELECT concert_ID, CAST(Year AS integer) AS Year\n    FROM concert\n    WHERE Theme = 'Free choice'\n),\nassumed_participants AS (\n    SELECT CAST(sic.Singer_ID AS integer) AS Singer_ID, fc.concert_ID\n    FROM singer_in_concert sic\n    JOIN free_choice_concert fc ON sic.concert_ID = fc.concert_ID\n    UNION\n    SELECT s.Singer_ID, fc.concert_ID\n    FROM free_choice_concert fc,\n         (SELECT Singer_ID FROM singer WHERE (CAST(strftime('%Y','now') AS integer) - Age) < 1985) s\n)\nSELECT DISTINCT s.Name,\n       s.Age - (CAST(strftime('%Y','now') AS integer) - fc.Year) AS Age_at_concert\nFROM assumed_participants ap\nJOIN singer s ON ap.Singer_ID = s.Singer_ID\nJOIN free_choice_concert fc ON ap.concert_ID = fc.concert_ID;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.375,
+      "sim_row": 0.75,
+      "sim_col": 0.0,
+      "pred_shape": [
+        4,
+        2
+      ],
+      "gold_shape": [
+        3,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 8,
+      "db_id": "concert_singer",
+      "question": "How many years has it been since the earliest concert?",
+      "reasoning_type": "- C",
+      "gold_sql": "SELECT strftime ( \"%Y\" , \"now\" ) - MIN ( Year ) AS years FROM concert",
+      "pred_sql": "SELECT (strftime('%Y', 'now') - MIN(CAST(Year AS INTEGER))) AS years_since_earliest_concert FROM concert;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 9,
+      "db_id": "concert_singer",
+      "question": "How many years ago did the first concert occur?",
+      "reasoning_type": "- C",
+      "gold_sql": "SELECT strftime ( \"%Y\" , \"now\" ) - MIN ( Year ) AS years FROM concert",
+      "pred_sql": "SELECT strftime('%Y', 'now') - CAST(MIN(Year) AS INTEGER) AS years_ago FROM concert",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 10,
+      "db_id": "concert_singer",
+      "question": "If the \"Wide Awake\" themed concert was held three years earlier, how many years has it been since the earliest concert?",
+      "reasoning_type": "- C H",
+      "gold_sql": "SELECT strftime ( \"%Y\" , \"now\" ) - MIN ( Year ) AS years FROM ( SELECt Year - 3 AS Year FROM concert WHERE Theme = \"Wide Awake\" UNION ALL SELECT Year FROM concert WHERE Theme != \"Wide Awake\" )",
+      "pred_sql": "SELECT strftime('%Y', 'now') - MIN(CASE WHEN Theme = 'Wide Awake' THEN Year - 3 ELSE Year END) AS years_since_earliest\nFROM concert;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 11,
+      "db_id": "concert_singer",
+      "question": "How many years ago did the earliest concert occur if the concert with the theme \"Wide Awake\" took place three years earlier?",
+      "reasoning_type": "- C H",
+      "gold_sql": "SELECT strftime ( \"%Y\" , \"now\" ) - MIN ( Year ) AS years FROM ( SELECt Year - 3 AS Year FROM concert WHERE Theme = \"Wide Awake\" UNION ALL SELECT Year FROM concert WHERE Theme != \"Wide Awake\" )",
+      "pred_sql": "SELECT strftime('%Y','now') - MIN(CASE WHEN Theme = 'Wide Awake' THEN CAST(concert.Year AS INTEGER) - 3 ELSE CAST(concert.Year AS INTEGER) END) AS years_ago FROM concert",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 12,
+      "db_id": "concert_singer",
+      "question": "What are the names of the singer participating in the \"Home Visits\" concert, and how old will they be on its 20th anniversary?",
+      "reasoning_type": "- + C",
+      "gold_sql": "SELECT C.Name , A.Year - strftime ( \"%Y\" , \"now\" ) + C.Age + 20 AS target_age FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.concert_Name = \"Home Visits\"",
+      "pred_sql": "SELECT s.Name, s.Age + 20 AS age_at_anniversary FROM singer s JOIN singer_in_concert sic ON s.Singer_ID = sic.Singer_ID JOIN concert c ON sic.concert_ID = c.concert_ID WHERE c.concert_Name = 'Home Visits'",
+      "valid": true,
+      "match": false,
+      "similarity": 0.1666,
+      "sim_row": 0.0,
+      "sim_col": 0.3333,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        1,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 13,
+      "db_id": "concert_singer",
+      "question": "What are the names of the \"Home Visits\" concert singer, and how old will they be on its 20th anniversary?",
+      "reasoning_type": "- + C",
+      "gold_sql": "SELECT C.Name , A.Year - strftime ( \"%Y\" , \"now\" ) + C.Age + 20 AS target_age FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.concert_Name = \"Home Visits\"",
+      "pred_sql": "SELECT s.Name, s.Age + (CAST(c.Year AS INTEGER) + 20 - CAST(strftime('%Y', 'now') AS INTEGER)) AS Age_on_anniversary FROM singer s JOIN singer_in_concert sic ON s.Singer_ID = sic.Singer_ID JOIN concert c ON sic.concert_ID = c.concert_ID WHERE c.concert_Name = 'Home Visits';",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        1,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 14,
+      "db_id": "concert_singer",
+      "question": "If all the singers who participated in concerts held in Stark Park also participated in the \"Home Visits\" concert, what are the names of the singer participating in the \"Home Visits\" concert, and how old will they be on its 20th anniversary?",
+      "reasoning_type": "- + C H",
+      "gold_sql": "SELECT C.Name , ( SELECT Year FROM concert WHERE concert_Name = \"Home Visits\" ) - strftime ( \"%Y\" , \"now\" ) + C.Age + 20 AS target_age FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.concert_Name = \"Home Visits\" OR B.Singer_ID IN ( SELECT C.Singer_ID FROM concert A JOIN stadium B ON A.Stadium_ID = B.Stadium_ID JOIN singer_in_concert C ON A.concert_ID = C.concert_ID WHERE B.Name = \"Stark's Park\" ) GROUP BY B.Singer_ID",
+      "pred_sql": "WITH home_visits_id AS (SELECT concert_ID FROM concert WHERE concert_Name = 'Home Visits'), stark_park_singers AS (SELECT DISTINCT sic.Singer_ID FROM singer_in_concert sic JOIN concert c ON sic.concert_ID = c.concert_ID JOIN stadium st ON c.Stadium_ID = st.Stadium_ID WHERE st.Name = 'Stark''s Park'), modified_singer_in_concert AS (SELECT Singer_ID, concert_ID FROM singer_in_concert UNION ALL SELECT s.Singer_ID, (SELECT concert_ID FROM home_visits_id) FROM stark_park_singers s WHERE NOT EXISTS (SELECT 1 FROM singer_in_concert sic2 WHERE sic2.Singer_ID = s.Singer_ID AND sic2.concert_ID = (SELECT concert_ID FROM home_visits_id))) SELECT DISTINCT s.Name, s.Age + (2035 - CAST(strftime('%Y','now') AS INTEGER)) AS age_at_anniversary FROM singer s JOIN modified_singer_in_concert ms ON s.Singer_ID = ms.Singer_ID JOIN concert c ON ms.concert_ID = c.concert_ID WHERE c.concert_Name = 'Home Visits'",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        2
+      ],
+      "gold_shape": [
+        3,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 15,
+      "db_id": "concert_singer",
+      "question": "What will be the ages and names of the \"Home Visits\" concert singers on its 20th anniversary, if all the singers who performed at concerts in Stark Park also took part in it?",
+      "reasoning_type": "- + C H",
+      "gold_sql": "SELECT C.Name , ( SELECT Year FROM concert WHERE concert_Name = \"Home Visits\" ) - strftime ( \"%Y\" , \"now\" ) + C.Age + 20 AS target_age FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID WHERE A.concert_Name = \"Home Visits\" OR B.Singer_ID IN ( SELECT C.Singer_ID FROM concert A JOIN stadium B ON A.Stadium_ID = B.Stadium_ID JOIN singer_in_concert C ON A.concert_ID = C.concert_ID WHERE B.Name = \"Stark's Park\" ) GROUP BY B.Singer_ID",
+      "pred_sql": "WITH modified_home_visits_singers AS (\n  (SELECT Singer_ID FROM singer_in_concert WHERE concert_ID = (SELECT concert_ID FROM concert WHERE concert_Name = 'Home Visits'))\n  UNION\n  (SELECT DISTINCT sic.Singer_ID FROM singer_in_concert sic JOIN concert c ON sic.concert_ID = c.concert_ID JOIN stadium s ON c.Stadium_ID = s.Stadium_ID WHERE s.Name = 'Stark''s Park')\n)\nSELECT s.Name, s.Age + (hc.Year + 20 - CAST(strftime('%Y','now') AS INTEGER)) AS Age_on_anniversary\nFROM modified_home_visits_singers a\nJOIN singer s ON a.Singer_ID = s.Singer_ID\nCROSS JOIN (SELECT CAST(Year AS INTEGER) AS Year FROM concert WHERE concert_Name = 'Home Visits') hc;",
+      "valid": false,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": null,
+      "gold_shape": null,
+      "pred_error": "OperationalError: near \"(\": syntax error",
+      "gold_error": null
+    },
+    {
+      "index": 16,
+      "db_id": "concert_singer",
+      "question": "When all tickets sold out, how much money can be made from ticket sales at the Balmoor stadium with a ticket price of 20 dollars and the Hampden Park stadium with a ticket price of 5.5 dollars?",
+      "reasoning_type": "+ * C",
+      "gold_sql": "SELECT Capacity * 20 + ( SELECT Capacity * 5.5 FROM stadium WHERE Name = \"Hampden Park\" ) AS total FROM stadium WHERE Name = \"Balmoor\"",
+      "pred_sql": "SELECT SUM(CASE WHEN s.Name = 'Balmoor' THEN s.Capacity * 20 WHEN s.Name = 'Hampden Park' THEN s.Capacity * 5.5 ELSE 0 END) AS total_money FROM stadium s WHERE s.Name IN ('Balmoor', 'Hampden Park');",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 17,
+      "db_id": "concert_singer",
+      "question": "If the ticket price for Balmoor stadium is $20 and for Hampden Park stadium is $5.5, and all tickets are sold out, how much money can be generated from ticket sales?",
+      "reasoning_type": "+ * C",
+      "gold_sql": "SELECT Capacity * 20 + ( SELECT Capacity * 5.5 FROM stadium WHERE Name = \"Hampden Park\" ) AS total FROM stadium WHERE Name = \"Balmoor\"",
+      "pred_sql": "SELECT SUM(CASE WHEN s.Name = 'Balmoor stadium' THEN s.Capacity * 20.0 WHEN s.Name = 'Hampden Park stadium' THEN s.Capacity * 5.5 END) AS total_revenue FROM stadium s WHERE s.Name IN ('Balmoor stadium', 'Hampden Park stadium')",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 18,
+      "db_id": "concert_singer",
+      "question": "If the capacity of the Hampden Park stadium is twice that of the Balmoor stadium, when all tickets sold out, how much money can be made from ticket sales at the Balmoor stadium with a ticket price of 20 dollars and the Hampden Park stadium with a ticket price of 5.5 dollars?",
+      "reasoning_type": "+ * C H",
+      "gold_sql": "SELECT Capacity * 20 + 2 * Capacity * 5.5 AS total FROM stadium WHERE Name = \"Balmoor\"",
+      "pred_sql": "SELECT ((SELECT Capacity FROM stadium WHERE Name = 'Balmoor') * 20 + 2 * (SELECT Capacity FROM stadium WHERE Name = 'Balmoor') * 5.5) AS total_revenue;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 19,
+      "db_id": "concert_singer",
+      "question": "Assuming the ticket price for Balmoor stadium is $20 and for Hampden Park stadium is $5.5, and if the Hampden Park stadium has twice the capacity of the Balmoor stadium, what would be the total revenue generated from ticket sales if all tickets are sold out at both stadiums?",
+      "reasoning_type": "+ * C H",
+      "gold_sql": "SELECT Capacity * 20 + 2 * Capacity * 5.5 AS total FROM stadium WHERE Name = \"Balmoor\"",
+      "pred_sql": "WITH modified AS (\n  SELECT Name, Capacity FROM stadium WHERE Name = 'Balmoor'\n  UNION ALL\n  SELECT 'Hampden Park', (2 * (SELECT Capacity FROM stadium WHERE Name = 'Balmoor'))\n)\nSELECT SUM(CASE WHEN Name = 'Balmoor' THEN Capacity * 20 ELSE Capacity * 5.5 END) AS total_revenue\nFROM modified;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 20,
+      "db_id": "concert_singer",
+      "question": "Singers born before 1980 earn $355 per concert, while singers born after 1980 earn $228 per concert. How much was spent on paying the singers for the concerts held in Somerset Park stadium?",
+      "reasoning_type": "- + * C",
+      "gold_sql": "SELECT p1 + p2 AS cost FROM ( SELECT 355 * ( COUNT ( * ) ) AS p1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND strftime ( \"%Y\" , \"now\" ) - C.Age < 1980 ) JOIN ( SELECT 228 * ( COUNT ( * ) ) AS p2 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND strftime ( \"%Y\" , \"now\" ) - C.Age >= 1980 )",
+      "pred_sql": "SELECT SUM(CASE WHEN strftime('%Y','now') - singer.Age < 1980 THEN 355 WHEN strftime('%Y','now') - singer.Age > 1980 THEN 228 ELSE 0 END) AS total_spent FROM singer_in_concert JOIN concert ON singer_in_concert.concert_ID = concert.concert_ID JOIN stadium ON concert.Stadium_ID = stadium.Stadium_ID JOIN singer ON CAST(singer_in_concert.Singer_ID AS INTEGER) = singer.Singer_ID WHERE stadium.Name = 'Somerset Park';",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 21,
+      "db_id": "concert_singer",
+      "question": "What was the total expenditure on paying singers for concerts held at Somerset Park stadium, given that singers born before 1980 earned $355 per concert and those born after 1980 earned $228 per concert?",
+      "reasoning_type": "- + * C",
+      "gold_sql": "SELECT p1 + p2 AS cost FROM ( SELECT 355 * ( COUNT ( * ) ) AS p1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND strftime ( \"%Y\" , \"now\" ) - C.Age < 1980 ) JOIN ( SELECT 228 * ( COUNT ( * ) ) AS p2 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND strftime ( \"%Y\" , \"now\" ) - C.Age >= 1980 )",
+      "pred_sql": "SELECT SUM(CASE WHEN (strftime('%Y', 'now') - s.Age) < 1980 THEN 355 WHEN (strftime('%Y', 'now') - s.Age) > 1980 THEN 228 ELSE 0 END) AS total FROM stadium st JOIN concert c ON c.Stadium_ID = st.Stadium_ID JOIN singer_in_concert sic ON sic.concert_ID = c.concert_ID JOIN singer s ON s.Singer_ID = sic.Singer_ID WHERE st.Name = 'Somerset Park';",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 22,
+      "db_id": "concert_singer",
+      "question": "Singers born before 1980 earn $355 per concert, while singers born after 1980 earn $228 per concert. If Justin Brown is 3 years older than John Nizinik, how much was spent on paying the singers for the concerts held in Somerset Park stadium?",
+      "reasoning_type": "- + * C H",
+      "gold_sql": "SELECT p1 + p2 AS cost FROM ( SELECT 355 * ( COUNT ( * ) ) AS p1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN ( SELECT Singer_ID , Name , strftime ( \"%Y\" , \"now\" ) - Age AS birth_year FROM singer WHERE Name != \"Justin Brown\" UNION ALL SELECT Singer_ID , Name , ( SELECT strftime ( \"%Y\" , \"now\" ) - Age FROM singer WHERE Name = \"John Nizinik\" ) - 3 AS birth_year FROM singer WHERE Name = \"Justin Brown\" ) C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.birth_year < 1980 ) JOIN ( SELECT 228 * ( COUNT ( * ) ) AS p2 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN ( SELECT Singer_ID , Name , strftime ( \"%Y\" , \"now\" ) - Age AS birth_year FROM singer WHERE Name != \"Justin Brown\" UNION ALL SELECT Singer_ID , Name , ( SELECT strftime ( \"%Y\" , \"now\" ) - Age FROM singer WHERE Name = \"John Nizinik\" ) - 3 AS birth_year FROM singer WHERE Name = \"Justin Brown\" ) C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.birth_year >= 1980 )",
+      "pred_sql": "SELECT SUM(CASE WHEN (CAST(s.Song_release_year AS INTEGER) - (CASE WHEN s.Name = 'John Nizinik' THEN (SELECT Age FROM singer WHERE Name = 'Justin Brown') - 3 ELSE s.Age END)) < 1980 THEN 355 ELSE 228 END) AS total_spent FROM singer_in_concert sic JOIN concert c ON sic.concert_ID = c.concert_ID JOIN stadium st ON c.Stadium_ID = st.Stadium_ID JOIN singer s ON sic.Singer_ID = s.Singer_ID WHERE st.Name = 'Somerset Park';",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 23,
+      "db_id": "concert_singer",
+      "question": "If Justin Brown was 3 years older than John Nizinik, what was the total expenditure on paying singers for concerts held at Somerset Park stadium, given that singers born before 1980 earned $355 per concert and those born after 1980 earned $228 per concert?",
+      "reasoning_type": "- + * C H",
+      "gold_sql": "SELECT p1 + p2 AS cost FROM ( SELECT 355 * ( COUNT ( * ) ) AS p1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN ( SELECT Singer_ID , Name , strftime ( \"%Y\" , \"now\" ) - Age AS birth_year FROM singer WHERE Name != \"Justin Brown\" UNION ALL SELECT Singer_ID , Name , ( SELECT strftime ( \"%Y\" , \"now\" ) - Age FROM singer WHERE Name = \"John Nizinik\" ) - 3 AS birth_year FROM singer WHERE Name = \"Justin Brown\" ) C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.birth_year < 1980 ) JOIN ( SELECT 228 * ( COUNT ( * ) ) AS p2 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN ( SELECT Singer_ID , Name , strftime ( \"%Y\" , \"now\" ) - Age AS birth_year FROM singer WHERE Name != \"Justin Brown\" UNION ALL SELECT Singer_ID , Name , ( SELECT strftime ( \"%Y\" , \"now\" ) - Age FROM singer WHERE Name = \"John Nizinik\" ) - 3 AS birth_year FROM singer WHERE Name = \"Justin Brown\" ) C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON A.Stadium_ID = D.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.birth_year >= 1980 )",
+      "pred_sql": "SELECT SUM(CASE WHEN strftime('%Y','now') - (CASE WHEN si.Name = 'Justin Brown' THEN (SELECT a.Age FROM singer a WHERE a.Name = 'John Nizinik') + 3 ELSE si.Age END) < 1980 THEN 355 WHEN strftime('%Y','now') - (CASE WHEN si.Name = 'Justin Brown' THEN (SELECT a.Age FROM singer a WHERE a.Name = 'John Nizinik') + 3 ELSE si.Age END) > 1980 THEN 228 ELSE 0 END) AS total_expenditure FROM concert c JOIN stadium s ON c.Stadium_ID = s.Stadium_ID JOIN singer_in_concert sic ON c.concert_ID = sic.concert_ID JOIN singer si ON sic.Singer_ID = si.Singer_ID WHERE s.Name = 'Somerset Park';",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 24,
+      "db_id": "concert_singer",
+      "question": "Which stadiums have the lowest and highest average attendance rates respectively, and how many concerts have they each held?",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT * FROM ( SELECT Name AS highest_name FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_highest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) ) JOIN ( SELECT Name AS lowest_name FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_lowest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) )",
+      "pred_sql": "SELECT s.Name, s.Average, COUNT(c.concert_ID) AS num_concerts FROM stadium s LEFT JOIN concert c ON s.Stadium_ID = c.Stadium_ID WHERE s.Average = (SELECT MIN(Average) FROM stadium) OR s.Average = (SELECT MAX(Average) FROM stadium) GROUP BY s.Stadium_ID ORDER BY s.Average",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        2,
+        3
+      ],
+      "gold_shape": [
+        1,
+        4
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 25,
+      "db_id": "concert_singer",
+      "question": "What are the names of the stadiums with the highest and lowest average attendance rates, and how many concerts have been held in each of them?",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT * FROM ( SELECT Name AS highest_name FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_highest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) ) JOIN ( SELECT Name AS lowest_name FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_lowest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM stadium GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) )",
+      "pred_sql": "WITH extremes AS (SELECT MAX(Average) AS max_avg, MIN(Average) AS min_avg FROM stadium) SELECT s.Name, COUNT(c.concert_ID) AS concert_count FROM stadium s LEFT JOIN concert c ON s.Stadium_ID = c.Stadium_ID WHERE s.Average = (SELECT max_avg FROM extremes) OR s.Average = (SELECT min_avg FROM extremes) GROUP BY s.Stadium_ID, s.Name",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        2,
+        2
+      ],
+      "gold_shape": [
+        1,
+        4
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 26,
+      "db_id": "concert_singer",
+      "question": "Suppose Gayfield Park stadium had a tenth of the capacity of Hampden Park stadium, which stadiums have the lowest and highest average attendance rates respectively, and how many concerts have they each held?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT * FROM ( SELECT Name AS highest_name FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_highest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) ) JOIN ( SELECT Name AS lowest_name FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_lowest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) )",
+      "pred_sql": "SELECT s.Name AS stadium_name,\n       CAST(s.Average AS REAL) / a.capacity AS attendance_rate,\n       (SELECT COUNT(c.concert_ID) FROM concert c WHERE c.Stadium_ID = s.Stadium_ID) AS concert_count\nFROM stadium s\nJOIN (\n  SELECT Stadium_ID,\n         CASE WHEN Name = 'Gayfield Park' THEN 0.1 * (SELECT Capacity FROM stadium WHERE Name = 'Hampden Park')\n              ELSE Capacity END AS capacity\n  FROM stadium\n) a ON s.Stadium_ID = a.Stadium_ID\nWHERE CAST(s.Average AS REAL) / a.capacity IN (\n  SELECT MIN(CAST(s2.Average AS REAL) / a2.capacity)\n  FROM stadium s2\n  JOIN (\n    SELECT Stadium_ID,\n           CASE WHEN Name = 'Gayfield Park' THEN 0.1 * (SELECT Capacity FROM stadium WHERE Name = 'Hampden Park')\n                ELSE Capacity END AS capacity\n    FROM stadium\n  ) a2 ON s2.Stadium_ID = a2.Stadium_ID\n  WHERE CAST(s2.Average AS REAL) IS NOT NULL AND a2.capacity IS NOT NULL\n  UNION ALL\n  SELECT MAX(CAST(s2.Average AS REAL) / a2.capacity)\n  FROM stadium s2\n  JOIN (\n    SELECT Stadium_ID,\n           CASE WHEN Name = 'Gayfield Park' THEN 0.1 * (SELECT Capacity FROM stadium WHERE Name = 'Hampden Park')\n                ELSE Capacity END AS capacity\n    FROM stadium\n  ) a2 ON s2.Stadium_ID = a2.Stadium_ID\n  WHERE CAST(s2.Average AS REAL) IS NOT NULL AND a2.capacity IS NOT NULL\n);",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        2,
+        3
+      ],
+      "gold_shape": [
+        1,
+        4
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 27,
+      "db_id": "concert_singer",
+      "question": "What are the names of the stadiums with the highest and lowest average attendance rates, if Gayfield Park stadium has one-tenth the capacity of Hampden Park stadium, and how many concerts have been held in each of them?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT * FROM ( SELECT Name AS highest_name FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_highest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity DESC LIMIT 1 ) ) JOIN ( SELECT Name AS lowest_name FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) JOIN ( SELECT COUNT ( * ) AS concerts_in_lowest_stadium FROM stadium A JOIN concert B ON A.Stadium_ID = B.Stadium_ID WHERE A.Stadium_ID = ( SELECT Stadium_ID FROM ( SELECT Stadium_ID , Name , ( SELECT Capacity FROM stadium WHERE Name = \"Hampden Park\" ) / 10 AS Capacity , Average FROM stadium WHERE Name = \"Gayfield Park\" UNION ALL SELECt Stadium_ID , Name , Capacity , Average FROM stadium WHERE Name != \"Gayfield Park\" ) GROUP BY Stadium_ID ORDER BY 100.0 * Average / Capacity ASC LIMIT 1 ) )",
+      "pred_sql": "WITH modified AS (\n  SELECT s.Stadium_ID, s.Name, s.Average,\n    CASE WHEN s.Name = 'Gayfield Park' THEN (SELECT s2.Capacity FROM stadium s2 WHERE s2.Name='Hampden Park')/10.0 ELSE s.Capacity END AS capacity_mod,\n    s.Capacity AS orig_capacity\n  FROM stadium s\n),\nrates AS (\n  SELECT Stadium_ID, Name, Average / capacity_mod AS rate\n  FROM modified\n  WHERE capacity_mod > 0\n),\nextremes AS (\n  SELECT MAX(rate) AS max_rate, MIN(rate) AS min_rate FROM rates\n)\nSELECT r.Name,\n  (SELECT COUNT(*) FROM concert c WHERE c.Stadium_ID = r.Stadium_ID) AS concert_count\nFROM rates r\nJOIN extremes e ON r.rate = e.max_rate OR r.rate = e.min_rate\nORDER BY r.rate DESC",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        9,
+        2
+      ],
+      "gold_shape": [
+        1,
+        4
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 28,
+      "db_id": "concert_singer",
+      "question": "What are the ID and name of each concert held at Somerset Park stadium, and what percentage of the singers in each of these concert are female singers?",
+      "reasoning_type": "+ * /",
+      "gold_sql": "SELECT t1.concert_ID, t1.concert_Name, 100.0 * n_female / n AS female_proportion FROM (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.Is_male = \"F\" GROUP BY A.concert_ID UNION ALL SELECT A.concert_ID, A.concert_Name, 0 AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND A.concert_ID NOT IN (SELECT A.concert_ID FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.Is_male = \"F\" GROUP BY A.concert_ID) GROUP BY A.concert_ID) t1 JOIN (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" GROUP BY A.concert_ID) t2 ON t1.concert_ID = t2.concert_ID",
+      "pred_sql": "SELECT c.concert_ID, c.concert_Name, CAST(100.0 * SUM(CASE WHEN s.Is_male = 'F' THEN 1 ELSE 0 END) / COUNT(s.Singer_ID) AS REAL) AS female_percentage FROM concert c JOIN singer_in_concert sic ON c.concert_ID = sic.concert_ID JOIN singer s ON sic.Singer_ID = s.Singer_ID JOIN stadium st ON c.Stadium_ID = st.Stadium_ID WHERE st.Name = 'Somerset Park' GROUP BY c.concert_ID, c.concert_Name;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        2,
+        3
+      ],
+      "gold_shape": [
+        2,
+        3
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 29,
+      "db_id": "concert_singer",
+      "question": "What are the ID and name of each concert held at Somerset Park stadium, and what is the percentage of female singers in each of these concert held at Somerset Park?",
+      "reasoning_type": "+ * /",
+      "gold_sql": "SELECT t1.concert_ID, t1.concert_Name, 100.0 * n_female / n AS female_proportion FROM (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.Is_male = \"F\" GROUP BY A.concert_ID UNION ALL SELECT A.concert_ID, A.concert_Name, 0 AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND A.concert_ID NOT IN (SELECT A.concert_ID FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" AND C.Is_male = \"F\" GROUP BY A.concert_ID) GROUP BY A.concert_ID) t1 JOIN (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE D.Name = \"Somerset Park\" GROUP BY A.concert_ID) t2 ON t1.concert_ID = t2.concert_ID",
+      "pred_sql": "SELECT c.concert_ID, c.concert_Name, (100.0 * SUM(CASE WHEN s.Is_male = 0 THEN 1 ELSE 0 END)) / COUNT(s.Singer_ID) AS percentage\nFROM concert c\nJOIN stadium st ON c.Stadium_ID = st.Stadium_ID\nLEFT JOIN singer_in_concert sic ON c.concert_ID = sic.concert_ID\nLEFT JOIN singer s ON sic.Singer_ID = s.Singer_ID\nWHERE st.Name = 'Somerset Park'\nGROUP BY c.concert_ID, c.concert_Name",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        2,
+        3
+      ],
+      "gold_shape": [
+        2,
+        3
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 30,
+      "db_id": "concert_singer",
+      "question": "If the \"Week 2\" concert was held at Somerset Park stadium, what are the ID and name of each concert held at Somerset Park stadium, and what percentage of the singers in each concert held at Somerset Park stadium are female singers?",
+      "reasoning_type": "+ * / H",
+      "gold_sql": "SELECT t1.concert_ID, t1.concert_Name, 100.0 * n_female / n AS female_proportion FROM (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND C.Is_male = \"F\" GROUP BY A.concert_ID UNION ALL SELECT A.concert_ID, A.concert_Name, 0 AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND A.concert_ID NOT IN (SELECT A.concert_ID FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND C.Is_male = \"F\" GROUP BY A.concert_ID) GROUP BY A.concert_ID) t1 JOIN (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") GROUP BY A.concert_ID) t2 ON t1.concert_ID = t2.concert_ID",
+      "pred_sql": "WITH modified_concert AS (SELECT concert_ID, concert_Name, '2' AS Stadium_ID FROM concert WHERE concert_Name = 'Week 2' UNION ALL SELECT concert_ID, concert_Name, Stadium_ID FROM concert WHERE concert_Name <> 'Week 2') SELECT c.concert_ID, c.concert_Name, 100.0 * COUNT(CASE WHEN s.Is_male = 'F' THEN 1 END) / COUNT(s.Singer_ID) AS percentage FROM modified_concert c JOIN singer_in_concert sic ON c.concert_ID = sic.concert_ID JOIN singer s ON sic.Singer_ID = s.Singer_ID WHERE c.Stadium_ID = '2' GROUP BY c.concert_ID, c.concert_Name",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        3
+      ],
+      "gold_shape": [
+        3,
+        3
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 31,
+      "db_id": "concert_singer",
+      "question": "What are the ID and name of each concert held at Somerset Park stadium, and what is the percentage of female singers in each concert held at Somerset Park, if the \"Week 2\" concert was held there?",
+      "reasoning_type": "+ * / H",
+      "gold_sql": "SELECT t1.concert_ID, t1.concert_Name, 100.0 * n_female / n AS female_proportion FROM (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND C.Is_male = \"F\" GROUP BY A.concert_ID UNION ALL SELECT A.concert_ID, A.concert_Name, 0 AS n_female FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND A.concert_ID NOT IN (SELECT A.concert_ID FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") AND C.Is_male = \"F\" GROUP BY A.concert_ID) GROUP BY A.concert_ID) t1 JOIN (SELECT A.concert_ID, A.concert_Name, COUNT (*) AS n FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN singer C ON B.Singer_ID = C.Singer_ID JOIN stadium D ON D.Stadium_ID = A.Stadium_ID WHERE (D.Name = \"Somerset Park\" OR A.concert_Name = \"Week 2\") GROUP BY A.concert_ID) t2 ON t1.concert_ID = t2.concert_ID",
+      "pred_sql": "SELECT c.concert_ID AS ID, c.concert_Name AS name,\n  CASE WHEN COUNT(sic.Singer_ID) = 0 THEN 0.0 ELSE CAST(SUM(CASE WHEN s.Is_male = 'F' THEN 1 ELSE 0 END) AS REAL) * 100.0 / COUNT(sic.Singer_ID) END AS percentage\nFROM concert c\nLEFT JOIN singer_in_concert sic ON c.concert_ID = sic.concert_ID\nLEFT JOIN singer s ON sic.Singer_ID = s.Singer_ID\nWHERE (CASE WHEN c.concert_Name = 'Week 2' THEN (SELECT Stadium_ID FROM stadium WHERE Name = 'Somerset Park') ELSE c.Stadium_ID END) = (SELECT Stadium_ID FROM stadium WHERE Name = 'Somerset Park')\nGROUP BY c.concert_ID, c.concert_Name",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        3
+      ],
+      "gold_shape": [
+        3,
+        3
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 32,
+      "db_id": "concert_singer",
+      "question": "What percentage of the concerts were held in the top three stadiums in terms of average attendance rate?",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT 100.0 * COUNT ( * ) / ( SELECT COUNT ( * ) FROM concert ) AS percent FROM concert WHERE Stadium_ID IN ( SELECT Stadium_ID FROM stadium ORDER BY 100.0 * Average / Capacity DESC LIMIT 3 )",
+      "pred_sql": "SELECT CAST(SUM(CASE WHEN c.Stadium_ID IN (SELECT s.Stadium_ID FROM stadium s ORDER BY s.Average DESC LIMIT 3) THEN 1 ELSE 0 END) AS REAL) * 100 / COUNT(*) AS percentage FROM concert c;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 33,
+      "db_id": "concert_singer",
+      "question": "What is the percentage of concerts that took place in the three stadiums with the highest average attendance rates?",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT 100.0 * COUNT ( * ) / ( SELECT COUNT ( * ) FROM concert ) AS percent FROM concert WHERE Stadium_ID IN ( SELECT Stadium_ID FROM stadium ORDER BY 100.0 * Average / Capacity DESC LIMIT 3 )",
+      "pred_sql": "WITH top3 AS (\n  SELECT Stadium_ID FROM stadium ORDER BY Average DESC LIMIT 3\n)\nSELECT (COUNT(*) * 100.0 / (SELECT COUNT(*) FROM concert)) AS percentage\nFROM concert WHERE Stadium_ID IN (SELECT Stadium_ID FROM top3);",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 34,
+      "db_id": "concert_singer",
+      "question": "If the \"Bleeding Love\" themed concert was held at Glebe Park stadium, what percentage of the concerts were held in the top three stadiums in terms of average attendance rate?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT 100.0 * COUNT ( * ) / ( SELECT COUNT ( * ) FROM concert ) AS percent FROM ( SELECT Stadium_ID FROM stadium WHERE Name = \"Glebe Park\" UNION ALL SELECT Stadium_ID FROM concert WHERE Theme != \"Bleeding Love\" ) WHERE Stadium_ID IN ( SELECT Stadium_ID FROM stadium ORDER BY 100.0 * Average / Capacity DESC LIMIT 3 )",
+      "pred_sql": "SELECT 100.0 * SUM(CASE WHEN Stadium_ID IN (SELECT Stadium_ID FROM stadium ORDER BY Average DESC LIMIT 3) THEN 1 ELSE 0 END) / COUNT(*) AS percentage FROM (SELECT concert_ID, CASE WHEN Theme = 'Bleeding Love' THEN (SELECT Stadium_ID FROM stadium WHERE Name = 'Glebe Park') ELSE concert.Stadium_ID END AS Stadium_ID FROM concert);",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 35,
+      "db_id": "concert_singer",
+      "question": "What percentage of concerts took place in the three stadiums with the highest average attendance rates, assuming that the concert with the theme \"Bleeding Love\" took place at the Glebe Park stadium?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT 100.0 * COUNT ( * ) / ( SELECT COUNT ( * ) FROM concert ) AS percent FROM ( SELECT Stadium_ID FROM stadium WHERE Name = \"Glebe Park\" UNION ALL SELECT Stadium_ID FROM concert WHERE Theme != \"Bleeding Love\" ) WHERE Stadium_ID IN ( SELECT Stadium_ID FROM stadium ORDER BY 100.0 * Average / Capacity DESC LIMIT 3 )",
+      "pred_sql": "WITH adjusted_concert AS (SELECT concert_ID, concert_Name, Theme, Year, CASE WHEN Theme = 'Bleeding Love' THEN (SELECT Stadium_ID FROM stadium WHERE Name = 'Glebe Park') ELSE Stadium_ID END AS Stadium_ID FROM concert), top_stadiums AS (SELECT Stadium_ID FROM stadium ORDER BY Average DESC LIMIT 3) SELECT (COUNT(CASE WHEN ac.Stadium_ID IN (SELECT Stadium_ID FROM top_stadiums) THEN 1 END)*100.0/COUNT(*)) AS percentage FROM adjusted_concert ac",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 36,
+      "db_id": "concert_singer",
+      "question": "Which stadium has at least three times the number of singers who have sung at the Glebe Park stadium?",
+      "reasoning_type": "*",
+      "gold_sql": "SELECT C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID GROUP BY C.Stadium_ID HAVING COUNT ( DISTINCT ( B.Singer_ID ) ) >= 3 * ( SELECT COUNT ( DISTINCT ( B.Singer_ID ) ) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Glebe Park\" )",
+      "pred_sql": "WITH glebe_count AS (SELECT COUNT(DISTINCT sic.Singer_ID) AS cnt FROM stadium s JOIN concert c ON s.Stadium_ID = c.Stadium_ID JOIN singer_in_concert sic ON c.concert_ID = sic.concert_ID WHERE s.Name = 'Glebe Park') SELECT s.Name FROM stadium s JOIN concert c ON s.Stadium_ID = c.Stadium_ID JOIN singer_in_concert sic ON c.concert_ID = sic.concert_ID GROUP BY s.Stadium_ID, s.Name HAVING COUNT(DISTINCT sic.Singer_ID) >= 3 * (SELECT cnt FROM glebe_count)",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        2,
+        1
+      ],
+      "gold_shape": [
+        2,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 37,
+      "db_id": "concert_singer",
+      "question": "Which stadium has had a minimum of three times more singers than Glebe Park does?",
+      "reasoning_type": "*",
+      "gold_sql": "SELECT C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID GROUP BY C.Stadium_ID HAVING COUNT ( DISTINCT ( B.Singer_ID ) ) >= 3 * ( SELECT COUNT ( DISTINCT ( B.Singer_ID ) ) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Glebe Park\" )",
+      "pred_sql": "SELECT s.Name\nFROM stadium s\nINNER JOIN concert c ON s.Stadium_ID = c.Stadium_ID\nINNER JOIN singer_in_concert sic ON c.concert_ID = sic.concert_ID\nGROUP BY s.Stadium_ID, s.Name\nHAVING COUNT(DISTINCT sic.Singer_ID) >= 3 * (\n    SELECT COUNT(DISTINCT sic2.Singer_ID)\n    FROM stadium sg\n    INNER JOIN concert cg ON sg.Stadium_ID = cg.Stadium_ID\n    INNER JOIN singer_in_concert sic2 ON cg.concert_ID = sic2.concert_ID\n    WHERE sg.Name = 'Glebe Park'\n)",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        2,
+        1
+      ],
+      "gold_shape": [
+        2,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 38,
+      "db_id": "concert_singer",
+      "question": "If all the singers who have performed at Somerset Park stadium also performed at Balmoor stadium, what is the name of the stadium with at least three times the number of singers who have sung at the Glebe Park stadium?",
+      "reasoning_type": "* H",
+      "gold_sql": "SELECT Name FROM ( SELECT C.Stadium_ID , B.Singer_ID , C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID UNION ALL SELECT ( SELECT Stadium_ID FROM stadium WHERE Name = \"Balmoor\" ) , B.Singer_ID , C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Somerset Park\" ) GROUP BY Stadium_ID HAVING COUNT ( DISTINCT ( Singer_ID ) ) >= 3 * ( SELECT COUNT ( DISTINCT ( B.Singer_ID ) ) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Glebe Park\" )",
+      "pred_sql": "WITH ModifiedSIC AS (\n  SELECT concert_ID, Singer_ID FROM singer_in_concert\n  UNION ALL\n  SELECT b.concert_ID, ss.Singer_ID\n  FROM (SELECT concert_ID FROM concert WHERE Stadium_ID = (SELECT Stadium_ID FROM stadium WHERE Name = 'Balmoor')) b,\n       (SELECT DISTINCT Singer_ID FROM singer_in_concert si JOIN concert co ON si.concert_ID = co.concert_ID JOIN stadium st ON co.Stadium_ID = st.Stadium_ID WHERE st.Name = 'Somerset Park') ss\n),\nGlebeCount AS (\n  SELECT COUNT(DISTINCT Singer_ID) AS glebe_cnt\n  FROM ModifiedSIC sic\n  JOIN concert c ON sic.concert_ID = c.concert_ID\n  JOIN stadium s ON c.Stadium_ID = s.Stadium_ID\n  WHERE s.Name = 'Glebe Park'\n),\nStadiumCounts AS (\n  SELECT s.Name, COUNT(DISTINCT sic.Singer_ID) AS cnt\n  FROM stadium s\n  JOIN concert c ON s.Stadium_ID = c.Stadium_ID\n  JOIN ModifiedSIC sic ON c.concert_ID = sic.concert_ID\n  GROUP BY s.Name\n)\nSELECT Name\nFROM StadiumCounts, GlebeCount\nWHERE cnt >= 3 * glebe_cnt;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        1
+      ],
+      "gold_shape": [
+        3,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 39,
+      "db_id": "concert_singer",
+      "question": "What is the name of the stadium that has a minimum of three times more singers than Glebe Park if the singers who have performed at Somerset Park also performed at the Balmoor stadium?",
+      "reasoning_type": "* H",
+      "gold_sql": "SELECT Name FROM ( SELECT C.Stadium_ID , B.Singer_ID , C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID UNION ALL SELECT ( SELECT Stadium_ID FROM stadium WHERE Name = \"Balmoor\" ) , B.Singer_ID , C.Name FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Somerset Park\" ) GROUP BY Stadium_ID HAVING COUNT ( DISTINCT ( Singer_ID ) ) >= 3 * ( SELECT COUNT ( DISTINCT ( B.Singer_ID ) ) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID JOIN stadium C ON A.Stadium_ID = C.Stadium_ID WHERE C.name = \"Glebe Park\" )",
+      "pred_sql": "WITH somerset_singers AS (\n    SELECT DISTINCT sic.Singer_ID\n    FROM singer_in_concert sic\n    JOIN concert c ON sic.concert_ID = c.concert_ID\n    JOIN stadium s ON c.Stadium_ID = s.Stadium_ID\n    WHERE s.Name = 'Somerset Park'\n),\nbalmoor_concerts AS (\n    SELECT c.concert_ID\n    FROM concert c\n    JOIN stadium s ON c.Stadium_ID = s.Stadium_ID\n    WHERE s.Name = 'Balmoor stadium'\n),\nhypo AS (\n    SELECT concert_ID, Singer_ID\n    FROM balmoor_concerts\n    CROSS JOIN somerset_singers\n),\nall_perf AS (\n    SELECT concert_ID, Singer_ID FROM singer_in_concert\n    UNION ALL\n    SELECT concert_ID, Singer_ID FROM hypo\n),\nstadium_singers AS (\n    SELECT s.Stadium_ID, s.Name, COUNT(DISTINCT ap.Singer_ID) AS cnt\n    FROM stadium s\n    LEFT JOIN concert c ON s.Stadium_ID = c.Stadium_ID\n    LEFT JOIN all_perf ap ON c.concert_ID = ap.concert_ID\n    GROUP BY s.Stadium_ID, s.Name\n),\nglebe_cnt AS (\n    SELECT cnt FROM stadium_singers WHERE Name = 'Glebe Park'\n)\nSELECT ss.Name\nFROM stadium_singers ss, glebe_cnt g\nWHERE ss.cnt >= 3 * g.cnt AND 'added' = 'added';",
+      "valid": true,
+      "match": false,
+      "similarity": 0.3333,
+      "sim_row": 0.6667,
+      "sim_col": 0.0,
+      "pred_shape": [
+        2,
+        1
+      ],
+      "gold_shape": [
+        3,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 40,
+      "db_id": "concert_singer",
+      "question": "What is the name of the stadium that has a highest attendance rate more than twice the highest attendance rate of the Balmoor stadium?",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT Name FROM stadium WHERE 100.0 * Highest / Capacity > 2 * ( SELECT 100.0 * Highest / Capacity FROM stadium WHERE Name = \"Balmoor\" )",
+      "pred_sql": "SELECT s.Name FROM stadium s WHERE s.Highest > 2 * (SELECT s2.Highest FROM stadium s2 WHERE s2.Name = 'Balmoor');",
+      "valid": true,
+      "match": false,
+      "similarity": 0.25,
+      "sim_row": 0.5,
+      "sim_col": 0.0,
+      "pred_shape": [
+        4,
+        1
+      ],
+      "gold_shape": [
+        2,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 41,
+      "db_id": "concert_singer",
+      "question": "Which stadium's maximum attendance rate is more than double the Balmoor stadium's highest attendance rate? Give the the stadium names.",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT Name FROM stadium WHERE 100.0 * Highest / Capacity > 2 * ( SELECT 100.0 * Highest / Capacity FROM stadium WHERE Name = \"Balmoor\" )",
+      "pred_sql": "SELECT Name FROM stadium WHERE (CAST(Highest AS REAL) / Capacity) > 2 * (SELECT CAST(Highest AS REAL) / Capacity FROM stadium WHERE Name = 'Balmoor');",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        2,
+        1
+      ],
+      "gold_shape": [
+        2,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 42,
+      "db_id": "concert_singer",
+      "question": "If the capacity of the Balmoor stadium is 5600, what is the name of the stadium that has a highest attendance rate more than twice the highest attendance rate of the Balmoor stadium?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT Name FROM stadium WHERE 100.0 * Highest / Capacity > 2 * ( SELECT 100.0 * Highest / 5600 FROM stadium WHERE Name = \"Balmoor\" )",
+      "pred_sql": "SELECT s.Name FROM stadium s WHERE CAST(s.Highest AS REAL) / CASE WHEN s.Name = 'Balmoor' THEN 5600 ELSE s.Capacity END > 2 * (SELECT CAST(b.Highest AS REAL) / 5600 FROM stadium b WHERE b.Name = 'Balmoor')",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        1
+      ],
+      "gold_shape": [
+        3,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 43,
+      "db_id": "concert_singer",
+      "question": "Which stadium's maximum attendance rate is more than double the Balmoor stadium's highest attendance rate, given its capacity of 5600? List the stadium names.",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT Name FROM stadium WHERE 100.0 * Highest / Capacity > 2 * ( SELECT 100.0 * Highest / 5600 FROM stadium WHERE Name = \"Balmoor\" )",
+      "pred_sql": "SELECT Name FROM stadium WHERE (Highest * 1.0 / Capacity) > 2 * (SELECT Highest * 1.0 / Capacity FROM stadium WHERE Name = 'Balmoor');",
+      "valid": true,
+      "match": false,
+      "similarity": 0.3333,
+      "sim_row": 0.6667,
+      "sim_col": 0.0,
+      "pred_shape": [
+        2,
+        1
+      ],
+      "gold_shape": [
+        3,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 44,
+      "db_id": "concert_singer",
+      "question": "What are the IDs and names of the concerts held after 2012 and has more singers than the \"Happy Tonight\" themed concert, and how many times is it?",
+      "reasoning_type": "* /",
+      "gold_sql": "SELECT A.concert_ID, A.concert_Name, 1.0 * COUNT (DISTINCT (B.Singer_ID)) / (SELECT COUNT (DISTINCT (B.Singer_ID)) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" ) AS times FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Year > 2012 GROUP BY A.concert_ID HAVING COUNT (DISTINCT (B.Singer_ID)) > (SELECT COUNT (DISTINCT (B.Singer_ID)) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" )",
+      "pred_sql": "SELECT c.concert_ID, c.concert_Name, COUNT(sic.Singer_ID) AS times\nFROM concert c\nJOIN singer_in_concert sic ON c.concert_ID = sic.concert_ID\nWHERE CAST(c.Year AS INTEGER) > 2012\nGROUP BY c.concert_ID, c.concert_Name\nHAVING COUNT(sic.Singer_ID) > (\n    SELECT COUNT(*)\n    FROM singer_in_concert sc\n    JOIN concert c2 ON sc.concert_ID = c2.concert_ID\n    WHERE c2.Theme = 'Happy Tonight'\n);",
+      "valid": true,
+      "match": false,
+      "similarity": 0.25,
+      "sim_row": 0.0,
+      "sim_col": 0.5,
+      "pred_shape": [
+        1,
+        3
+      ],
+      "gold_shape": [
+        1,
+        3
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 45,
+      "db_id": "concert_singer",
+      "question": "What are the ID and name of the post-2012 concert features more singers than the \"Happy Tonight\" themed concert, what is the ratio of the number of singers in both concerts?",
+      "reasoning_type": "* /",
+      "gold_sql": "SELECT A.concert_ID, A.concert_Name, 1.0 * COUNT (DISTINCT (B.Singer_ID)) / (SELECT COUNT (DISTINCT (B.Singer_ID)) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" ) AS times FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Year > 2012 GROUP BY A.concert_ID HAVING COUNT (DISTINCT (B.Singer_ID)) > (SELECT COUNT (DISTINCT (B.Singer_ID)) FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" )",
+      "pred_sql": "SELECT c.concert_ID, c.concert_Name, CAST((SELECT COUNT(*) FROM singer_in_concert sic2 WHERE sic2.concert_ID = c.concert_ID) AS REAL) / (SELECT COUNT(*) FROM singer_in_concert sic3 JOIN concert c2 ON sic3.concert_ID = c2.concert_ID WHERE c2.Theme = 'Happy Tonight') AS ratio\nFROM concert c\nWHERE CAST(c.Year AS INTEGER) > 2012\nAND (SELECT COUNT(*) FROM singer_in_concert sic2 WHERE sic2.concert_ID = c.concert_ID) > (SELECT COUNT(*) FROM singer_in_concert sic3 JOIN concert c2 ON sic3.concert_ID = c2.concert_ID WHERE c2.Theme = 'Happy Tonight')\nORDER BY (SELECT COUNT(*) FROM singer_in_concert sic2 WHERE sic2.concert_ID = c.concert_ID) DESC\nLIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        3
+      ],
+      "gold_shape": [
+        1,
+        3
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 46,
+      "db_id": "concert_singer",
+      "question": "If singer Joe Sharp performed in every concert, what are the IDs and names of concerts held after 2012 has more singers than the \"Happy Tonight\" themed concert, and and how many times is it?",
+      "reasoning_type": "+ * / H",
+      "gold_sql": "SELECT A.concert_ID, A.concert_Name, 1.0 * (COUNT (DISTINCT (B.Singer_ID)) + 1) / (SELECT COUNT (DISTINCT (B.Singer_ID)) + 1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) ) AS times FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Year > 2012 AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) GROUP BY A.concert_ID HAVING (COUNT (DISTINCT (B.Singer_ID)) + 1) > (SELECT COUNT (DISTINCT (B.Singer_ID)) + 1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) )",
+      "pred_sql": "WITH modified_sings AS (SELECT concert_ID, Singer_ID FROM singer_in_concert UNION SELECT c.concert_ID, (SELECT Singer_ID FROM singer WHERE Name = 'Joe Sharp' LIMIT 1) FROM concert c WHERE NOT EXISTS (SELECT 1 FROM singer_in_concert WHERE concert_ID = c.concert_ID AND Singer_ID = (SELECT Singer_ID FROM singer WHERE Name = 'Joe Sharp'))), happy_count AS (SELECT COUNT(*) AS cnt FROM concert c2 JOIN modified_sings ms ON c2.concert_ID = ms.concert_ID WHERE c2.Theme = 'Happy Tonight'), qualified_concerts AS (SELECT c.concert_ID, c.concert_Name, COUNT(ms.Singer_ID) AS singer_count FROM concert c JOIN modified_sings ms ON c.concert_ID = ms.concert_ID WHERE CAST(c.Year AS INTEGER) > 2012 GROUP BY c.concert_ID, c.concert_Name HAVING singer_count > (SELECT cnt FROM happy_count)) SELECT qc.concert_ID, qc.concert_Name, (SELECT COUNT(*) FROM qualified_concerts) AS total_count FROM qualified_concerts;",
+      "valid": false,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": null,
+      "gold_shape": null,
+      "pred_error": "OperationalError: no such column: qc.concert_ID",
+      "gold_error": null
+    },
+    {
+      "index": 47,
+      "db_id": "concert_singer",
+      "question": "Assuming that Joe Sharp performed in all concerts, what are the ID and name of post-2012 concert features more singers than the \"Happy Tonight\" themed concert, and what is the ratio of the number of singers in both concerts?",
+      "reasoning_type": "+ * / H",
+      "gold_sql": "SELECT A.concert_ID, A.concert_Name, 1.0 * (COUNT (DISTINCT (B.Singer_ID)) + 1) / (SELECT COUNT (DISTINCT (B.Singer_ID)) + 1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) ) AS times FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Year > 2012 AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) GROUP BY A.concert_ID HAVING (COUNT (DISTINCT (B.Singer_ID)) + 1) > (SELECT COUNT (DISTINCT (B.Singer_ID)) + 1 FROM concert A JOIN singer_in_concert B ON A.concert_ID = B.concert_ID WHERE A.Theme = \"Happy Tonight\" AND B.Singer_ID != (SELECT Singer_ID FROM singer WHERE Name = \"Joe Sharp\" ) )",
+      "pred_sql": "SELECT c.concert_ID, c.concert_Name, CAST( ((SELECT COUNT(DISTINCT sic.Singer_ID) FROM singer_in_concert sic WHERE sic.concert_ID = c.concert_ID) + CASE WHEN EXISTS (SELECT 1 FROM singer_in_concert sic WHERE sic.concert_ID = c.concert_ID AND sic.Singer_ID = (SELECT Singer_ID FROM singer WHERE Name = 'Joe Sharp')) THEN 0 ELSE 1 END) AS REAL) / ((SELECT COUNT(DISTINCT sic.Singer_ID) FROM singer_in_concert sic WHERE sic.concert_ID = (SELECT concert_ID FROM concert WHERE Theme = 'Happy Tonight')) + CASE WHEN EXISTS (SELECT 1 FROM singer_in_concert sic WHERE sic.concert_ID = (SELECT concert_ID FROM concert WHERE Theme = 'Happy Tonight') AND sic.Singer_ID = (SELECT Singer_ID FROM singer WHERE Name = 'Joe Sharp')) THEN 0 ELSE 1 END) AS ratio FROM concert c WHERE CAST(c.Year AS INTEGER) > 2012 AND ((SELECT COUNT(DISTINCT sic.Singer_ID) FROM singer_in_concert sic WHERE sic.concert_ID = c.concert_ID) + CASE WHEN EXISTS (SELECT 1 FROM singer_in_concert sic WHERE sic.concert_ID = c.concert_ID AND sic.Singer_ID = (SELECT Singer_ID FROM singer WHERE Name = 'Joe Sharp')) THEN 0 ELSE 1 END) > ((SELECT COUNT(DISTINCT sic.Singer_ID) FROM singer_in_concert sic WHERE sic.concert_ID = (SELECT concert_ID FROM concert WHERE Theme = 'Happy Tonight')) + CASE WHEN EXISTS (SELECT 1 FROM singer_in_concert sic WHERE sic.concert_ID = (SELECT concert_ID FROM concert WHERE Theme = 'Happy Tonight') AND sic.Singer_ID = (SELECT Singer_ID FROM singer WHERE Name = 'Joe Sharp')) THEN 0 ELSE 1 END);",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        3
+      ],
+      "gold_shape": [
+        1,
+        3
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 48,
+      "db_id": "concert_singer",
+      "question": "At the time of the release of the song \"Love,\" what are the names of singers who were more than twice as old as the singer of the song?",
+      "reasoning_type": "- * C",
+      "gold_sql": "SELECT Name FROM singer WHERE ( SELECT Song_release_year FROM singer WHERE Song_Name = \"Love\" ) - ( strftime ( \"%Y\" , \"now\" ) - Age ) > 2 * ( SELECT Age - ( strftime ( \"%Y\" , \"now\" ) - Song_release_year ) FROM singer WHERE Song_Name = \"Love\" )",
+      "pred_sql": "SELECT DISTINCT s.Name, (s.Age - (CAST(strftime('%Y','now') AS INTEGER) - CAST(l.Song_release_year AS INTEGER))) AS Age_At_Love_Release\nFROM singer s\nCROSS JOIN singer l ON l.Song_Name = 'Love'\nWHERE s.Singer_ID != l.Singer_ID\n  AND (s.Age - (CAST(strftime('%Y','now') AS INTEGER) - CAST(l.Song_release_year AS INTEGER))) > 2 * (l.Age - (CAST(strftime('%Y','now') AS INTEGER) - CAST(l.Song_release_year AS INTEGER)));",
+      "valid": true,
+      "match": false,
+      "similarity": 0.25,
+      "sim_row": 0.0,
+      "sim_col": 0.5,
+      "pred_shape": [
+        3,
+        2
+      ],
+      "gold_shape": [
+        3,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 49,
+      "db_id": "concert_singer",
+      "question": "Which singers, at the time when \"Love\" was released, had an age more than double that of the singer who performed the song? List their names.",
+      "reasoning_type": "- * C",
+      "gold_sql": "SELECT Name FROM singer WHERE ( SELECT Song_release_year FROM singer WHERE Song_Name = \"Love\" ) - ( strftime ( \"%Y\" , \"now\" ) - Age ) > 2 * ( SELECT Age - ( strftime ( \"%Y\" , \"now\" ) - Song_release_year ) FROM singer WHERE Song_Name = \"Love\" )",
+      "pred_sql": "WITH performer AS (\n  SELECT Song_release_year, Age, Singer_ID\n  FROM singer\n  WHERE Song_Name = 'Love'\n),\ncurrent_year AS (\n  SELECT CAST(strftime('%Y', 'now') AS INTEGER) AS yr\n)\nSELECT s.Name\nFROM singer s\nCROSS JOIN performer p\nCROSS JOIN current_year c\nWHERE s.Singer_ID != p.Singer_ID\nAND (s.Age - (c.yr - CAST(p.Song_release_year AS INTEGER))) > 2 * (p.Age - (c.yr - CAST(p.Song_release_year AS INTEGER)));",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        1
+      ],
+      "gold_shape": [
+        3,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 50,
+      "db_id": "concert_singer",
+      "question": "If \"Love\" was released in 2010, at the time of the release of the song \"Love,\" what are the names of singers who were more than twice as old as the singer of the song?",
+      "reasoning_type": "- * C H",
+      "gold_sql": "SELECT Name FROM singer WHERE 2010 - ( strftime ( \"%Y\" , \"now\" ) - Age ) > 2 * ( SELECT Age - ( strftime ( \"%Y\" , \"now\" ) - 2010 ) FROM singer WHERE Song_Name = \"Love\" )",
+      "pred_sql": "SELECT s.Name FROM singer s, singer ls WHERE ls.Song_Name = 'Love' AND s.Singer_ID != ls.Singer_ID AND (s.Age - (CAST(strftime('%Y', 'now') AS INTEGER) - 2010)) > 2 * (ls.Age - (CAST(strftime('%Y', 'now') AS INTEGER) - 2010));",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        1
+      ],
+      "gold_shape": [
+        3,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 51,
+      "db_id": "concert_singer",
+      "question": "Assuming \"Love\" was released in 2010, which singers, at that time, had an age that was more than twice the age of the singer who performed the song? List their names.",
+      "reasoning_type": "- * C H",
+      "gold_sql": "SELECT Name FROM singer WHERE 2010 - ( strftime ( \"%Y\" , \"now\" ) - Age ) > 2 * ( SELECT Age - ( strftime ( \"%Y\" , \"now\" ) - 2010 ) FROM singer WHERE Song_Name = \"Love\" )",
+      "pred_sql": "SELECT s.Name FROM singer s WHERE (s.Age + (2010 - CAST(s.Song_release_year AS INTEGER))) > 2 * (SELECT s_love.Age + (2010 - CAST(s_love.Song_release_year AS INTEGER)) FROM singer s_love WHERE s_love.Song_Name = 'Love')",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        3,
+        1
+      ],
+      "gold_shape": [
+        3,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 52,
+      "db_id": "world_1",
+      "question": "Which continent is the country with the highest GNP per capita located in?",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT Continent FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 1",
+      "pred_sql": "SELECT c.Continent FROM country c WHERE c.GNP IS NOT NULL ORDER BY (c.GNP * 1.0 / c.Population) DESC LIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 53,
+      "db_id": "world_1",
+      "question": "In which continent can we find the country with the highest GNP per capita?",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT Continent FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 1",
+      "pred_sql": "SELECT Continent FROM country WHERE GNP IS NOT NULL AND Population > 0 ORDER BY CAST(GNP AS REAL) / Population DESC LIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 54,
+      "db_id": "world_1",
+      "question": "If the gross national product of the country where Korla City is located is 1982268.0, which continent is the country with the highest GNP per capita located in?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT Continent FROM (SELECT \"1982268.0\" AS GNP, Population, Continent FROM country WHERE name = (SELECT A.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE B.name = \"Korla\" ) UNION ALL SELECT GNP, Population, Continent FROM country WHERE name != (SELECT A.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE B.name = \"Korla\" ) ) ORDER BY 1.0 * GNP / Population DESC LIMIT 1",
+      "pred_sql": "SELECT Continent\nFROM (\n    SELECT Continent,\n           CASE WHEN Code = (SELECT CountryCode FROM city WHERE Name = 'Korla City') THEN 1982268.0 ELSE GNP END * 1.0 / Population AS gnp_percap\n    FROM country\n    WHERE Population > 0 AND (Code = (SELECT CountryCode FROM city WHERE Name = 'Korla City') OR GNP IS NOT NULL)\n)\nORDER BY gnp_percap DESC\nLIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 55,
+      "db_id": "world_1",
+      "question": "In which continent can we find the country with the highest GNP per capita, if the GNP of the country containing Korla City is 1982268?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT Continent FROM (SELECT \"1982268.0\" AS GNP, Population, Continent FROM country WHERE name = (SELECT A.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE B.name = \"Korla\" ) UNION ALL SELECT GNP, Population, Continent FROM country WHERE name != (SELECT A.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE B.name = \"Korla\" ) ) ORDER BY 1.0 * GNP / Population DESC LIMIT 1",
+      "pred_sql": "SELECT co.Continent FROM country co ORDER BY (CASE WHEN co.Code = (SELECT ci.CountryCode FROM city ci WHERE ci.Name = 'Korla') THEN 1982268.0 ELSE co.GNP END) / co.Population DESC LIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 56,
+      "db_id": "world_1",
+      "question": "Among the countries that became independent after 1979, which country has the highest growth rate of GNP?",
+      "reasoning_type": "- * /",
+      "gold_sql": "SELECT Name FROM country WHERE IndepYear > 1979 ORDER BY 1.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+      "pred_sql": "SELECT Name FROM country WHERE IndepYear > 1979 AND GNP IS NOT NULL AND GNPOld IS NOT NULL AND GNPOld <> 0 ORDER BY (GNP - GNPOld) * 1.0 / GNPOld DESC LIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 57,
+      "db_id": "world_1",
+      "question": "Which country, among those that gained independence after 1979, has the highest gross national product growth rate?",
+      "reasoning_type": "- * /",
+      "gold_sql": "SELECT Name FROM country WHERE IndepYear > 1979 ORDER BY 1.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+      "pred_sql": "SELECT Name FROM country WHERE IndepYear > 1979 AND GNPOld IS NOT NULL AND GNP IS NOT NULL AND GNPOld > 0 ORDER BY (GNP - GNPOld) / GNPOld DESC LIMIT 1",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 58,
+      "db_id": "world_1",
+      "question": "Among the countries that became independent after 1979, which country has the highest growth rate in GNP if all countries in Oceania have an increase in curretn GNP of 1,000,000?",
+      "reasoning_type": "+ - * / H",
+      "gold_sql": "SELECT name FROM ( SELECT name , GNP + 1000000 AS GNP , GNPOld , IndepYear FROM country WHERE Continent = \"Oceania\" UNION ALL SELECT name , GNP , GNPOld , IndepYear FROM country WHERE Continent != \"Oceania\" ) WHERE IndepYear > 1979 ORDER BY 1.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+      "pred_sql": "SELECT country.Name, CASE WHEN country.Continent = 'Oceania' THEN (country.GNP + 1000000 - country.GNPOld) / country.GNPOld ELSE (country.GNP - country.GNPOld) / country.GNPOld END AS GrowthRate FROM country WHERE country.IndepYear > 1979 AND country.GNP IS NOT NULL AND country.GNPOld IS NOT NULL AND country.GNPOld > 0 ORDER BY GrowthRate DESC LIMIT 1",
+      "valid": true,
+      "match": false,
+      "similarity": 0.25,
+      "sim_row": 0.0,
+      "sim_col": 0.5,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 59,
+      "db_id": "world_1",
+      "question": "Assuming all countries in Oceania have an increase of 1,000,000 in their current GNP, which country among those that gained independence after 1979 has the highest gross national product growth rate?",
+      "reasoning_type": "+ - * / H",
+      "gold_sql": "SELECT name FROM ( SELECT name , GNP + 1000000 AS GNP , GNPOld , IndepYear FROM country WHERE Continent = \"Oceania\" UNION ALL SELECT name , GNP , GNPOld , IndepYear FROM country WHERE Continent != \"Oceania\" ) WHERE IndepYear > 1979 ORDER BY 1.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+      "pred_sql": "SELECT Name FROM (SELECT Name, Continent, IndepYear, GNPOld, CASE WHEN Continent = 'Oceania' THEN GNP + 1000000 ELSE GNP END AS current_GNP FROM country) t WHERE IndepYear > 1979 AND GNPOld IS NOT NULL AND GNPOld > 0 ORDER BY (current_GNP - GNPOld) / GNPOld DESC LIMIT 1",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 60,
+      "db_id": "world_1",
+      "question": "Which country where the majority of people speak English has the highest population density, how many times larger than the country with the lowest population density?",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT Name , ( 100.0 * Population / SurfaceArea ) / ( SELECT MIN ( 100.0 * Population / SurfaceArea ) FROM country WHERE 100.0 * Population / SurfaceArea > 0 ) AS times FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT * , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"English\" ) ORDER BY 100.0 * Population / SurfaceArea DESC LIMIT 1",
+      "pred_sql": "SELECT cn.Name AS country_name, ((SELECT MAX(c.Population * 1.0 / c.SurfaceArea) FROM country c JOIN countrylanguage cl ON c.Code = cl.CountryCode WHERE cl.Language = 'English' AND cl.Percentage > 50.0) / (SELECT MIN(c.Population * 1.0 / c.SurfaceArea) FROM country c JOIN countrylanguage cl ON c.Code = cl.CountryCode WHERE cl.Language = 'English' AND cl.Percentage > 50.0)) AS ratio FROM country cn WHERE cn.Code IN (SELECT c2.Code FROM country c2 JOIN countrylanguage cl2 ON c2.Code = cl2.CountryCode WHERE cl2.Language = 'English' AND cl2.Percentage > 50.0) AND cn.Population * 1.0 / cn.SurfaceArea = (SELECT MAX(c3.Population * 1.0 / c3.SurfaceArea) FROM country c3 JOIN countrylanguage cl3 ON c3.Code = cl3.CountryCode WHERE cl3.Language = 'English' AND cl3.Percentage > 50.0) LIMIT 1;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.1666,
+      "sim_row": 0.0,
+      "sim_col": 0.3333,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        1,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 61,
+      "db_id": "world_1",
+      "question": "Among the countries in which English is the most spoken language, which country has the highest population density? What is the ratio between the highest and lowest population density?",
+      "reasoning_type": "* / C",
+      "gold_sql": "SELECT Name , ( 100.0 * Population / SurfaceArea ) / ( SELECT MIN ( 100.0 * Population / SurfaceArea ) FROM country WHERE 100.0 * Population / SurfaceArea > 0 ) AS times FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT * , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"English\" ) ORDER BY 100.0 * Population / SurfaceArea DESC LIMIT 1",
+      "pred_sql": "WITH english_top AS (\n    SELECT CountryCode\n    FROM (\n        SELECT CountryCode, Language, Percentage,\n               RANK() OVER (PARTITION BY CountryCode ORDER BY Percentage DESC) AS rnk\n        FROM countrylanguage\n    )\n    WHERE Language = 'English' AND rnk = 1\n)\nSELECT c.Name AS CountryName,\n       CAST(c.Population AS REAL) / c.SurfaceArea AS Density,\n       (SELECT MAX(CAST(c2.Population AS REAL) / c2.SurfaceArea) /\n               MIN(CAST(c2.Population AS REAL) / c2.SurfaceArea)\n        FROM country c2\n        INNER JOIN english_top t2 ON c2.Code = t2.CountryCode) AS DensityRatio\nFROM country c\nINNER JOIN english_top t ON c.Code = t.CountryCode\nORDER BY Density DESC\nLIMIT 1;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.125,
+      "sim_row": 0.0,
+      "sim_col": 0.25,
+      "pred_shape": [
+        1,
+        3
+      ],
+      "gold_shape": [
+        1,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 62,
+      "db_id": "world_1",
+      "question": "If no one in Ireland speaks English, which country where the majority of people speak English has the highest population density, how many times larger than the country with the lowest population density?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT Name , ( 100.0 * Population / SurfaceArea ) / ( SELECT MIN ( 100.0 * Population / SurfaceArea ) FROM country WHERE 100.0 * Population / SurfaceArea > 0 ) AS times FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT * , MAX ( Percentage ) FROM countrylanguage A JOIN country B ON A.CountryCode = B.Code WHERE B.name != \"Ireland\" GROUP BY A.CountryCode ) WHERE Language = \"English\" ) ORDER BY 100.0 * Population / SurfaceArea DESC LIMIT 1",
+      "pred_sql": "WITH lang_mod AS (SELECT CountryCode, Language, CASE WHEN CountryCode = 'IRL' AND Language = 'English' THEN 0 ELSE Percentage END AS Percentage FROM countrylanguage), english_majority AS (SELECT CountryCode FROM lang_mod WHERE Language = 'English' AND Percentage > 50) SELECT (SELECT c.Name FROM country c JOIN english_majority e ON c.Code = e.CountryCode WHERE (c.Population * 1.0 / c.SurfaceArea) = (SELECT MAX(c2.Population * 1.0 / c2.SurfaceArea) FROM country c2 JOIN english_majority e2 ON c2.Code = e2.CountryCode) LIMIT 1) AS Name, (SELECT MAX(c.Population * 1.0 / c.SurfaceArea) FROM country c JOIN english_majority e ON c.Code = e.CountryCode) / (SELECT MIN(c.Population * 1.0 / c.SurfaceArea) FROM country c JOIN english_majority e ON c.Code = e.CountryCode) AS Ratio;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.1666,
+      "sim_row": 0.0,
+      "sim_col": 0.3333,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        1,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 63,
+      "db_id": "world_1",
+      "question": "If English is not spoken in Ireland, which country among those in which English is the most spoken language has the highest population density? What is the ratio between the highest and lowest population density?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT Name , ( 100.0 * Population / SurfaceArea ) / ( SELECT MIN ( 100.0 * Population / SurfaceArea ) FROM country WHERE 100.0 * Population / SurfaceArea > 0 ) AS times FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT * , MAX ( Percentage ) FROM countrylanguage A JOIN country B ON A.CountryCode = B.Code WHERE B.name != \"Ireland\" GROUP BY A.CountryCode ) WHERE Language = \"English\" ) ORDER BY 100.0 * Population / SurfaceArea DESC LIMIT 1",
+      "pred_sql": "SELECT (SELECT Name FROM country WHERE Code IN (SELECT cl.CountryCode FROM countrylanguage cl WHERE cl.Language = 'English' AND (CASE WHEN cl.CountryCode = (SELECT Code FROM country WHERE Name='Ireland') THEN 0.0 ELSE cl.Percentage END) = (SELECT MAX(CASE WHEN CountryCode = (SELECT Code FROM country WHERE Name='Ireland') AND Language='English' THEN 0.0 ELSE Percentage END) FROM countrylanguage cl2 WHERE cl2.CountryCode = cl.CountryCode)) ORDER BY Population * 1.0 / SurfaceArea DESC LIMIT 1) AS highest_density_country, (SELECT MAX(Population * 1.0 / SurfaceArea) FROM country WHERE Code IN (SELECT cl.CountryCode FROM countrylanguage cl WHERE cl.Language = 'English' AND (CASE WHEN cl.CountryCode = (SELECT Code FROM country WHERE Name='Ireland') THEN 0.0 ELSE cl.Percentage END) = (SELECT MAX(CASE WHEN CountryCode = (SELECT Code FROM country WHERE Name='Ireland') AND Language='English' THEN 0.0 ELSE Percentage END) FROM countrylanguage cl2 WHERE cl2.CountryCode = cl.CountryCode))) / (SELECT MIN(Population * 1.0 / SurfaceArea) FROM country WHERE Code IN (SELECT cl.CountryCode FROM countrylanguage cl WHERE cl.Language = 'English' AND (CASE WHEN cl.CountryCode = (SELECT Code FROM country WHERE Name='Ireland') THEN 0.0 ELSE cl.Percentage END) = (SELECT MAX(CASE WHEN CountryCode = (SELECT Code FROM country WHERE Name='Ireland') AND Language='English' THEN 0.0 ELSE Percentage END) FROM countrylanguage cl2 WHERE cl2.CountryCode = cl.CountryCode))) AS density_ratio;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.1666,
+      "sim_row": 0.0,
+      "sim_col": 0.3333,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        1,
+        2
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 64,
+      "db_id": "world_1",
+      "question": "In countries where Arabic is not the official language, which country has the largest increase rate in GNP?",
+      "reasoning_type": "- * /",
+      "gold_sql": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM countrylanguage WHERE Language = \"Arabic\" AND IsOfficial = \"T\" ) ORDER BY 100.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+      "pred_sql": "SELECT c.Name FROM country c WHERE NOT EXISTS (SELECT 1 FROM countrylanguage cl WHERE cl.CountryCode = c.Code AND cl.Language = 'Arabic' AND cl.IsOfficial = 'T') AND c.GNPOld IS NOT NULL AND c.GNPOld != 0 ORDER BY (c.GNP - c.GNPOld) / c.GNPOld DESC LIMIT 1",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 65,
+      "db_id": "world_1",
+      "question": "Among countries with non-Arabic official languages, what is the name of the country that has experienced the greatest growth rate in GNP?",
+      "reasoning_type": "- * /",
+      "gold_sql": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM countrylanguage WHERE Language = \"Arabic\" AND IsOfficial = \"T\" ) ORDER BY 100.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+      "pred_sql": "SELECT c.Name FROM country c WHERE EXISTS (SELECT 1 FROM countrylanguage cl WHERE cl.CountryCode = c.Code AND cl.IsOfficial = 'T') AND NOT EXISTS (SELECT 1 FROM countrylanguage cl2 WHERE cl2.CountryCode = c.Code AND cl2.IsOfficial = 'T' AND cl2.Language = 'Arabic') AND c.GNPOld IS NOT NULL AND c.GNPOld > 0 ORDER BY (c.GNP - c.GNPOld) * 1.0 / c.GNPOld DESC LIMIT 1",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 66,
+      "db_id": "world_1",
+      "question": "Among the countries where Arabic is not the official language, which country has the largest growth rate of GNP if the old GNP of all countries in South America increased by 9999.0?",
+      "reasoning_type": "- + * / H",
+      "gold_sql": "SELECT Name FROM ( SELECT Name , Code , GNP , GNPOld + 9999.0 AS GNPOld FROM country WHERE Continent = \"South America\" UNION ALL SELECT Name , Code , GNP , GNPOld FROM country WHERE Continent != \"South America\" ) WHERE Code NOT IN ( SELECT CountryCode FROM countrylanguage WHERE Language = \"Arabic\" AND IsOfficial = \"T\" ) ORDER BY 100.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+      "pred_sql": "SELECT c.Name FROM (SELECT country.*, CASE WHEN country.Continent = 'South America' THEN country.GNPOld + 9999.0 ELSE country.GNPOld END AS mod_gnp_old FROM country) AS c WHERE NOT EXISTS (SELECT 1 FROM countrylanguage cl WHERE cl.CountryCode = c.Code AND cl.Language = 'Arabic' AND cl.IsOfficial = 'T') AND c.GNP IS NOT NULL AND c.mod_gnp_old IS NOT NULL AND c.mod_gnp_old <> 0 ORDER BY ((c.GNP - c.mod_gnp_old) * 1.0 / c.mod_gnp_old) DESC LIMIT 1",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 67,
+      "db_id": "world_1",
+      "question": "If all South American countries have an increase of 9999.0 in their previous GNP, which country, among those with non-Arabic official languages, has the highest Gross National Product growth rate?",
+      "reasoning_type": "- + * / H",
+      "gold_sql": "SELECT Name FROM ( SELECT Name , Code , GNP , GNPOld + 9999.0 AS GNPOld FROM country WHERE Continent = \"South America\" UNION ALL SELECT Name , Code , GNP , GNPOld FROM country WHERE Continent != \"South America\" ) WHERE Code NOT IN ( SELECT CountryCode FROM countrylanguage WHERE Language = \"Arabic\" AND IsOfficial = \"T\" ) ORDER BY 100.0 * ( GNP - GNPOld ) / GNPOld DESC LIMIT 1",
+      "pred_sql": "SELECT country.Name,\n  (country.GNP - CASE WHEN country.Continent = 'South America' THEN country.GNPOld + 9999.0 ELSE country.GNPOld END) / (CASE WHEN country.Continent = 'South America' THEN country.GNPOld + 9999.0 ELSE country.GNPOld END) AS GrowthRate\nFROM country\nWHERE EXISTS (\n  SELECT 1 FROM countrylanguage\n  WHERE countrylanguage.CountryCode = country.Code AND countrylanguage.IsOfficial = 'T' AND countrylanguage.Language <> 'Arabic'\n)\nORDER BY GrowthRate DESC\nLIMIT 1;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        2
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 68,
+      "db_id": "world_1",
+      "question": "Which city in North America has a population at least twice that of Kang-won?",
+      "reasoning_type": "*",
+      "gold_sql": "SELECT B.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE A.Continent = \"North America\" AND B.Population >= 2 * ( SELECT SUM ( Population ) FROM city WHERE District = \"Kang-won\" )",
+      "pred_sql": "SELECT city.Name\nFROM city\nJOIN country ON city.CountryCode = country.Code\nWHERE country.Continent = 'North America'\nAND city.Population >= 2 * (SELECT population FROM city WHERE Name = 'Kang-won');",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        0,
+        1
+      ],
+      "gold_shape": [
+        9,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 69,
+      "db_id": "world_1",
+      "question": "What North American city has a population that is at least double the population of Kang-won?",
+      "reasoning_type": "*",
+      "gold_sql": "SELECT B.name FROM country A JOIN city B ON A.Code = B.CountryCode WHERE A.Continent = \"North America\" AND B.Population >= 2 * ( SELECT SUM ( Population ) FROM city WHERE District = \"Kang-won\" )",
+      "pred_sql": "SELECT c.Name AS Name FROM city c JOIN country co ON c.CountryCode = co.Code WHERE co.Continent = 'North America' AND c.Population >= 2 * (SELECT Population FROM city WHERE Name = 'Kang-won')",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        0,
+        1
+      ],
+      "gold_shape": [
+        9,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 70,
+      "db_id": "world_1",
+      "question": "If the population of North American countries where English is the official language was increased by 1%, which city in North America has a population at least twice that of Kang-won?",
+      "reasoning_type": "* + H",
+      "gold_sql": "SELECT DISTINCT ( name ) FROM ( SELECT B.name , B.Population * ( 1 + 0.01 ) AS Population FROM country A JOIN city B ON A.Code = B.CountryCode JOIN countrylanguage C ON A.Code = C.CountryCode WHERE A.Continent = \"North America\" AND C.Language = \"English\" AND C.IsOfficial = \"T\" UNION ALL SELECT B.name , B.Population FROM country A JOIN city B ON A.Code = B.CountryCode JOIN countrylanguage C ON A.Code = C.CountryCode WHERE A.Continent = \"North America\" AND NOT ( C.Language = \"English\" AND C.IsOfficial = \"T\" ) ) WHERE Population >= 2 * ( SELECT SUM ( Population ) FROM city WHERE District = \"Kang-won\" )",
+      "pred_sql": "SELECT city.Name FROM city WHERE city.CountryCode IN (SELECT Code FROM country WHERE Continent = 'North America') AND city.Population >= 2 * (SELECT Population FROM city WHERE Name = 'Kang-won') AND EXISTS (SELECT 1 FROM country WHERE country.Continent = 'North America' AND country.Code IN (SELECT CountryCode FROM countrylanguage WHERE Language = 'English' AND IsOfficial = 'T') AND country.Population * 1.01 > 0)",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        0,
+        1
+      ],
+      "gold_shape": [
+        9,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 71,
+      "db_id": "world_1",
+      "question": "If all countries in North America with English as the official language experienced a population increase of 1%, what North American city would have a population that is at least double the population of Kang-won?",
+      "reasoning_type": "* + H",
+      "gold_sql": "SELECT DISTINCT ( name ) FROM ( SELECT B.name , B.Population * ( 1 + 0.01 ) AS Population FROM country A JOIN city B ON A.Code = B.CountryCode JOIN countrylanguage C ON A.Code = C.CountryCode WHERE A.Continent = \"North America\" AND C.Language = \"English\" AND C.IsOfficial = \"T\" UNION ALL SELECT B.name , B.Population FROM country A JOIN city B ON A.Code = B.CountryCode JOIN countrylanguage C ON A.Code = C.CountryCode WHERE A.Continent = \"North America\" AND NOT ( C.Language = \"English\" AND C.IsOfficial = \"T\" ) ) WHERE Population >= 2 * ( SELECT SUM ( Population ) FROM city WHERE District = \"Kang-won\" )",
+      "pred_sql": "WITH kw_pop AS (SELECT Population FROM city WHERE Name = 'Kang-won') SELECT c.Name FROM city c JOIN country co ON c.CountryCode = co.Code WHERE co.Continent = 'North America' AND c.Population >= 2 * (SELECT Population FROM kw_pop);",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        0,
+        1
+      ],
+      "gold_shape": [
+        9,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 72,
+      "db_id": "world_1",
+      "question": "Which continent has a GNP growth rate at least 1.5 times that of Africa?",
+      "reasoning_type": "- * /",
+      "gold_sql": "SELECT Continent FROM country GROUP BY Continent HAVING 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) > 1.5 * ( SELECT 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) FROM country WHERE Continent = \"Africa\" )",
+      "pred_sql": "SELECT Continent FROM country WHERE gnpoold IS NOT NULL AND gnp IS NOT NULL GROUP BY Continent HAVING (SUM(gnp) - SUM(gnpoold)) * 1.0 / SUM(gnpoold) >= 1.5 * (SELECT (SUM(gnp) - SUM(gnpoold)) * 1.0 / SUM(gnpoold) FROM country WHERE Continent = 'Africa' AND gnpoold IS NOT NULL AND gnp IS NOT NULL)",
+      "valid": false,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": null,
+      "gold_shape": null,
+      "pred_error": "OperationalError: no such column: gnpoold",
+      "gold_error": null
+    },
+    {
+      "index": 73,
+      "db_id": "world_1",
+      "question": "Name the continent whose rate of growth of GNP is no less than 1.5 times that of Africa?",
+      "reasoning_type": "- * /",
+      "gold_sql": "SELECT Continent FROM country GROUP BY Continent HAVING 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) > 1.5 * ( SELECT 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) FROM country WHERE Continent = \"Africa\" )",
+      "pred_sql": "WITH africa_rate AS (\n  SELECT (SUM(GNP) - SUM(GNPOld)) * 1.0 / SUM(GNPOld) AS growth_rate\n  FROM country\n  WHERE Continent = 'Africa' AND GNPOld IS NOT NULL AND GNPOld != 0\n),\ncontinent_rates AS (\n  SELECT Continent,\n         (SUM(GNP) - SUM(GNPOld)) * 1.0 / SUM(GNPOld) AS growth_rate\n  FROM country\n  WHERE GNPOld IS NOT NULL AND GNPOld != 0\n  GROUP BY Continent\n  HAVING SUM(GNPOld) > 0\n)\nSELECT cr.Continent\nFROM continent_rates cr, africa_rate a\nWHERE cr.growth_rate >= 1.5 * a.growth_rate;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        0,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 74,
+      "db_id": "world_1",
+      "question": "If the current GNP of countries where the majority of people speak Czech was increased by 0.5%, which continent has a GNP growth rate at least 1.5 times that of Africa?",
+      "reasoning_type": "+ - * / H",
+      "gold_sql": "SELECT Continent FROM ( SELECT Code , GNP * ( 1 + 0.005 ) AS GNP , GNPOld , Continent FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Czech\" ) UNION ALL SELECT Code , GNP , GNPOld , Continent FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Czech\" ) ) GROUP BY Continent HAVING 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) > 1.5 * ( SELECT 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) FROM country WHERE Continent = \"Africa\" )",
+      "pred_sql": "WITH czech_majority AS (\n  SELECT CountryCode\n  FROM countrylanguage\n  WHERE Language = 'Czech' AND Percentage > 50\n),\ncontinent_growth AS (\n  SELECT\n    country.Continent,\n    SUM(country.GNP) AS old_gnp,\n    SUM(CASE WHEN country.Code IN (SELECT CountryCode FROM czech_majority) THEN country.GNP * 1.005 ELSE country.GNP END) AS new_gnp\n  FROM country\n  GROUP BY country.Continent\n),\nafrica_growth AS (\n  SELECT (new_gnp - old_gnp) / old_gnp AS growth_rate\n  FROM continent_growth\n  WHERE Continent = 'Africa'\n)\nSELECT continent_growth.Continent\nFROM continent_growth, africa_growth\nWHERE (continent_growth.new_gnp - continent_growth.old_gnp) / continent_growth.old_gnp >= 1.5 * africa_growth.growth_rate;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        6,
+        1
+      ],
+      "gold_shape": [
+        0,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 75,
+      "db_id": "world_1",
+      "question": "Which continent would have a GNP growth rate that is at least 1.5 times greater than Africa if the GNP of countries where Czech is the dominant language increased by 0.5%?",
+      "reasoning_type": "+ - * / H",
+      "gold_sql": "SELECT Continent FROM ( SELECT Code , GNP * ( 1 + 0.005 ) AS GNP , GNPOld , Continent FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Czech\" ) UNION ALL SELECT Code , GNP , GNPOld , Continent FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Czech\" ) ) GROUP BY Continent HAVING 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) > 1.5 * ( SELECT 100.0 * ( SUM ( GNP ) - SUM ( GNPOld ) ) / SUM ( GNPOld ) FROM country WHERE Continent = \"Africa\" )",
+      "pred_sql": "WITH cz_countries AS (SELECT CountryCode FROM countrylanguage WHERE Language = 'Czech' AND (CountryCode, Percentage) IN (SELECT CountryCode, MAX(Percentage) FROM countrylanguage GROUP BY CountryCode)), continent_sums AS (SELECT c.Continent, SUM(COALESCE(c.GNP, 0)) AS old_total, SUM(COALESCE(CASE WHEN c.Code IN (SELECT CountryCode FROM cz_countries) THEN c.GNP * 1.005 ELSE c.GNP END, 0)) AS new_total FROM country c GROUP BY c.Continent), continent_rates AS (SELECT Continent, (new_total - old_total) / NULLIF(old_total, 0) AS rate FROM continent_sums) SELECT Continent FROM continent_rates WHERE rate >= 1.5 * (SELECT rate FROM continent_rates WHERE Continent = 'Africa');",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        6,
+        1
+      ],
+      "gold_shape": [
+        0,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 76,
+      "db_id": "world_1",
+      "question": "Which country has a life expectancy no less than 1.5 times that of Zambia?",
+      "reasoning_type": "*",
+      "gold_sql": "SELECT Name FROM country WHERE LifeExpectancy >= 1.5 * ( SELECT LifeExpectancy FROM country WHERE name = \"Zambia\" )",
+      "pred_sql": "SELECT Name FROM country WHERE LifeExpectancy >= 1.5 * (SELECT LifeExpectancy FROM country WHERE Name = 'Zambia');",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        175,
+        1
+      ],
+      "gold_shape": [
+        175,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 77,
+      "db_id": "world_1",
+      "question": "What country has an average life expectancy that is at least 1.5 times that of Zambia?",
+      "reasoning_type": "*",
+      "gold_sql": "SELECT Name FROM country WHERE LifeExpectancy >= 1.5 * ( SELECT LifeExpectancy FROM country WHERE name = \"Zambia\" )",
+      "pred_sql": "SELECT Name FROM country WHERE LifeExpectancy >= 1.5 * (SELECT LifeExpectancy FROM country WHERE Name = 'Zambia') AND LifeExpectancy IS NOT NULL;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        175,
+        1
+      ],
+      "gold_shape": [
+        175,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 78,
+      "db_id": "world_1",
+      "question": "If the top 20 countries in terms of per capita GNP in the world has a life expectancy of 90, which country has a life expectancy no less than 1.5 times that of Zambia?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT Name FROM ( SELECT Name , 90 AS LifeExpectancy FROM country WHERE Code IN ( SELECT Code FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 20 ) UNION ALL SELECT Name , LifeExpectancy FROM country WHERE Code NOT IN ( SELECT Code FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 20 ) ) WHERE LifeExpectancy >= 1.5 * ( SELECT LifeExpectancy FROM country WHERE name = \"Zambia\" )",
+      "pred_sql": "WITH top20 AS (\n  SELECT c.Code\n  FROM country c\n  ORDER BY c.GNP * 1.0 / c.Population DESC\n  LIMIT 20\n),\nadjusted AS (\n  SELECT c.Code, c.Name,\n    CASE WHEN t20.Code IS NOT NULL THEN 90 ELSE c.LifeExpectancy END AS AdjustedLE\n  FROM country c\n  LEFT JOIN top20 t20 ON c.Code = t20.Code\n),\nzambia_le AS (\n  SELECT AdjustedLE FROM adjusted WHERE Code = 'ZMB'\n)\nSELECT a.Name\nFROM adjusted a, zambia_le z\nWHERE a.AdjustedLE >= 1.5 * z.AdjustedLE;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        175,
+        1
+      ],
+      "gold_shape": [
+        175,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 79,
+      "db_id": "world_1",
+      "question": "Which country has a life expectancy that is at least 1.5 times that of Zambia, given that the top 20 countries in the world with the highest per capita GNP have a life expectancy of 90?",
+      "reasoning_type": "* / C H",
+      "gold_sql": "SELECT Name FROM ( SELECT Name , 90 AS LifeExpectancy FROM country WHERE Code IN ( SELECT Code FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 20 ) UNION ALL SELECT Name , LifeExpectancy FROM country WHERE Code NOT IN ( SELECT Code FROM country ORDER BY 1.0 * GNP / Population DESC LIMIT 20 ) ) WHERE LifeExpectancy >= 1.5 * ( SELECT LifeExpectancy FROM country WHERE name = \"Zambia\" )",
+      "pred_sql": "WITH base AS (SELECT c.Code, c.Name, c.LifeExpectancy, c.GNP, c.Population, (c.GNP / c.Population) AS GNP_per_capita FROM country c), top20 AS (SELECT Code, LifeExpectancy AS orig_le, GNP_per_capita, ROW_NUMBER() OVER (ORDER BY GNP_per_capita DESC) AS rn FROM base), adjusted AS (SELECT b.Code, b.Name, CASE WHEN t.rn <= 20 THEN 90 ELSE b.LifeExpectancy END AS AdjustedLifeExpectancy FROM base b LEFT JOIN top20 t ON b.Code = t.Code), zambia_le AS (SELECT AdjustedLifeExpectancy AS le FROM adjusted WHERE Code = (SELECT Code FROM country WHERE Name = 'Zambia')) SELECT a.Name FROM adjusted a, zambia_le z WHERE a.AdjustedLifeExpectancy >= 1.5 * z.le;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        175,
+        1
+      ],
+      "gold_shape": [
+        175,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 80,
+      "db_id": "world_1",
+      "question": "In countries where Dutch is not the main language, which country has the largest reduction in GNP?",
+      "reasoning_type": "-",
+      "gold_sql": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Dutch\" ) ORDER BY GNPOld - GNP DESC LIMIT 1",
+      "pred_sql": "SELECT c.Name\nFROM country c\nJOIN countrylanguage cl ON c.Code = cl.CountryCode\nJOIN (SELECT CountryCode, MAX(Percentage) AS max_pct FROM countrylanguage GROUP BY CountryCode) main\nON cl.CountryCode = main.CountryCode AND cl.Percentage = main.max_pct\nWHERE cl.Language <> 'Dutch'\nORDER BY (c.GNPOld - c.GNP) DESC\nLIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 81,
+      "db_id": "world_1",
+      "question": "Which country, among those where Dutch is not the primary language, has experienced the most significant decrease in Gross National Product (GNP)?",
+      "reasoning_type": "-",
+      "gold_sql": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Dutch\" ) ORDER BY GNPOld - GNP DESC LIMIT 1",
+      "pred_sql": "SELECT c.Name FROM country c WHERE NOT EXISTS (SELECT 1 FROM countrylanguage cl WHERE cl.CountryCode = c.Code AND cl.Language = 'Dutch' AND cl.Percentage = (SELECT MAX(cl2.Percentage) FROM countrylanguage cl2 WHERE cl2.CountryCode = c.Code)) AND c.GNP IS NOT NULL AND c.GNPOld IS NOT NULL AND c.GNPOld > c.GNP ORDER BY (c.GNPOld - c.GNP) DESC LIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 82,
+      "db_id": "world_1",
+      "question": "If everyone in Aruba spoke Dutch, in countries where Dutch is not the main language, which country has the largest reduction in GNP?",
+      "reasoning_type": "- H",
+      "gold_sql": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Dutch\" UNION SELECT Code FROM country WHERE name = \"Aruba\" ) ORDER BY GNPOld - GNP DESC LIMIT 1",
+      "pred_sql": "WITH adjusted AS (\n  SELECT CountryCode, Language,\n    CASE WHEN CountryCode='ABW' THEN CASE WHEN Language='Dutch' THEN '100' ELSE '0' END ELSE Percentage END AS adj_pct\n  FROM countrylanguage\n),\nmain_lang AS (\n  SELECT CountryCode, Language, adj_pct,\n    ROW_NUMBER() OVER (PARTITION BY CountryCode ORDER BY CAST(adj_pct AS REAL) DESC) as rn\n  FROM adjusted\n),\nmain_per_country AS (\n  SELECT CountryCode, Language\n  FROM main_lang WHERE rn = 1\n)\nSELECT c.Name\nFROM country c\nJOIN main_per_country ml ON c.Code = ml.CountryCode\nWHERE ml.Language != 'Dutch'\n  AND c.GNP IS NOT NULL AND c.GNPOld IS NOT NULL\nORDER BY (c.GNPOld - c.GNP) DESC\nLIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 83,
+      "db_id": "world_1",
+      "question": "Assuming every person in Aruba speaks Dutch, which country, among those where Dutch is not the primary language, has experienced the most significant decrease in Gross National Product (GNP)?",
+      "reasoning_type": "- H",
+      "gold_sql": "SELECT Name FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Dutch\" UNION SELECT Code FROM country WHERE name = \"Aruba\" ) ORDER BY GNPOld - GNP DESC LIMIT 1",
+      "pred_sql": "WITH adj_lang AS (\n  SELECT CountryCode, Language,\n    CASE WHEN CountryCode = 'ABW' AND Language = 'Dutch' THEN 100.0 ELSE Percentage END AS Perc\n  FROM countrylanguage\n),\ndutch_primary AS (\n  SELECT CountryCode\n  FROM adj_lang\n  WHERE Language = 'Dutch' AND Perc = (SELECT MAX(Perc) FROM adj_lang a2 WHERE a2.CountryCode = adj_lang.CountryCode)\n)\nSELECT c.Name\nFROM country c\nWHERE c.Code NOT IN (SELECT CountryCode FROM dutch_primary)\nAND c.GNPOld IS NOT NULL AND c.GNP IS NOT NULL\nORDER BY (c.GNPOld - c.GNP) DESC\nLIMIT 1;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 84,
+      "db_id": "world_1",
+      "question": "How many more countries in North America than in South America have a declining GNP?",
+      "reasoning_type": "-",
+      "gold_sql": "SELECT COUNT ( * ) - ( SELECT COUNT ( * ) FROM country WHERE GNP < GNPOld AND Continent = \"South America\" ) AS diff FROM country WHERE GNP < GNPOld AND Continent = \"North America\"",
+      "pred_sql": "SELECT (SELECT COUNT(*) FROM country WHERE Continent = 'North America' AND GNP < GNPOld) -\n        (SELECT COUNT(*) FROM country WHERE Continent = 'South America' AND GNP < GNPOld) AS difference",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 85,
+      "db_id": "world_1",
+      "question": "What is the difference in the number of countries with a decreasing GNP in North America compared to South America?",
+      "reasoning_type": "-",
+      "gold_sql": "SELECT COUNT ( * ) - ( SELECT COUNT ( * ) FROM country WHERE GNP < GNPOld AND Continent = \"South America\" ) AS diff FROM country WHERE GNP < GNPOld AND Continent = \"North America\"",
+      "pred_sql": "SELECT (SELECT COUNT(*) FROM country WHERE Continent = 'North America' AND GNP < GNPOld) - (SELECT COUNT(*) FROM country WHERE Continent = 'South America' AND GNP < GNPOld) AS difference;",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 86,
+      "db_id": "world_1",
+      "question": "Suppose the current GNP of the top two most populous countries in North America increases by 2%, how many more countries in North America than in South America have a declining GNP?",
+      "reasoning_type": "+ - * H",
+      "gold_sql": "SELECT COUNT ( * ) - ( SELECT COUNT ( * ) FROM country WHERE GNP < GNPOld AND Continent = \"South America\" ) AS diff FROM ( SELECT Name , GNP * ( 1 + 0.02 ) AS GNP , GNPOld , Continent FROM country WHERE Continent = \"North America\" AND Code IN ( SELECT Code FROM country WHERE Continent = \"North America\" ORDER BY Population DESC LIMIT 2 ) UNION ALL SELECT Name , GNP , GNPOld , Continent FROM country WHERE Continent = \"North America\" AND Code NOT IN ( SELECT Code FROM country WHERE Continent = \"North America\" ORDER BY Population DESC LIMIT 2 ) ) WHERE GNP < GNPOld AND Continent = \"North America\"",
+      "pred_sql": "SELECT (SELECT COUNT(*) FROM country WHERE Continent = 'North America' AND GNP IS NOT NULL AND GNPOld IS NOT NULL AND (CASE WHEN Code IN (SELECT Code FROM country WHERE Continent = 'North America' ORDER BY Population DESC LIMIT 2) THEN GNP * 1.02 ELSE GNP END) < GNPOld) - (SELECT COUNT(*) FROM country WHERE Continent = 'South America' AND GNP IS NOT NULL AND GNPOld IS NOT NULL AND GNP < GNPOld) AS diff",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 87,
+      "db_id": "world_1",
+      "question": "If the two most populated North American countries experience a 2% increase in GNP, what is the difference in the number of countries with a decreasing GNP between North and South America?",
+      "reasoning_type": "+ - * H",
+      "gold_sql": "SELECT COUNT ( * ) - ( SELECT COUNT ( * ) FROM country WHERE GNP < GNPOld AND Continent = \"South America\" ) AS diff FROM ( SELECT Name , GNP * ( 1 + 0.02 ) AS GNP , GNPOld , Continent FROM country WHERE Continent = \"North America\" AND Code IN ( SELECT Code FROM country WHERE Continent = \"North America\" ORDER BY Population DESC LIMIT 2 ) UNION ALL SELECT Name , GNP , GNPOld , Continent FROM country WHERE Continent = \"North America\" AND Code NOT IN ( SELECT Code FROM country WHERE Continent = \"North America\" ORDER BY Population DESC LIMIT 2 ) ) WHERE GNP < GNPOld AND Continent = \"North America\"",
+      "pred_sql": "SELECT COUNT(CASE WHEN continent = 'North America' THEN 1 END) - COUNT(CASE WHEN continent = 'South America' THEN 1 END) AS difference FROM (SELECT c.Continent AS continent, CASE WHEN c.Continent = 'North America' AND c.Code IN (SELECT Code FROM country WHERE Continent = 'North America' ORDER BY Population DESC LIMIT 2) THEN c.GNP * 1.02 ELSE c.GNP END AS adj_gnp, c.GNPOld FROM country c) sub WHERE adj_gnp < GNPOld",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 88,
+      "db_id": "world_1",
+      "question": "Which continent has a per capita GNP growth rate at least two percentage points higher than Europe?",
+      "reasoning_type": "+ - * / C",
+      "gold_sql": "SELECT Continent FROM country GROUP BY Continent HAVING 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) >= ( SELECT 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) FROM country WHERE Continent = \"Europe\" ) + 0.02",
+      "pred_sql": "SELECT Continent\nFROM country\nWHERE GNP IS NOT NULL AND GNPOld IS NOT NULL AND GNPOld > 0 AND Population > 0\nGROUP BY Continent\nHAVING (SUM(GNP) - SUM(GNPOld)) / SUM(GNPOld) * 100 >= \n       (SELECT (SUM(GNP) - SUM(GNPOld)) / SUM(GNPOld) * 100 FROM country WHERE Continent = 'Europe' AND GNP IS NOT NULL AND GNPOld IS NOT NULL AND GNPOld > 0 AND Population > 0) + 2;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.25,
+      "sim_row": 0.5,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        2,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 89,
+      "db_id": "world_1",
+      "question": "Name a continent whose per capita GNP growth rate exceeds Europe by at least two percentage points?",
+      "reasoning_type": "+ - * / C",
+      "gold_sql": "SELECT Continent FROM country GROUP BY Continent HAVING 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) >= ( SELECT 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) FROM country WHERE Continent = \"Europe\" ) + 0.02",
+      "pred_sql": "WITH continent_growth AS (\n  SELECT Continent, \n         (SUM(GNP) - SUM(GNPOld)) * 100.0 / NULLIF(SUM(GNPOld), 0) AS growth_rate\n  FROM country\n  WHERE GNP IS NOT NULL AND GNPOld IS NOT NULL\n  GROUP BY Continent\n),\neurope_rate AS (\n  SELECT growth_rate FROM continent_growth WHERE Continent = 'Europe'\n)\nSELECT Continent \nFROM continent_growth \nWHERE Continent != 'Europe' \n  AND growth_rate > (SELECT growth_rate FROM europe_rate) + 2;\n",
+      "valid": true,
+      "match": false,
+      "similarity": 0.25,
+      "sim_row": 0.5,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        2,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 90,
+      "db_id": "world_1",
+      "question": "If the GNP of the top three countries with the longest life expectancy decreases by 2%, which continent has a per capita GNP growth rate at least two points higher than Europe?",
+      "reasoning_type": "+ - * / C H",
+      "gold_sql": "SELECT Continent FROM ( SELECT name , Continent , GNP * ( 1 - 0.02 ) AS GNP , Population , GNPOld FROM country WHERE Code IN ( SELECT Code FROM country ORDER BY LifeExpectancy DESC LIMIT 3 ) UNION ALL SELECT name , Continent , GNP , Population , GNPOld FROM country WHERE Code NOT IN ( SELECT Code FROM country ORDER BY LifeExpectancy DESC LIMIT 3 ) ) GROUP BY Continent HAVING 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) >= ( SELECT 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) FROM country WHERE Continent = \"Europe\" ) + 0.02",
+      "pred_sql": "WITH top3 AS (\n  SELECT Code FROM country ORDER BY LifeExpectancy DESC LIMIT 3\n),\norig_pc AS (\n  SELECT Continent, SUM(GNP)/SUM(Population) AS orig_pcgdp\n  FROM country\n  GROUP BY Continent\n),\nmod_pc AS (\n  SELECT Continent, SUM(CASE WHEN Code IN (SELECT Code FROM top3) THEN GNP*0.98 ELSE GNP END)/SUM(Population) AS new_pcgdp\n  FROM country\n  GROUP BY Continent\n),\ngrowth AS (\n  SELECT o.Continent, ( (m.new_pcgdp / o.orig_pcgdp) - 1 ) * 100 AS growth_rate\n  FROM orig_pc o JOIN mod_pc m ON o.Continent = m.Continent\n),\neuro_rate AS (\n  SELECT growth_rate AS rate FROM growth WHERE Continent = 'Europe'\n)\nSELECT DISTINCT g.Continent\nFROM growth g, euro_rate e\nWHERE g.growth_rate >= e.rate + 2;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        0,
+        1
+      ],
+      "gold_shape": [
+        2,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 91,
+      "db_id": "world_1",
+      "question": "Assuming a 2% decrease in the GNP of the top three countries with the highest life expectancy, which continent has a per capita GNP growth rate that exceeds Europe by at least two points?",
+      "reasoning_type": "+ - * / C H",
+      "gold_sql": "SELECT Continent FROM ( SELECT name , Continent , GNP * ( 1 - 0.02 ) AS GNP , Population , GNPOld FROM country WHERE Code IN ( SELECT Code FROM country ORDER BY LifeExpectancy DESC LIMIT 3 ) UNION ALL SELECT name , Continent , GNP , Population , GNPOld FROM country WHERE Code NOT IN ( SELECT Code FROM country ORDER BY LifeExpectancy DESC LIMIT 3 ) ) GROUP BY Continent HAVING 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) >= ( SELECT 1.0 * ( SUM ( GNP ) / SUM ( Population ) - SUM ( GNPOld ) / SUM ( Population ) ) / ( SUM ( GNPOld ) / SUM ( Population ) ) FROM country WHERE Continent = \"Europe\" ) + 0.02",
+      "pred_sql": "WITH top3 AS (\n  SELECT country.Code FROM country WHERE country.LifeExpectancy IS NOT NULL ORDER BY country.LifeExpectancy DESC LIMIT 3\n),\ncontinent_percap AS (\n  SELECT\n    country.Continent,\n    SUM(country.GNP) as old_gnp,\n    SUM(country.Population) as pop,\n    SUM(CASE WHEN country.Code IN (SELECT top3.Code FROM top3) THEN country.GNP * 0.98 ELSE country.GNP END) as new_gnp\n  FROM country\n  GROUP BY country.Continent\n),\ngrowth AS (\n  SELECT\n    Continent,\n    (new_gnp / pop - old_gnp / pop) / (old_gnp / pop) * 100 as growth_rate\n  FROM continent_percap\n  WHERE pop > 0 AND old_gnp > 0\n),\neuro_rate AS (\n  SELECT growth_rate as euro_rate FROM growth WHERE Continent = 'Europe'\n)\nSELECT g.Continent\nFROM growth g, euro_rate e\nWHERE g.growth_rate - e.euro_rate >= 2;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        0,
+        1
+      ],
+      "gold_shape": [
+        2,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 92,
+      "db_id": "world_1",
+      "question": "List name, the past and current gross national product of each country in Asia, and estimate the future gross national product if the growth rate remains unchanged.",
+      "reasoning_type": "+ -",
+      "gold_sql": "SELECT name , GNPOld , GNP , GNP + ( GNP - GNPOld ) AS GNPFuture FROM country WHERE Continent = \"Asia\"",
+      "pred_sql": "SELECT Name, GNPOld AS PastGNP, GNP AS CurrentGNP, (GNP * GNP) / NULLIF(GNPOld, 0) AS FutureGNP FROM country WHERE Continent = 'Asia'",
+      "valid": true,
+      "match": false,
+      "similarity": 0.3312,
+      "sim_row": 0.0625,
+      "sim_col": 0.6,
+      "pred_shape": [
+        51,
+        4
+      ],
+      "gold_shape": [
+        51,
+        4
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 93,
+      "db_id": "world_1",
+      "question": "For each country in Asia, provide a list of their name, the past and current GNP, and estimate their future Gross National Product assuming a constant growth rate.",
+      "reasoning_type": "+ -",
+      "gold_sql": "SELECT name , GNPOld , GNP , GNP + ( GNP - GNPOld ) AS GNPFuture FROM country WHERE Continent = \"Asia\"",
+      "pred_sql": "SELECT Name, GNPOld AS past_GNP, GNP AS current_GNP, CASE WHEN country.GNPOld > 0 THEN country.GNP * (country.GNP / country.GNPOld) END AS future_GNP FROM country WHERE Continent = 'Asia';",
+      "valid": true,
+      "match": false,
+      "similarity": 0.3312,
+      "sim_row": 0.0625,
+      "sim_col": 0.6,
+      "pred_shape": [
+        51,
+        4
+      ],
+      "gold_shape": [
+        51,
+        4
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 94,
+      "db_id": "world_1",
+      "question": "If the current gross national product of a country with Chinese as its main language is 1000000.0, list name, the past and current gross national product of each country in Asia, and estimate the future gross national product if the growth rate remains unchanged.",
+      "reasoning_type": "+ - H",
+      "gold_sql": "SELECT name , GNPOld , GNP , GNP + ( GNP - GNPOld ) AS GNPFuture FROM ( SELECT name , GNPOld , 1000000.0 AS GNP , Continent FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Chinese\" ) UNION ALL SELECT name , GNPOld , GNP , Continent FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Chinese\" ) ) WHERE Continent = \"Asia\"",
+      "pred_sql": "SELECT c.Name AS name, c.GNPOld AS past_gross_national_product, CASE WHEN c.Code = (SELECT CountryCode FROM countrylanguage WHERE Language = 'Chinese' ORDER BY Percentage DESC LIMIT 1) THEN 1000000.0 ELSE c.GNP END AS current_gross_national_product, CASE WHEN COALESCE(c.GNPOld, 0) = 0 THEN NULL ELSE (CASE WHEN c.Code = (SELECT CountryCode FROM countrylanguage WHERE Language = 'Chinese' ORDER BY Percentage DESC LIMIT 1) THEN 1000000.0 ELSE c.GNP END) * (CASE WHEN c.Code = (SELECT CountryCode FROM countrylanguage WHERE Language = 'Chinese' ORDER BY Percentage DESC LIMIT 1) THEN 1000000.0 ELSE c.GNP END) / c.GNPOld END AS estimated_future_gross_national_product FROM country c WHERE c.Continent = 'Asia'",
+      "valid": true,
+      "match": false,
+      "similarity": 0.1979,
+      "sim_row": 0.0625,
+      "sim_col": 0.3333,
+      "pred_shape": [
+        51,
+        4
+      ],
+      "gold_shape": [
+        51,
+        4
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 95,
+      "db_id": "world_1",
+      "question": "Assuming that the country with Chinese as its primary language has a current GNP of 1000000.0, provide a list of their name, the past and current GNP for each Asian country, and estimate their future Gross National Product assuming a constant growth rate.",
+      "reasoning_type": "+ - H",
+      "gold_sql": "SELECT name , GNPOld , GNP , GNP + ( GNP - GNPOld ) AS GNPFuture FROM ( SELECT name , GNPOld , 1000000.0 AS GNP , Continent FROM country WHERE Code IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Chinese\" ) UNION ALL SELECT name , GNPOld , GNP , Continent FROM country WHERE Code NOT IN ( SELECT CountryCode FROM ( SELECT CountryCode , Language , MAX ( Percentage ) FROM countrylanguage GROUP BY CountryCode ) WHERE Language = \"Chinese\" ) ) WHERE Continent = \"Asia\"",
+      "pred_sql": "WITH primary_languages AS (SELECT CountryCode, Language, RANK() OVER (PARTITION BY CountryCode ORDER BY Percentage DESC) AS rnk FROM countrylanguage), chinese_country AS (SELECT CountryCode FROM primary_languages WHERE Language = 'Chinese' AND rnk = 1) SELECT c.Name AS name, c.GNPOld AS past_gnp, CASE WHEN cc.CountryCode IS NOT NULL THEN 1000000.0 ELSE c.GNP END AS current_gnp, (CASE WHEN cc.CountryCode IS NOT NULL THEN 1000000.0 ELSE c.GNP END) * (CASE WHEN cc.CountryCode IS NOT NULL THEN 1000000.0 ELSE c.GNP END) / NULLIF(c.GNPOld, 0) AS future_gnp FROM country c LEFT JOIN chinese_country cc ON c.Code = cc.CountryCode WHERE c.Continent = 'Asia';",
+      "valid": true,
+      "match": false,
+      "similarity": 0.3312,
+      "sim_row": 0.0625,
+      "sim_col": 0.6,
+      "pred_shape": [
+        51,
+        4
+      ],
+      "gold_shape": [
+        51,
+        4
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 96,
+      "db_id": "world_1",
+      "question": "The annual population growth rate in the UK is 0.4%. What is the population size in the UK one year later?",
+      "reasoning_type": "+ *",
+      "gold_sql": "SELECT Population * ( 1 + 0.004 ) AS population_in_1year FROM country WHERE name = \"United Kingdom\"",
+      "pred_sql": "SELECT Population * 1.004 AS population_one_year_later FROM country WHERE Code = 'GBR'",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 97,
+      "db_id": "world_1",
+      "question": "What will be the population size of UK after one year, given that the UK has an annual growth rate of 0.4%?",
+      "reasoning_type": "+ *",
+      "gold_sql": "SELECT Population * ( 1 + 0.004 ) AS population_in_1year FROM country WHERE name = \"United Kingdom\"",
+      "pred_sql": "SELECT Population * 1.004 AS Population_after_1_year FROM country WHERE Code = 'GBR';",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 98,
+      "db_id": "world_1",
+      "question": "The annual population growth rate in the UK is 0.4%. If the population of countries with a life expectancy greater than 75 in Europe is 103000, what is the population size in the UK one year later?",
+      "reasoning_type": "+ * H",
+      "gold_sql": "SELECT Population * ( 1 + 0.004 ) AS population_in_1year FROM ( SELECT Continent , name , 103000 AS Population FROM country WHERE Continent = \"Europe\" AND LifeExpectancy > 75 UNION SELECT Continent , name , Population FROM country WHERE Continent = \"Europe\" AND LifeExpectancy <= 75 ) WHERE name = \"United Kingdom\"",
+      "pred_sql": "WITH total_qual AS (\n  SELECT SUM(Population) AS orig_total\n  FROM country\n  WHERE Continent = 'Europe' AND LifeExpectancy > 75\n),\nuk AS (\n  SELECT Population, Continent, LifeExpectancy\n  FROM country\n  WHERE Code = 'GBR'\n)\nSELECT ROUND(\n  CASE\n    WHEN uk.Continent = 'Europe' AND uk.LifeExpectancy > 75\n    THEN uk.Population * (103000.0 / total_qual.orig_total) * 1.004\n    ELSE uk.Population * 1.004\n  END\n) AS pop_one_year_later\nFROM uk, total_qual;",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 99,
+      "db_id": "world_1",
+      "question": "What will be the population size of the UK after one year, given that the UK has an annual population growth rate of 0.4% and all European countries with a life expectancy greater than 75 have a population of 103000?",
+      "reasoning_type": "+ * H",
+      "gold_sql": "SELECT Population * ( 1 + 0.004 ) AS population_in_1year FROM ( SELECT Continent , name , 103000 AS Population FROM country WHERE Continent = \"Europe\" AND LifeExpectancy > 75 UNION SELECT Continent , name , Population FROM country WHERE Continent = \"Europe\" AND LifeExpectancy <= 75 ) WHERE name = \"United Kingdom\"",
+      "pred_sql": "SELECT (CASE WHEN co.Continent = 'Europe' AND co.LifeExpectancy > 75 THEN 103000 ELSE co.Population END) * 1.004 AS population_after_one_year FROM country AS co WHERE co.Name = 'United Kingdom';",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 100,
+      "db_id": "world_1",
+      "question": "According to Zambia's life expectancy, what is the expected year of death for people born in the year of Zambia's independence?",
+      "reasoning_type": "+ C",
+      "gold_sql": "SELECT CAST ( IndepYear + LifeExpectancy AS INT ) AS death_year FROM country WHERE name = \"Zambia\"",
+      "pred_sql": "SELECT country.IndepYear + country.LifeExpectancy AS ExpectedYearOfDeath FROM country WHERE country.Name = 'Zambia';",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 101,
+      "db_id": "world_1",
+      "question": "Based on Zambia's life expectancy, what is the predicted year of death for individuals born in the year of it's independence?",
+      "reasoning_type": "+ C",
+      "gold_sql": "SELECT CAST ( IndepYear + LifeExpectancy AS INT ) AS death_year FROM country WHERE name = \"Zambia\"",
+      "pred_sql": "SELECT IndepYear + LifeExpectancy AS predicted_death_year FROM country WHERE Name = 'Zambia';",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 102,
+      "db_id": "world_1",
+      "question": "If life expectancy increases by 10 years in countries with per capita GNP greater than the average per capita GNP of all European countries, what is the expected year of death for people born in the year of Zambia's independence asccording to Zambia's life expectancy?",
+      "reasoning_type": "+ * / C H",
+      "gold_sql": "SELECT CAST ( IndepYear + LifeExpectancy AS INT ) AS death_year FROM ( SELECT name , IndepYear , LifeExpectancy + 10 AS LifeExpectancy FROM country WHERE 1.0 * GNP / Population > ( SELECT 1.0 * SUM ( GNP ) / SUM ( Population ) FROM country WHERE Continent = \"Europe\" ) UNION ALL SELECT name , IndepYear , LifeExpectancy FROM country WHERE NOT ( 1.0 * GNP / Population > ( SELECT 1.0 * SUM ( GNP ) / SUM ( Population ) FROM country WHERE Continent = \"Europe\" ) ) ) WHERE name = \"Zambia\"",
+      "pred_sql": "WITH modified_country AS (SELECT *, CASE WHEN (GNP*1.0/Population) > (SELECT AVG(GNP*1.0/Population) FROM country WHERE Continent='Europe') THEN LifeExpectancy + 10 ELSE LifeExpectancy END AS new_lifeexp FROM country) SELECT ROUND(IndepYear + new_lifeexp) AS expected_death_year FROM modified_country WHERE Name='Zambia';",
+      "valid": true,
+      "match": true,
+      "similarity": 1.0,
+      "sim_row": 1.0,
+      "sim_col": 1.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    },
+    {
+      "index": 103,
+      "db_id": "world_1",
+      "question": "What is the predicted year of death for individuals born during the year of Zambia's independence, according to the country's life expectancy, if countries with a per capita GNP higher than the average per capita GNP of all European countries experience a 10-year increase in life expectancy?",
+      "reasoning_type": "+ * / C H",
+      "gold_sql": "SELECT CAST ( IndepYear + LifeExpectancy AS INT ) AS death_year FROM ( SELECT name , IndepYear , LifeExpectancy + 10 AS LifeExpectancy FROM country WHERE 1.0 * GNP / Population > ( SELECT 1.0 * SUM ( GNP ) / SUM ( Population ) FROM country WHERE Continent = \"Europe\" ) UNION ALL SELECT name , IndepYear , LifeExpectancy FROM country WHERE NOT ( 1.0 * GNP / Population > ( SELECT 1.0 * SUM ( GNP ) / SUM ( Population ) FROM country WHERE Continent = \"Europe\" ) ) ) WHERE name = \"Zambia\"",
+      "pred_sql": "SELECT (IndepYear + CASE WHEN (GNP / Population) > (SELECT AVG(GNP/Population) FROM country WHERE Continent = 'Europe') THEN LifeExpectancy + 10 ELSE LifeExpectancy END) AS predicted_death_year FROM country WHERE Name = 'Zambia'",
+      "valid": true,
+      "match": false,
+      "similarity": 0.0,
+      "sim_row": 0.0,
+      "sim_col": 0.0,
+      "pred_shape": [
+        1,
+        1
+      ],
+      "gold_shape": [
+        1,
+        1
+      ],
+      "pred_error": null,
+      "gold_error": null
+    }
+  ]
+}

@@ -1,0 +1,1662 @@
+{
+ "meta": {
+  "protocol": "bird-official",
+  "deviations": [
+   "read-only connection (official uses a writable one; write predictions score 0 either way)",
+   "timeout via sqlite progress handler (official uses func_timeout); the limit is shared by the prediction and the gold query, matching the official single func_timeout call",
+   "empty prediction scores 0 up front (official hands it to sqlite, which may return an empty result set and accidentally match an empty gold)"
+  ],
+  "timeout_s": 30.0,
+  "db_dir": "D:\\University\\tasks\\ustc\\data\\bird\\dev_databases",
+  "dataset": "D:\\University\\tasks\\ustc\\data\\bird\\dev.json",
+  "pred": "predictions/bird-pro-t-dsl_bird_dev.json"
+ },
+ "summary": {
+  "n": 200,
+  "n_match": 52,
+  "EX": 0.26,
+  "EX_pct": 26.0
+ },
+ "by_difficulty": {
+  "simple": {
+   "n": 61,
+   "n_match": 28,
+   "EX": 0.459,
+   "EX_pct": 45.9
+  },
+  "moderate": {
+   "n": 49,
+   "n_match": 20,
+   "EX": 0.4082,
+   "EX_pct": 40.82
+  },
+  "challenging": {
+   "n": 90,
+   "n_match": 4,
+   "EX": 0.0444,
+   "EX_pct": 4.44
+  }
+ },
+ "by_db": {
+  "california_schools": {
+   "n": 89,
+   "n_match": 25,
+   "EX": 0.2809,
+   "EX_pct": 28.09
+  },
+  "financial": {
+   "n": 106,
+   "n_match": 25,
+   "EX": 0.2358,
+   "EX_pct": 23.58
+  },
+  "toxicology": {
+   "n": 5,
+   "n_match": 2,
+   "EX": 0.4,
+   "EX_pct": 40.0
+  }
+ },
+ "samples": [
+  {
+   "index": 0,
+   "question_id": 0,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 1,
+   "question_id": 1,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 2,
+   "question_id": 2,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 3,
+   "question_id": 3,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 4,
+   "question_id": 4,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 5,
+   "question_id": 5,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 6,
+   "question_id": 6,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 7,
+   "question_id": 7,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 8,
+   "question_id": 8,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 9,
+   "question_id": 9,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 10,
+   "question_id": 10,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 11,
+   "question_id": 11,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 12,
+   "question_id": 12,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 13,
+   "question_id": 13,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 14,
+   "question_id": 14,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 15,
+   "question_id": 15,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 16,
+   "question_id": 16,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 17,
+   "question_id": 17,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 18,
+   "question_id": 18,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 19,
+   "question_id": 19,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 20,
+   "question_id": 20,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 21,
+   "question_id": 21,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 22,
+   "question_id": 22,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 23,
+   "question_id": 23,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 24,
+   "question_id": 24,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 25,
+   "question_id": 25,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 26,
+   "question_id": 26,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 27,
+   "question_id": 27,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 28,
+   "question_id": 28,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 29,
+   "question_id": 29,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 30,
+   "question_id": 30,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 31,
+   "question_id": 31,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 32,
+   "question_id": 32,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 33,
+   "question_id": 33,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 34,
+   "question_id": 34,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 35,
+   "question_id": 35,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 36,
+   "question_id": 36,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 37,
+   "question_id": 37,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 38,
+   "question_id": 38,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 39,
+   "question_id": 39,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 40,
+   "question_id": 40,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 41,
+   "question_id": 41,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 42,
+   "question_id": 42,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 43,
+   "question_id": 43,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 44,
+   "question_id": 44,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 45,
+   "question_id": 45,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 46,
+   "question_id": 46,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 47,
+   "question_id": 47,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 48,
+   "question_id": 48,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 49,
+   "question_id": 49,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 50,
+   "question_id": 50,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 51,
+   "question_id": 51,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 52,
+   "question_id": 52,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 53,
+   "question_id": 53,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 54,
+   "question_id": 54,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 55,
+   "question_id": 55,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 56,
+   "question_id": 56,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 57,
+   "question_id": 57,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 58,
+   "question_id": 58,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 59,
+   "question_id": 59,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 60,
+   "question_id": 60,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 61,
+   "question_id": 61,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 62,
+   "question_id": 62,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 63,
+   "question_id": 63,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 64,
+   "question_id": 64,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 65,
+   "question_id": 65,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 66,
+   "question_id": 66,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 67,
+   "question_id": 67,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 68,
+   "question_id": 68,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 69,
+   "question_id": 69,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 70,
+   "question_id": 70,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 71,
+   "question_id": 71,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 72,
+   "question_id": 72,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 73,
+   "question_id": 73,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 74,
+   "question_id": 74,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 75,
+   "question_id": 75,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 76,
+   "question_id": 76,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 77,
+   "question_id": 77,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 78,
+   "question_id": 78,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 79,
+   "question_id": 79,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 80,
+   "question_id": 80,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 81,
+   "question_id": 81,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 82,
+   "question_id": 82,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 83,
+   "question_id": 83,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 84,
+   "question_id": 84,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 85,
+   "question_id": 85,
+   "db_id": "california_schools",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 86,
+   "question_id": 86,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 87,
+   "question_id": 87,
+   "db_id": "california_schools",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 88,
+   "question_id": 88,
+   "db_id": "california_schools",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 89,
+   "question_id": 89,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 90,
+   "question_id": 90,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 91,
+   "question_id": 91,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 92,
+   "question_id": 92,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 93,
+   "question_id": 93,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 94,
+   "question_id": 94,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 95,
+   "question_id": 95,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 96,
+   "question_id": 96,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 97,
+   "question_id": 97,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 98,
+   "question_id": 98,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 99,
+   "question_id": 99,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 100,
+   "question_id": 100,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 101,
+   "question_id": 101,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 102,
+   "question_id": 102,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": "OperationalError: interrupted"
+  },
+  {
+   "index": 103,
+   "question_id": 103,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 104,
+   "question_id": 104,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 105,
+   "question_id": 105,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 106,
+   "question_id": 106,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 107,
+   "question_id": 107,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 108,
+   "question_id": 108,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 109,
+   "question_id": 109,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 110,
+   "question_id": 110,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 111,
+   "question_id": 111,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 112,
+   "question_id": 112,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 113,
+   "question_id": 113,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 114,
+   "question_id": 114,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 115,
+   "question_id": 115,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 116,
+   "question_id": 116,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 117,
+   "question_id": 117,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 118,
+   "question_id": 118,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 119,
+   "question_id": 119,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 120,
+   "question_id": 120,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 121,
+   "question_id": 121,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": "OperationalError: interrupted"
+  },
+  {
+   "index": 122,
+   "question_id": 122,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 123,
+   "question_id": 123,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 124,
+   "question_id": 124,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 125,
+   "question_id": 125,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 126,
+   "question_id": 126,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 127,
+   "question_id": 127,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 128,
+   "question_id": 128,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 129,
+   "question_id": 129,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 130,
+   "question_id": 130,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 131,
+   "question_id": 131,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 132,
+   "question_id": 132,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 133,
+   "question_id": 133,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 134,
+   "question_id": 134,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 135,
+   "question_id": 135,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": "OperationalError: interrupted"
+  },
+  {
+   "index": 136,
+   "question_id": 136,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 137,
+   "question_id": 137,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 138,
+   "question_id": 138,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 139,
+   "question_id": 139,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 140,
+   "question_id": 140,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 141,
+   "question_id": 141,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 142,
+   "question_id": 142,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 143,
+   "question_id": 143,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 144,
+   "question_id": 144,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 145,
+   "question_id": 145,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 146,
+   "question_id": 146,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 147,
+   "question_id": 147,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 148,
+   "question_id": 148,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 149,
+   "question_id": 149,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 150,
+   "question_id": 150,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 151,
+   "question_id": 151,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 152,
+   "question_id": 152,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 153,
+   "question_id": 153,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": "OperationalError: no such column: d.account_id"
+  },
+  {
+   "index": 154,
+   "question_id": 154,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 155,
+   "question_id": 155,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": "OperationalError: near \"WITH\": syntax error"
+  },
+  {
+   "index": 156,
+   "question_id": 156,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 157,
+   "question_id": 157,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 158,
+   "question_id": 158,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": "OperationalError: DISTINCT aggregates must have exactly one argument"
+  },
+  {
+   "index": 159,
+   "question_id": 159,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 160,
+   "question_id": 160,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 161,
+   "question_id": 161,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 162,
+   "question_id": 162,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 163,
+   "question_id": 163,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 164,
+   "question_id": 164,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 165,
+   "question_id": 165,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 166,
+   "question_id": 166,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 167,
+   "question_id": 167,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 168,
+   "question_id": 168,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 169,
+   "question_id": 169,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 170,
+   "question_id": 170,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 171,
+   "question_id": 171,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 172,
+   "question_id": 172,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 173,
+   "question_id": 173,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 174,
+   "question_id": 174,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 175,
+   "question_id": 175,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 176,
+   "question_id": 176,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 177,
+   "question_id": 177,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 178,
+   "question_id": 178,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 179,
+   "question_id": 179,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 180,
+   "question_id": 180,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 181,
+   "question_id": 181,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 182,
+   "question_id": 182,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 183,
+   "question_id": 183,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 184,
+   "question_id": 184,
+   "db_id": "financial",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 185,
+   "question_id": 185,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 186,
+   "question_id": 186,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": "OperationalError: no such column: c.gender"
+  },
+  {
+   "index": 187,
+   "question_id": 187,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": "OperationalError: interrupted"
+  },
+  {
+   "index": 188,
+   "question_id": 188,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 189,
+   "question_id": 189,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 190,
+   "question_id": 190,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 191,
+   "question_id": 191,
+   "db_id": "financial",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 192,
+   "question_id": 192,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 193,
+   "question_id": 193,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 194,
+   "question_id": 194,
+   "db_id": "financial",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 195,
+   "question_id": 195,
+   "db_id": "toxicology",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 196,
+   "question_id": 196,
+   "db_id": "toxicology",
+   "difficulty": "challenging",
+   "match": true,
+   "error": null
+  },
+  {
+   "index": 197,
+   "question_id": 197,
+   "db_id": "toxicology",
+   "difficulty": "moderate",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 198,
+   "question_id": 198,
+   "db_id": "toxicology",
+   "difficulty": "challenging",
+   "match": false,
+   "error": null
+  },
+  {
+   "index": 199,
+   "question_id": 199,
+   "db_id": "toxicology",
+   "difficulty": "simple",
+   "match": true,
+   "error": null
+  }
+ ]
+}

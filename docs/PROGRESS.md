@@ -24,6 +24,36 @@
 | M2 DSL 中间层 | planner 后加 DSL 结构化输出 → 规则校验循环 → sqlglot 编译 + LLM 降级通道 | 🔨 代码完成+测试全绿；待真实 API 冒烟与 dev 跑分 |
 | M3 增量迭代 | ASSUME 反事实算子 / 公式库 / 值链接强化 / 经验缓存 / 投票加宽 | 🔨 画像前置注入（m3a/b）判负收档；m3c 检查器族并入 M3-d 强制臂验证；M3-d 约定轴进行中 |
 
+## 2026-07-29 · 收尾整理审计与执行
+
+- 用户确认最终保留的两个实验 idea 为 **DSL** 与 **fixed semantic few-shot**；
+  Direct 只作为对照，其余 plan、conventions/knowledge、SFS、Value Evidence、
+  selector、DPC 等路线统一视为探索性实验，不再与主线混排。
+- 本轮只读盘点确认：当前 `.gitignore` 整块忽略 `docs/`、`predictions/`、
+  `results/`、`data/fewshot/`，导致可复现资产与缓存一起被隐藏；同时
+  `docs/DEVELOPMENT.md` 已不存在，但 `AGENTS.md` / `CLAUDE.md` 仍把它列为必读，
+  文档入口失效。
+- 已找回并审计 fixed semantic top-k：Archer `en_dev` k=3 共 104 records，
+  BIRD 新/旧 dev 各 1533 个唯一题面 records；三份均为每题恰好 3 例、零重复
+  source、零 self-selection。最终四格 prediction 也完整：Archer 各 104 条，
+  BIRD 各 1534 条。
+- 用户明确取消“修复文档入口”：不恢复 `docs/DEVELOPMENT.md`，不改现有
+  `README.md` 的定位，也不重构本进度文档；改为新增 `README.new.md` 展示最终主线。
+- `.gitignore` 已改为精确规则：运行期 predictions/results、模型权重、原始 corpus、
+  SFS/VE/DPC 大体积产物继续忽略；三份 RSL k=3 selection 在原运行路径放行。
+  `.superpowers/`、嵌套 `.superpowers/` 和任意 `superpowers/` 目录全部忽略；
+  原先被跟踪的 10 个 `docs/superpowers/` 文件已从 Git 索引移除，本地文件保留。
+- `model` 注册表拆为 `MAIN_MODELS` 与 `EXPERIMENT_MODELS`，兼容的 `MODELS`
+  仍包含全部旧档位。主线只列 Direct / Direct+FS / DSL / DSL+FS 的
+  Archer/BIRD 四格；`python -m model --list` 分组展示，生成算法与旧命令均未改变。
+- 新增 `artifacts/`：冻结 Archer/BIRD 最终四格 prediction、可用 trace、详细/官方
+  result，以及旧版 BIRD DSL+FS 历史快照；`manifest.json` 记录题数、分数、路径和
+  SHA-256。新增 `experiments/README.md` 汇总探索代码与判定状态。
+- 验证：manifest 中三份 selection、8 个最终臂和 1 个旧版臂的文件、题数、分数、
+  trace 与 SHA-256 全部匹配；三份 selection audit 均为每题 3 例、零重复 source、
+  零 self-selection；Archer/BIRD DSL+FS 无 API prompt preview 成功；
+  `.venv\Scripts\python.exe -m pytest -q` 为 **500 passed**。
+
 ## 2026-07-29 · BIRD Direct+FS / DSL+FS 候选选择实验
 
 - 用户批准直接复用已有 `bird-pro-t-direct-fs` 与 `bird-pro-t-dsl-fs`

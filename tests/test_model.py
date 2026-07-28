@@ -7,7 +7,7 @@ import pytest
 import config
 from archer_eval.data import load_dataset
 from archer_eval.evaluate import evaluate, find_db_file
-from model import MODELS
+from model import EXPERIMENT_MODELS, MAIN_MODELS, MODELS
 from model.api import extract_sql
 from model.base import SQLGenerator
 from model.example import FirstTableBaseline
@@ -22,6 +22,22 @@ def test_registry_names_match_classes():
     for name, cls in MODELS.items():
         assert issubclass(cls, SQLGenerator)
         assert cls.name == name
+
+
+def test_final_registry_is_direct_dsl_by_fixed_fewshot_grid():
+    assert set(MAIN_MODELS) == {
+        "first_table",
+        "pro-t-direct",
+        "pro-t-direct-fs",
+        "pro-t-dsl",
+        "pro-t-dsl-fs",
+        "bird-pro-t-direct",
+        "bird-pro-t-direct-fs",
+        "bird-pro-t-dsl",
+        "bird-pro-t-dsl-fs",
+    }
+    assert MAIN_MODELS.keys().isdisjoint(EXPERIMENT_MODELS)
+    assert MODELS == {**MAIN_MODELS, **EXPERIMENT_MODELS}
 
 
 def test_chat_endpoint_without_key_fails_loudly(monkeypatch):

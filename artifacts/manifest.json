@@ -1,0 +1,132 @@
+{
+  "format_version": 1,
+  "frozen_at": "2026-07-29",
+  "scope": {
+    "ideas": [
+      "dsl",
+      "fixed-semantic-few-shot"
+    ],
+    "baseline": "direct",
+    "encoder": "sentence-transformers/all-mpnet-base-v2",
+    "distance": "euclidean",
+    "k": 3
+  },
+  "fewshot_selections": [
+    {
+      "dataset": "archer_en_dev",
+      "path": "data/fewshot/selections/archer_en_dev_rsl_k3.json",
+      "records": 104,
+      "sha256": "3974818F5BEAE72BD5D43BD78FEFCEA35C4350DA81A88EFBDC987F25992F8713"
+    },
+    {
+      "dataset": "bird_dev_20251106",
+      "path": "data/fewshot/selections/bird_dev_rsl_k3.json",
+      "records": 1533,
+      "note": "1534 rows contain one duplicated question key",
+      "sha256": "CFBA19C19537159F5BCC96D1BF08D6C826019493CFA18F7CEE5927FF4B1AF8FF"
+    },
+    {
+      "dataset": "bird_dev_20240627",
+      "path": "data/fewshot/selections/bird_dev_20240627_rsl_k3.json",
+      "records": 1533,
+      "status": "archive",
+      "sha256": "E166269C7C2F8DBF65DB0997928941C686F4E3238A08B843141E9638EDDAC2B7"
+    }
+  ],
+  "final_runs": [
+    {
+      "dataset": "archer_en_dev",
+      "model": "pro-t-direct",
+      "n": 104,
+      "ex": 0.3654,
+      "va": 0.9904,
+      "prediction": "artifacts/final/archer/en_dev/predictions/pro-t-direct_en_dev.json",
+      "result": "artifacts/final/archer/en_dev/results/en_dev_pro-t-direct.json",
+      "sha256": "D6EA9904C7D6B39BB36C2BB65075379A9509D8F85035BA71F173CEDB01F1C434"
+    },
+    {
+      "dataset": "archer_en_dev",
+      "model": "pro-t-direct-fs",
+      "n": 104,
+      "ex": 0.4423,
+      "va": 0.9904,
+      "prediction": "artifacts/final/archer/en_dev/predictions/pro-t-direct-fs_en_dev.json",
+      "trace": "artifacts/final/archer/en_dev/traces/pro-t-direct-fs_en_dev.trace.json",
+      "result": "artifacts/final/archer/en_dev/results/en_dev_pro-t-direct-fs.json",
+      "sha256": "BBCCC63B8BE67BBF305B85D7F3F22977CE9AEF987357621D46D219ADEF664138"
+    },
+    {
+      "dataset": "archer_en_dev",
+      "model": "pro-t-dsl",
+      "n": 104,
+      "ex": 0.5288,
+      "va": 0.9712,
+      "prediction": "artifacts/final/archer/en_dev/predictions/pro-t-dsl_en_dev.json",
+      "trace": "artifacts/final/archer/en_dev/traces/pro-t-dsl_en_dev.trace.json",
+      "result": "artifacts/final/archer/en_dev/results/en_dev_pro-t-dsl.json",
+      "sha256": "4AE575A88FB0C21EC9088D25A70763CE3A838E3E6E9D29572873A2829C6282AF"
+    },
+    {
+      "dataset": "archer_en_dev",
+      "model": "pro-t-dsl-fs",
+      "n": 104,
+      "ex": 0.5865,
+      "va": 0.9808,
+      "prediction": "artifacts/final/archer/en_dev/predictions/pro-t-dsl-fs_en_dev.json",
+      "trace": "artifacts/final/archer/en_dev/traces/pro-t-dsl-fs_en_dev.trace.json",
+      "result": "artifacts/final/archer/en_dev/results/en_dev_pro-t-dsl-fs.json",
+      "sha256": "501AA7E28832D212191EA9382C71BFFF5B63C77C9FE0674B12708200F9DF9F9D"
+    },
+    {
+      "dataset": "bird_dev_20251106",
+      "model": "bird-pro-t-direct",
+      "n": 1534,
+      "ex": 0.5737,
+      "prediction": "artifacts/final/bird/dev_20251106/predictions/bird-pro-t-direct_bird_dev.json",
+      "result": "artifacts/final/bird/dev_20251106/results/bird_dev_bird-pro-t-direct_bird_dev.official.json",
+      "sha256": "28C81341C9CD77692CD7F87062BECC53199C40F94C7519974F128AD83C309E3C"
+    },
+    {
+      "dataset": "bird_dev_20251106",
+      "model": "bird-pro-t-direct-fs",
+      "n": 1534,
+      "ex": 0.6023,
+      "prediction": "artifacts/final/bird/dev_20251106/predictions/bird-pro-t-direct-fs_bird_dev.json",
+      "trace": "artifacts/final/bird/dev_20251106/traces/bird-pro-t-direct-fs_bird_dev.trace.json",
+      "result": "artifacts/final/bird/dev_20251106/results/bird_dev_bird-pro-t-direct-fs_bird_dev.official.json",
+      "sha256": "FB4353242885BCD0D8FCC4DD89F750BB2635AA4366AF580B514EA808E321D381"
+    },
+    {
+      "dataset": "bird_dev_20251106",
+      "model": "bird-pro-t-dsl",
+      "n": 1534,
+      "ex": 0.6076,
+      "prediction": "artifacts/final/bird/dev_20251106/predictions/bird-pro-t-dsl_bird_dev.json",
+      "trace": "artifacts/final/bird/dev_20251106/traces/bird-pro-t-dsl_bird_dev.trace.json",
+      "result": "artifacts/final/bird/dev_20251106/results/bird_dev_bird-pro-t-dsl_bird_dev.official.json",
+      "sha256": "1EB86509E353BDC9ADE8652F357D8B36A61908ABF5755113368334BAABA6C058"
+    },
+    {
+      "dataset": "bird_dev_20251106",
+      "model": "bird-pro-t-dsl-fs",
+      "n": 1534,
+      "ex": 0.6258,
+      "prediction": "artifacts/final/bird/dev_20251106/predictions/bird-pro-t-dsl-fs_bird_dev.json",
+      "trace": "artifacts/final/bird/dev_20251106/traces/bird-pro-t-dsl-fs_bird_dev.trace.json",
+      "result": "artifacts/final/bird/dev_20251106/results/bird_dev_bird-pro-t-dsl-fs_bird_dev.official.json",
+      "sha256": "B5F997F2A94C9A774B117703E5F402CD707094C49E1D734273171EFD9FF4E193"
+    }
+  ],
+  "archive_runs": [
+    {
+      "dataset": "bird_dev_20240627",
+      "model": "bird-pro-t-dsl-fs-20240627",
+      "n": 1534,
+      "ex": 0.616,
+      "prediction": "artifacts/archive/bird/dev_20240627/predictions/bird-pro-t-dsl-fs-20240627_bird_dev_20240627.json",
+      "trace": "artifacts/archive/bird/dev_20240627/traces/bird-pro-t-dsl-fs-20240627_bird_dev_20240627.trace.json",
+      "result": "artifacts/archive/bird/dev_20240627/results/bird_dev_20240627_bird-pro-t-dsl-fs-20240627_bird_dev_20240627.official.json",
+      "sha256": "1D226F3FEF366952A94297FA8F18ABD75F1129CDF9EBB58DBB0829808B2AEB89"
+    }
+  ]
+}

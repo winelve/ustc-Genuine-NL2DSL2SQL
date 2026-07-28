@@ -1,0 +1,221 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1000" viewBox="0 0 1700 1000" font-family="'Helvetica Neue',Helvetica,Arial,'Segoe UI',sans-serif">
+<style>
+  .pt  { font-size:18px; font-weight:700; fill:#16233a; letter-spacing:0.2px }
+  .ps  { font-size:13px; fill:#46525f }
+  .bd  { font-size:14px; font-weight:700; fill:#ffffff }
+  .bt  { font-size:12.5px; font-weight:700 }
+  .tag { font-size:10.5px; font-style:italic }
+  .p   { font-size:11.5px; fill:#16202b }
+  .pb  { font-size:12px; font-weight:700; fill:#0b131c }
+  .it  { font-size:10.5px; font-style:italic; fill:#55606d }
+  .m   { font-family:'Consolas','DejaVu Sans Mono',Menlo,'Courier New',monospace; font-size:11.5px; fill:#0d1620 }
+  .ms  { font-family:'Consolas','DejaVu Sans Mono',Menlo,'Courier New',monospace; font-size:11px;   fill:#0d1620 }
+  .al  { font-size:12.5px; font-weight:700; fill:#0B4A9E }
+  .ico { fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round }
+</style>
+
+<defs>
+  <filter id="sh" x="-12%" y="-12%" width="130%" height="140%">
+    <feDropShadow dx="0" dy="2" stdDeviation="2.4" flood-color="#243044" flood-opacity="0.13"/>
+  </filter>
+  <marker id="ar" viewBox="0 0 12 12" refX="10.5" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+    <path d="M0,0.5 L12,6 L0,11.5 z" fill="#1157C2"/>
+  </marker>
+  <marker id="aro" viewBox="0 0 12 12" refX="10.5" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+    <path d="M0,0.5 L12,6 L0,11.5 z" fill="#E2761B"/>
+  </marker>
+  <g id="i-bubble" class="ico"><path d="M3.6 6.4A2.4 2.4 0 0 1 6 4h12a2.4 2.4 0 0 1 2.4 2.4v7.2A2.4 2.4 0 0 1 18 16h-7.6L5.6 19.6V16H6a2.4 2.4 0 0 1-2.4-2.4z"/><path d="M7.6 9.6h8.8M7.6 12.4h5.6"/></g>
+  <g id="i-tag" class="ico"><path d="M11.4 3.6H19a1.4 1.4 0 0 1 1.4 1.4v7.6L11.6 21.4a1.4 1.4 0 0 1-2 0l-7-7a1.4 1.4 0 0 1 0-2z"/><circle cx="16.4" cy="8" r="1.4"/></g>
+  <g id="i-lock" class="ico"><rect x="4.6" y="10.4" width="14.8" height="9.8" rx="2.2"/><path d="M8 10.4V7.6a4 4 0 0 1 8 0v2.8"/></g>
+  <g id="i-db" class="ico"><ellipse cx="12" cy="6.2" rx="7.6" ry="2.9"/><path d="M4.4 6.2v11.4c0 1.6 3.4 2.9 7.6 2.9s7.6-1.3 7.6-2.9V6.2"/><path d="M4.4 11.9c0 1.6 3.4 2.9 7.6 2.9s7.6-1.3 7.6-2.9"/></g>
+  <g id="i-brace" class="ico"><path d="M9.4 4C7.2 4 7.2 7.6 7.2 8.8c0 1.7-.9 3-2.6 3 1.7 0 2.6 1.3 2.6 3 0 1.2 0 4.8 2.2 4.8"/><path d="M14.6 4c2.2 0 2.2 3.6 2.2 4.8 0 1.7.9 3 2.6 3-1.7 0-2.6 1.3-2.6 3 0 1.2 0 4.8-2.2 4.8"/></g>
+  <g id="i-book" class="ico"><path d="M12 7.2C10.4 5.8 8 5 4.6 5v12.6C8 17.6 10.4 18.4 12 19.8c1.6-1.4 4-2.2 7.4-2.2V5c-3.4 0-5.8.8-7.4 2.2z"/><path d="M12 7.2v12.6"/></g>
+  <g id="i-warn" class="ico"><path d="M12 4.2l8.4 15.2H3.6z"/><path d="M12 9.6v4.4M12 16.6v.1"/></g>
+  <g id="i-form" class="ico"><rect x="4.4" y="3.8" width="15.2" height="16.4" rx="2.2"/><path d="M7.6 8.6h8.8M7.6 12h8.8M7.6 15.4h5.4"/></g>
+  <g id="i-clip" class="ico"><rect x="4.2" y="4.2" width="15.6" height="15.6" rx="2.6"/><path d="M7.4 9.2l1.7 1.8 3.2-3.4"/><path d="M14.6 10h2.4"/><path d="M7.4 15.2l1.7 1.8 3.2-3.4"/><path d="M14.6 16h2.4"/></g>
+  <g id="i-alert" class="ico"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.6v5M12 15.6v.1"/></g>
+  <g id="i-play" class="ico"><circle cx="12" cy="12" r="8.4"/><path d="M10.2 8.6L15.8 12l-5.6 3.4z" fill="currentColor"/></g>
+  <g id="i-grid" class="ico"><rect x="4.2" y="4.4" width="15.6" height="15.2" rx="2.2"/><path d="M4.2 9.4h15.6M4.2 14.6h15.6M9.6 9.4v10.2"/></g>
+  <g id="i-medal" class="ico"><circle cx="12" cy="14.4" r="5.6"/><path d="M8.6 9.2L6.2 3.8h11.6l-2.4 5.4"/><path d="M12 12.2l.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z"/></g>
+  <g id="i-chip" class="ico"><rect x="6.4" y="6.4" width="11.2" height="11.2" rx="2"/><path d="M9.6 3.6v2.8M14.4 3.6v2.8M9.6 17.6v2.8M14.4 17.6v2.8M3.6 9.6h2.8M3.6 14.4h2.8M17.6 9.6h2.8M17.6 14.4h2.8"/></g>
+  <g id="ok"><circle r="9" fill="#2f9e5c"/><path d="M-4 .2l2.7 3.1 4.4-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="no"><circle r="9" fill="#d9534f"/><path d="M-3.4-3.4L3.4 3.4M3.4-3.4L-3.4 3.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></g>
+</defs>
+
+<rect width="1700" height="1000" fill="#ffffff"/>
+
+<!-- ══════════════ (a) ══════════════ -->
+<rect x="24" y="24" width="700" height="490" rx="12" fill="#FCFDFE" stroke="#2b3648" stroke-width="1.4" stroke-dasharray="8 5"/>
+<rect x="42" y="38" width="34" height="25" rx="7" fill="#3B82C4"/><text class="bd" x="59" y="56" text-anchor="middle">a</text>
+<text class="pt" x="86" y="57">Context Preparation</text>
+<text class="ps" x="272" y="57">— assembled by code, no LLM</text>
+
+<rect x="42" y="82" width="664" height="76" rx="9" fill="#EDF4FD" filter="url(#sh)"/>
+<path d="M42 110V91a9 9 0 0 1 9-9h646a9 9 0 0 1 9 9v19z" fill="#CFE0F7"/>
+<rect x="42" y="82" width="664" height="76" rx="9" fill="none" stroke="#3B82C4" stroke-width="1.5"/>
+<use href="#i-bubble" x="54" y="88" width="17" height="17" color="#1D4E8F"/>
+<text class="bt" x="78" y="102" fill="#1D4E8F">Question</text>
+<text class="tag" x="694" y="102" text-anchor="end" fill="#1D4E8F">en / zh, scored separately</text>
+<text class="m" x="56" y="130" xml:space="preserve" fill="#0e2f56"><tspan x="56" dy="0">Q: Which stadium's maximum attendance rate is more than double the</tspan><tspan x="56" dy="17">   Balmoor stadium's highest attendance rate? Give the stadium names.</tspan></text>
+
+<rect x="42" y="168" width="324" height="72" rx="9" fill="#F7F9FB" filter="url(#sh)"/>
+<path d="M42 194v-17a9 9 0 0 1 9-9h306a9 9 0 0 1 9 9v17z" fill="#E5E9EF"/>
+<rect x="42" y="168" width="324" height="72" rx="9" fill="none" stroke="#9AA6B8" stroke-width="1.5"/>
+<use href="#i-tag" x="54" y="173" width="16" height="16" color="#3A4A63"/>
+<text class="bt" x="80" y="187" fill="#3A4A63">Benchmark item</text>
+<text class="p" x="56" y="214">Archer en_dev · item #41 · db concert_singer</text>
+<text class="p" x="56" y="231">reasoning type: * / C  (arithmetic + commonsense)</text>
+
+<rect x="382" y="168" width="324" height="72" rx="9" fill="#F7F9FB" filter="url(#sh)"/>
+<path d="M382 194v-17a9 9 0 0 1 9-9h306a9 9 0 0 1 9 9v17z" fill="#E5E9EF"/>
+<rect x="382" y="168" width="324" height="72" rx="9" fill="none" stroke="#9AA6B8" stroke-width="1.5"/>
+<use href="#i-lock" x="394" y="173" width="16" height="16" color="#3A4A63"/>
+<text class="bt" x="420" y="187" fill="#3A4A63">Context policy</text>
+<text class="p" x="396" y="214">no retrieval · no few-shot examples</text>
+<text class="p" x="396" y="231">every database is opened read-only</text>
+
+<rect x="42" y="250" width="664" height="246" rx="9" fill="#F3FBF6" filter="url(#sh)"/>
+<path d="M42 280v-21a9 9 0 0 1 9-9h646a9 9 0 0 1 9 9v21z" fill="#CDEEDA"/>
+<rect x="42" y="250" width="664" height="246" rx="9" fill="none" stroke="#34A853" stroke-width="1.5"/>
+<use href="#i-db" x="54" y="256" width="18" height="18" color="#1C6B3C"/>
+<text class="bt" x="80" y="271" fill="#1C6B3C">Full schema — 4 tables (stadium shown) + 3 example rows each</text>
+<text class="m" x="56" y="302" xml:space="preserve"><tspan x="56" dy="0">CREATE TABLE "stadium" (</tspan><tspan x="56" dy="17">  "Stadium_ID" int, "Location" text, "Name" text,</tspan><tspan x="56" dy="17">  "Capacity" int, "Highest" int, "Lowest" int, "Average" int,</tspan><tspan x="56" dy="17">  PRIMARY KEY ("Stadium_ID") );</tspan><tspan x="56" dy="20">/* 3 example rows */</tspan><tspan x="56" dy="17">Stadium_ID | Location     | Name          | Capacity | Highest | Lowest | Average</tspan><tspan x="56" dy="17">1          | Raith Rovers | Stark's Park  | 10104    | 4812    | 1294   | 2106</tspan><tspan x="56" dy="17">2          | Ayr United   | Somerset Park | 11998    | 2363    | 1057   | 1477</tspan><tspan x="56" dy="17">3          | East Fife    | Bayview Stad. | 2000     | 1980    | 533    | 864</tspan></text>
+<text class="it" x="56" y="474" fill="#1C6B3C">singer, concert and singer_in_concert are given in the same form</text>
+
+<!-- ══════════════ (b) ══════════════ -->
+<rect x="800" y="24" width="840" height="560" rx="12" fill="#FCFDFE" stroke="#2b3648" stroke-width="1.4" stroke-dasharray="8 5"/>
+<rect x="818" y="38" width="34" height="25" rx="7" fill="#7C5CD6"/><text class="bd" x="835" y="56" text-anchor="middle">b</text>
+<text class="pt" x="862" y="57">Declaration Generator</text>
+<rect x="1374" y="34" width="248" height="30" rx="15" fill="#F7F9FB" stroke="#9AA6B8" stroke-width="1.4"/>
+<use href="#i-chip" x="1386" y="41" width="16" height="16" color="#3A4A63"/>
+<text class="p" x="1508" y="53" text-anchor="middle" fill="#0b131c">DeepSeek-v4-pro · thinking · T = 0</text>
+
+<rect x="818" y="82" width="804" height="186" rx="9" fill="#EDF4FD" filter="url(#sh)"/>
+<path d="M818 112V91a9 9 0 0 1 9-9h786a9 9 0 0 1 9 9v21z" fill="#CFE0F7"/>
+<rect x="818" y="82" width="804" height="186" rx="9" fill="none" stroke="#3B82C4" stroke-width="1.5"/>
+<use href="#i-brace" x="830" y="88" width="18" height="18" color="#1D4E8F"/>
+<text class="bt" x="856" y="103" fill="#1D4E8F">System prompt — output contract</text>
+<text class="tag" x="1610" y="103" text-anchor="end" fill="#1D4E8F">one JSON object, nothing else</text>
+<text class="m" x="832" y="134" xml:space="preserve" fill="#0e2f56"><tspan x="832" dy="0">{ "sql": "&lt;one SQLite query answering the question&gt;",</tspan><tspan x="832" dy="17">  "declarations": {</tspan><tspan x="832" dy="17">    "time_context": { "displaced": bool, "reference": str },</tspan><tspan x="832" dy="17">    "outputs": [ { "name": str, "source": "column" | "derived", "expr": str,</tspan><tspan x="832" dy="17">                   "anchors": { col: { "kind": "now" | "column" | "literal" } } } ],</tspan><tspan x="832" dy="17">    "assumptions": [ { "target": str, "where": str, "value": str } ] } }</tspan></text>
+<text class="it" x="832" y="256" fill="#1D4E8F">the sheet is not commentary — it is part of the required output</text>
+
+<rect x="818" y="280" width="804" height="138" rx="9" fill="#FEF8EB" filter="url(#sh)"/>
+<path d="M818 310v-21a9 9 0 0 1 9-9h786a9 9 0 0 1 9 9v21z" fill="#FBEBC8"/>
+<rect x="818" y="280" width="804" height="138" rx="9" fill="none" stroke="#E0A32E" stroke-width="1.5"/>
+<use href="#i-book" x="830" y="286" width="18" height="18" color="#8A5A10"/>
+<text class="bt" x="856" y="301" fill="#8A5A10">Benchmark Conventions  K1 – K11</text>
+<text class="tag" x="1610" y="301" text-anchor="end" fill="#8A5A10">distilled from the train split</text>
+<text class="m" x="832" y="332" xml:space="preserve" fill="#4d3708"><tspan x="832" dy="0">K1   reference time unrecorded  →  anchor at query time: strftime('%Y','now')</tspan><tspan x="832" dy="17">K3   1 lb = 0.45 kg  ·  1 inch = 25 mm  ·  1 mile = 1.609344 km</tspan><tspan x="832" dy="17">K4   "difference between A and B"  →  ABS(A − B) unless the direction is fixed</tspan><tspan x="832" dy="17">…    11 conventions in total, none taken from the dev split</tspan></text>
+<text class="it" x="832" y="408" fill="#8A5A10">appended to the system prompt · the dev split is never read</text>
+
+<rect x="818" y="430" width="392" height="142" rx="9" fill="#FDEFEF" filter="url(#sh)"/>
+<path d="M818 458v-19a9 9 0 0 1 9-9h374a9 9 0 0 1 9 9v19z" fill="#F8D5D4"/>
+<rect x="818" y="430" width="392" height="142" rx="9" fill="none" stroke="#DC4B48" stroke-width="1.5"/>
+<use href="#i-warn" x="830" y="436" width="16" height="16" color="#A32C28"/>
+<text class="bt" x="854" y="450" fill="#A32C28">Round 1 — SQL</text>
+<text class="tag" x="1198" y="450" text-anchor="end" fill="#A32C28">no division: wrong</text>
+<text class="ms" x="832" y="480" xml:space="preserve"><tspan x="832" dy="0">SELECT Name FROM stadium</tspan><tspan x="832" dy="16">WHERE Highest &gt; 2 * (</tspan><tspan x="832" dy="16">    SELECT Highest FROM stadium</tspan><tspan x="832" dy="16">    WHERE Name = 'Balmoor' )</tspan></text>
+<text class="it" x="832" y="558" fill="#A32C28">compares raw head-counts, not rates</text>
+
+<rect x="1230" y="430" width="392" height="142" rx="9" fill="#F5F2FD" filter="url(#sh)"/>
+<path d="M1230 458v-19a9 9 0 0 1 9-9h374a9 9 0 0 1 9 9v19z" fill="#DFD7F6"/>
+<rect x="1230" y="430" width="392" height="142" rx="9" fill="none" stroke="#7C5CD6" stroke-width="1.5"/>
+<use href="#i-form" x="1242" y="436" width="16" height="16" color="#4C3B96"/>
+<text class="bt" x="1266" y="450" fill="#4C3B96">Round 1 — declaration sheet</text>
+<text class="ms" x="1244" y="480" xml:space="preserve" fill="#2b2050"><tspan x="1244" dy="0">time_context: { displaced: false }</tspan><tspan x="1244" dy="16">outputs: [ { name: "Name",</tspan><tspan x="1244" dy="16">             source: "column",</tspan><tspan x="1244" dy="16">             column: "stadium.Name" } ]</tspan><tspan x="1244" dy="16">assumptions: [ ]</tspan></text>
+
+<!-- ══════════════ (c) ══════════════ -->
+<rect x="800" y="614" width="840" height="362" rx="12" fill="#FCFDFE" stroke="#2b3648" stroke-width="1.4" stroke-dasharray="8 5"/>
+<rect x="818" y="628" width="34" height="25" rx="7" fill="#34A853"/><text class="bd" x="835" y="646" text-anchor="middle">c</text>
+<text class="pt" x="862" y="647">Rule Validator</text>
+<text class="ps" x="1006" y="647">— pure rules, no LLM, re-runs every round</text>
+
+<rect x="818" y="668" width="452" height="28" rx="6" fill="#EFF9F3" stroke="#A9DCBB" stroke-width="1.3"/>
+<use href="#ok" x="836" y="682" width="16" height="16"/>
+<text class="p" x="856" y="686" fill="#0b131c"><tspan class="pb">C1</tspan>  output alignment: SQL columns match declarations</text>
+<rect x="818" y="702" width="452" height="28" rx="6" fill="#EFF9F3" stroke="#A9DCBB" stroke-width="1.3"/>
+<use href="#ok" x="836" y="716" width="16" height="16"/>
+<text class="p" x="856" y="720" fill="#0b131c"><tspan class="pb">C2</tspan>  consistency: a premise rewrites data, not filters</text>
+<rect x="818" y="736" width="452" height="28" rx="6" fill="#EFF9F3" stroke="#A9DCBB" stroke-width="1.3"/>
+<use href="#ok" x="836" y="750" width="16" height="16"/>
+<text class="p" x="856" y="754" fill="#0b131c"><tspan class="pb">C3</tspan>  grounding: tables, columns and literals exist in the DB</text>
+<rect x="818" y="770" width="452" height="28" rx="6" fill="#EFF9F3" stroke="#A9DCBB" stroke-width="1.3"/>
+<use href="#ok" x="836" y="784" width="16" height="16"/>
+<text class="p" x="856" y="788" fill="#0b131c"><tspan class="pb">C4</tspan>  anchors: every derived column declares its frame</text>
+<rect x="818" y="804" width="452" height="28" rx="6" fill="#F6FCF8" stroke="#C6E6D2" stroke-width="1.3" stroke-dasharray="4 3"/>
+<use href="#ok" x="836" y="818" width="16" height="16"/>
+<text class="p" x="856" y="822" fill="#0b131c"><tspan class="pb">C5</tspan>  anchor ↔ SQL: a declared "now" appears in the SQL</text>
+<rect x="818" y="838" width="452" height="28" rx="6" fill="#FDEFEF" stroke="#DC4B48" stroke-width="1.6" stroke-dasharray="4 3"/>
+<use href="#no" x="836" y="852" width="16" height="16"/>
+<text class="p" x="856" y="856" fill="#A32C28"><tspan class="pb" fill="#A32C28">C6</tspan>  ratio hint: a rate is asked, but nothing is divided  →  FAILED</text>
+<text class="it" x="818" y="890">solid frame = always on   ·   dashed frame = optional check   ·   ✓ = passed or not applicable</text>
+<text class="it" x="818" y="908">a failed check re-opens the decision — it never supplies the answer</text>
+
+<rect x="1290" y="662" width="332" height="274" rx="9" fill="#FDEFEF" filter="url(#sh)"/>
+<path d="M1290 692v-21a9 9 0 0 1 9-9h314a9 9 0 0 1 9 9v21z" fill="#F8D5D4"/>
+<rect x="1290" y="662" width="332" height="274" rx="9" fill="none" stroke="#DC4B48" stroke-width="1.5"/>
+<use href="#i-alert" x="1302" y="668" width="17" height="17" color="#A32C28"/>
+<text class="bt" x="1326" y="683" fill="#A32C28">Issue — sent back to the model</text>
+<text class="ms" x="1304" y="714" xml:space="preserve" fill="#5f1a17"><tspan x="1304" dy="0">The question asks for a rate, but</tspan><tspan x="1304" dy="17">the SQL contains no division and</tspan><tspan x="1304" dy="17">only uses stadium.Highest.</tspan><tspan x="1304" dy="20">The same table also has Capacity,</tspan><tspan x="1304" dy="17">Lowest and Average — is one of</tspan><tspan x="1304" dy="17">them the denominator?</tspan><tspan x="1304" dy="20">If no normalisation is needed,</tspan><tspan x="1304" dy="17">say why in `considered`.</tspan></text>
+<text class="it" x="1304" y="920" fill="#A32C28">one message per failed check</text>
+
+<!-- ══════════════ (d) ══════════════ -->
+<rect x="24" y="524" width="700" height="452" rx="12" fill="#FCFDFE" stroke="#2b3648" stroke-width="1.4" stroke-dasharray="8 5"/>
+<rect x="42" y="538" width="34" height="25" rx="7" fill="#17998C"/><text class="bd" x="59" y="556" text-anchor="middle">d</text>
+<text class="pt" x="86" y="557">Execution and Evaluation</text>
+
+<rect x="42" y="582" width="664" height="150" rx="9" fill="#F3FBF6" filter="url(#sh)"/>
+<path d="M42 612v-21a9 9 0 0 1 9-9h646a9 9 0 0 1 9 9v21z" fill="#CDEEDA"/>
+<rect x="42" y="582" width="664" height="150" rx="9" fill="none" stroke="#34A853" stroke-width="1.5"/>
+<use href="#i-clip" x="54" y="588" width="18" height="18" color="#1C6B3C"/>
+<text class="bt" x="80" y="603" fill="#1C6B3C">Round 2 — SQL after repair</text>
+<use href="#ok" x="688" y="597" width="18" height="18"/>
+<text class="tag" x="668" y="603" text-anchor="end" fill="#1C6B3C">every check passes</text>
+<text class="m" x="56" y="634" xml:space="preserve"><tspan x="56" dy="0">SELECT Name FROM stadium</tspan><tspan x="56" dy="18">WHERE <tspan fill="#B3701A" font-weight="700">CAST(Highest AS REAL) / Capacity</tspan> &gt;</tspan><tspan x="56" dy="18">      2 * ( SELECT <tspan fill="#B3701A" font-weight="700">CAST(Highest AS REAL) / Capacity</tspan></tspan><tspan x="56" dy="18">            FROM stadium WHERE Name = 'Balmoor' )</tspan></text>
+<text class="it" x="56" y="718" fill="#8F5A0E">amber = the only edit the repair round made</text>
+
+<path d="M 374 732 V 750" stroke="#1157C2" stroke-width="3" marker-end="url(#ar)"/>
+<rect x="42" y="754" width="664" height="44" rx="9" fill="#F7F9FB" stroke="#9AA6B8" stroke-width="1.5" filter="url(#sh)"/>
+<use href="#i-play" x="56" y="767" width="18" height="18" color="#3A4A63"/>
+<text class="pb" x="82" y="781">read-only SQLite execution</text>
+<text class="it" x="692" y="781" text-anchor="end">timeout-guarded · a query that fails to run is recorded, never dropped</text>
+<path d="M 374 798 V 816" stroke="#1157C2" stroke-width="3" marker-end="url(#ar)"/>
+
+<rect x="42" y="820" width="214" height="84" rx="9" fill="#ffffff" stroke="#9AA6B8" stroke-width="1.5" filter="url(#sh)"/>
+<path d="M42 848v-19a9 9 0 0 1 9-9h196a9 9 0 0 1 9 9v19z" fill="#E5E9EF"/>
+<line x1="42" y1="848" x2="256" y2="848" stroke="#9AA6B8"/>
+<line x1="42" y1="876" x2="256" y2="876" stroke="#E3E8EF"/>
+<text class="bt" x="149" y="841" text-anchor="middle" fill="#0b131c">Name</text>
+<text class="m" x="149" y="867" text-anchor="middle">Stark's Park</text>
+<text class="m" x="149" y="895" text-anchor="middle">Bayview Stadium</text>
+<use href="#ok" x="284" y="852" width="18" height="18"/>
+<text class="pb" x="308" y="847">matches the reference result  →  EX correct</text>
+<text class="p" x="308" y="869">both rows agree with the benchmark's reference answer,</text>
+<text class="p" x="308" y="885">under the scorer's own comparison</text>
+
+<rect x="42" y="914" width="664" height="54" rx="9" fill="#EFFAF8" stroke="#17998C" stroke-width="1.5" filter="url(#sh)"/>
+<use href="#i-medal" x="58" y="931" width="20" height="20" color="#0E6B62"/>
+<text x="86" y="949" font-size="19" font-weight="700" fill="#0E6B62">VA 100.0</text>
+<text x="212" y="949" font-size="19" font-weight="700" fill="#0E6B62">EX 63.46</text>
+<text class="p" x="330" y="938">VA = share of queries that execute · EX = share whose result matches</text>
+<text class="p" x="330" y="956">the reference answer — 66 of 104 on Archer en_dev</text>
+
+<!-- ══════════════ arrows ══════════════ -->
+<path d="M 728 270 H 792" stroke="#1157C2" stroke-width="3.2" marker-end="url(#ar)"/>
+<rect x="710" y="228" width="102" height="34" rx="8" fill="#ffffff" stroke="#1157C2" stroke-width="1.6"/>
+<text class="al" x="761" y="242" text-anchor="middle">question</text>
+<text class="al" x="761" y="256" text-anchor="middle">+ schema</text>
+
+<path d="M 1220 586 V 608" stroke="#1157C2" stroke-width="3.2" marker-end="url(#ar)"/>
+<rect x="1236" y="583" width="150" height="24" rx="8" fill="#ffffff" stroke="#1157C2" stroke-width="1.6"/>
+<text class="al" x="1311" y="600" text-anchor="middle">{ sql, declarations }</text>
+
+<path d="M 796 830 H 732" stroke="#1157C2" stroke-width="3.2" marker-end="url(#ar)"/>
+<rect x="712" y="788" width="102" height="34" rx="8" fill="#ffffff" stroke="#1157C2" stroke-width="1.6"/>
+<text class="al" x="763" y="802" text-anchor="middle">all checks</text>
+<text class="al" x="763" y="816" text-anchor="middle">pass</text>
+
+<path d="M 1456 936 V 958 H 1662 V 344 H 1646" fill="none" stroke="#E2761B" stroke-width="3.2" marker-end="url(#aro)"/>
+<rect x="1330" y="946" width="240" height="26" rx="13" fill="#FDF1E7" stroke="#E2761B" stroke-width="1.4"/>
+<text class="al" x="1450" y="964" text-anchor="middle" fill="#B3601A">repair loop · at most 2 rounds</text>
+</svg>

@@ -1,0 +1,2082 @@
+[
+ {
+  "question": "List the name and age of each singer at the time of the release of the song \"Gentleman\".",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:357",
+    "en_train:300",
+    "en_train:205"
+   ],
+   "distances": [
+    1.1549916980359922,
+    1.1585297435390565,
+    1.1637496685197009
+   ]
+  }
+ },
+ {
+  "question": "What were the names and ages of all singers of the release of the song \"Gentleman\"",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:300",
+    "en_train:120",
+    "en_train:357"
+   ],
+   "distances": [
+    1.1785739998299694,
+    1.194059154618256,
+    1.1990436791713213
+   ]
+  }
+ },
+ {
+  "question": "If the song \"Gentleman\" was released in the first year of the 21st century, list the name and age of each singer at the time of the song's release.",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:300",
+    "en_train:301",
+    "en_train:302"
+   ],
+   "distances": [
+    1.1101484624615012,
+    1.1162716406971704,
+    1.1450496095544995
+   ]
+  }
+ },
+ {
+  "question": "Assuming that the song \"Gentleman\" was released in the first year of the 21st century, what were the names and ages of all its singers at the time of its release?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:300",
+    "en_train:302",
+    "en_train:301"
+   ],
+   "distances": [
+    1.096837418724966,
+    1.1330426581320652,
+    1.13888392384764
+   ]
+  }
+ },
+ {
+  "question": "What are the names and ages of the participating singers in the concert with the theme of \"Free choice\" at that time?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:296",
+    "en_train:297",
+    "en_train:298"
+   ],
+   "distances": [
+    1.116968241120678,
+    1.1264156963970908,
+    1.1336522345016846
+   ]
+  }
+ },
+ {
+  "question": "What were the names and ages of all singers who participated in the \"Free Choice\" themed concert at the time of the concert?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:297",
+    "en_train:296",
+    "en_train:120"
+   ],
+   "distances": [
+    1.1264609063159512,
+    1.1282926669625986,
+    1.1422803225103104
+   ]
+  }
+ },
+ {
+  "question": "If all singers born before 1985 participated in the \"Free Choice\" themed concert, what are the names and ages of the participating singers in the concert with the theme of \"Free choice\" at that time?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:299",
+    "en_train:297",
+    "en_train:300"
+   ],
+   "distances": [
+    1.1173905772315902,
+    1.1206126409687298,
+    1.1305676677670826
+   ]
+  }
+ },
+ {
+  "question": "Assuming that all the singers born before 1985 participated in the \"Free Choice\" themed concert, what were the names and ages of all the singers who took part at the time of the concert?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:108",
+    "en_train:116",
+    "en_train:109"
+   ],
+   "distances": [
+    1.110213417968507,
+    1.1115164033368263,
+    1.117151745548101
+   ]
+  }
+ },
+ {
+  "question": "How many years has it been since the earliest concert?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:138",
+    "en_train:262",
+    "en_train:294"
+   ],
+   "distances": [
+    1.081664510256893,
+    1.0943292745603002,
+    1.106219009243306
+   ]
+  }
+ },
+ {
+  "question": "How many years ago did the first concert occur?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:262",
+    "en_train:292",
+    "en_train:263"
+   ],
+   "distances": [
+    1.1005342614858786,
+    1.1162352350470102,
+    1.1210964968228867
+   ]
+  }
+ },
+ {
+  "question": "If the \"Wide Awake\" themed concert was held three years earlier, how many years has it been since the earliest concert?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:138",
+    "en_train:161",
+    "en_train:140"
+   ],
+   "distances": [
+    1.0744990789405582,
+    1.0902227600512864,
+    1.0968999401408661
+   ]
+  }
+ },
+ {
+  "question": "How many years ago did the earliest concert occur if the concert with the theme \"Wide Awake\" took place three years earlier?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:138",
+    "en_train:140",
+    "en_train:161"
+   ],
+   "distances": [
+    1.1031782617543713,
+    1.1303107319667813,
+    1.1310036285861944
+   ]
+  }
+ },
+ {
+  "question": "What are the names of the singer participating in the \"Home Visits\" concert, and how old will they be on its 20th anniversary?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:121",
+    "en_train:161",
+    "en_train:150"
+   ],
+   "distances": [
+    1.1555121684868082,
+    1.1714980099713463,
+    1.1715617851972522
+   ]
+  }
+ },
+ {
+  "question": "What are the names of the \"Home Visits\" concert singer, and how old will they be on its 20th anniversary?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:121",
+    "en_train:154",
+    "en_train:150"
+   ],
+   "distances": [
+    1.1308238907052095,
+    1.1352184731730266,
+    1.1447493276975877
+   ]
+  }
+ },
+ {
+  "question": "If all the singers who participated in concerts held in Stark Park also participated in the \"Home Visits\" concert, what are the names of the singer participating in the \"Home Visits\" concert, and how old will they be on its 20th anniversary?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:120",
+    "en_train:121",
+    "en_train:205"
+   ],
+   "distances": [
+    1.134578326556662,
+    1.1352375047266132,
+    1.1664202601744194
+   ]
+  }
+ },
+ {
+  "question": "What will be the ages and names of the \"Home Visits\" concert singers on its 20th anniversary, if all the singers who performed at concerts in Stark Park also took part in it?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:120",
+    "en_train:121",
+    "en_train:150"
+   ],
+   "distances": [
+    1.0252276445421815,
+    1.0360384265160745,
+    1.05852436048256
+   ]
+  }
+ },
+ {
+  "question": "When all tickets sold out, how much money can be made from ticket sales at the Balmoor stadium with a ticket price of 20 dollars and the Hampden Park stadium with a ticket price of 5.5 dollars?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:59",
+    "en_train:133",
+    "en_train:404"
+   ],
+   "distances": [
+    1.019093749279961,
+    1.0262776696158624,
+    1.0497309276075986
+   ]
+  }
+ },
+ {
+  "question": "If the ticket price for Balmoor stadium is $20 and for Hampden Park stadium is $5.5, and all tickets are sold out, how much money can be generated from ticket sales?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:59",
+    "en_train:133",
+    "en_train:56"
+   ],
+   "distances": [
+    1.0550754315113045,
+    1.0612811975616865,
+    1.0811625457723264
+   ]
+  }
+ },
+ {
+  "question": "If the capacity of the Hampden Park stadium is twice that of the Balmoor stadium, when all tickets sold out, how much money can be made from ticket sales at the Balmoor stadium with a ticket price of 20 dollars and the Hampden Park stadium with a ticket price of 5.5 dollars?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:133",
+    "en_train:173",
+    "en_train:404"
+   ],
+   "distances": [
+    1.0210741432467356,
+    1.0507487935951207,
+    1.0549683152946288
+   ]
+  }
+ },
+ {
+  "question": "Assuming the ticket price for Balmoor stadium is $20 and for Hampden Park stadium is $5.5, and if the Hampden Park stadium has twice the capacity of the Balmoor stadium, what would be the total revenue generated from ticket sales if all tickets are sold out at both stadiums?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:59",
+    "en_train:133",
+    "en_train:171"
+   ],
+   "distances": [
+    1.0981443316361836,
+    1.101066153079842,
+    1.1167783334813115
+   ]
+  }
+ },
+ {
+  "question": "Singers born before 1980 earn $355 per concert, while singers born after 1980 earn $228 per concert. How much was spent on paying the singers for the concerts held in Somerset Park stadium?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:152",
+    "en_train:141",
+    "en_train:133"
+   ],
+   "distances": [
+    0.9873999487756613,
+    0.9998653350971455,
+    1.0277998506360424
+   ]
+  }
+ },
+ {
+  "question": "What was the total expenditure on paying singers for concerts held at Somerset Park stadium, given that singers born before 1980 earned $355 per concert and those born after 1980 earned $228 per concert?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:133",
+    "en_train:132",
+    "en_train:152"
+   ],
+   "distances": [
+    1.0027775040661915,
+    1.0127418889826665,
+    1.0330273702254418
+   ]
+  }
+ },
+ {
+  "question": "Singers born before 1980 earn $355 per concert, while singers born after 1980 earn $228 per concert. If Justin Brown is 3 years older than John Nizinik, how much was spent on paying the singers for the concerts held in Somerset Park stadium?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:141",
+    "en_train:152",
+    "en_train:140"
+   ],
+   "distances": [
+    0.9544957464083274,
+    0.9807420769563241,
+    0.99634696253915
+   ]
+  }
+ },
+ {
+  "question": "If Justin Brown was 3 years older than John Nizinik, what was the total expenditure on paying singers for concerts held at Somerset Park stadium, given that singers born before 1980 earned $355 per concert and those born after 1980 earned $228 per concert?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:141",
+    "en_train:152",
+    "en_train:133"
+   ],
+   "distances": [
+    0.9624742935997815,
+    0.9783750179918487,
+    0.9848367709302437
+   ]
+  }
+ },
+ {
+  "question": "Which stadiums have the lowest and highest average attendance rates respectively, and how many concerts have they each held?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:48",
+    "en_train:49",
+    "en_train:189"
+   ],
+   "distances": [
+    1.0890682116254833,
+    1.0942409005605802,
+    1.0958718656793438
+   ]
+  }
+ },
+ {
+  "question": "What are the names of the stadiums with the highest and lowest average attendance rates, and how many concerts have been held in each of them?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:189",
+    "en_train:102",
+    "en_train:188"
+   ],
+   "distances": [
+    1.063789030393625,
+    1.0804548545282735,
+    1.0990705248081898
+   ]
+  }
+ },
+ {
+  "question": "Suppose Gayfield Park stadium had a tenth of the capacity of Hampden Park stadium, which stadiums have the lowest and highest average attendance rates respectively, and how many concerts have they each held?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:218",
+    "en_train:152",
+    "en_train:273"
+   ],
+   "distances": [
+    0.9934592187231966,
+    1.0090332594317055,
+    1.0161096513323937
+   ]
+  }
+ },
+ {
+  "question": "What are the names of the stadiums with the highest and lowest average attendance rates, if Gayfield Park stadium has one-tenth the capacity of Hampden Park stadium, and how many concerts have been held in each of them?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:277",
+    "en_train:191",
+    "en_train:276"
+   ],
+   "distances": [
+    1.0209249146665473,
+    1.025204860714644,
+    1.0424061264603444
+   ]
+  }
+ },
+ {
+  "question": "What are the ID and name of each concert held at Somerset Park stadium, and what percentage of the singers in each of these concert are female singers?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:93",
+    "en_train:92",
+    "en_train:17"
+   ],
+   "distances": [
+    1.0589296636094157,
+    1.0839171225595032,
+    1.1034265713147033
+   ]
+  }
+ },
+ {
+  "question": "What are the ID and name of each concert held at Somerset Park stadium, and what is the percentage of female singers in each of these concert held at Somerset Park?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:93",
+    "en_train:92",
+    "en_train:17"
+   ],
+   "distances": [
+    1.0578053687776605,
+    1.0795343274162241,
+    1.0835461165098916
+   ]
+  }
+ },
+ {
+  "question": "If the \"Week 2\" concert was held at Somerset Park stadium, what are the ID and name of each concert held at Somerset Park stadium, and what percentage of the singers in each concert held at Somerset Park stadium are female singers?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:16",
+    "en_train:18",
+    "en_train:116"
+   ],
+   "distances": [
+    1.0465842262469032,
+    1.0609163604365996,
+    1.0756334646473942
+   ]
+  }
+ },
+ {
+  "question": "What are the ID and name of each concert held at Somerset Park stadium, and what is the percentage of female singers in each concert held at Somerset Park, if the \"Week 2\" concert was held there?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:16",
+    "en_train:93",
+    "en_train:17"
+   ],
+   "distances": [
+    1.0673250211752647,
+    1.075668780039911,
+    1.0814074033841001
+   ]
+  }
+ },
+ {
+  "question": "What percentage of the concerts were held in the top three stadiums in terms of average attendance rate?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:271",
+    "en_train:270",
+    "en_train:258"
+   ],
+   "distances": [
+    1.0159667077889147,
+    1.0212704519267184,
+    1.041859198629409
+   ]
+  }
+ },
+ {
+  "question": "What is the percentage of concerts that took place in the three stadiums with the highest average attendance rates?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:49",
+    "en_train:48",
+    "en_train:270"
+   ],
+   "distances": [
+    0.995024960300985,
+    1.0058908613759336,
+    1.0069011043583915
+   ]
+  }
+ },
+ {
+  "question": "If the \"Bleeding Love\" themed concert was held at Glebe Park stadium, what percentage of the concerts were held in the top three stadiums in terms of average attendance rate?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:406",
+    "en_train:231",
+    "en_train:230"
+   ],
+   "distances": [
+    1.012536632786655,
+    1.043033278546519,
+    1.0548217461351672
+   ]
+  }
+ },
+ {
+  "question": "What percentage of concerts took place in the three stadiums with the highest average attendance rates, assuming that the concert with the theme \"Bleeding Love\" took place at the Glebe Park stadium?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:406",
+    "en_train:152",
+    "en_train:231"
+   ],
+   "distances": [
+    0.9800155615100299,
+    1.0032762102841604,
+    1.0061844842999863
+   ]
+  }
+ },
+ {
+  "question": "Which stadium has at least three times the number of singers who have sung at the Glebe Park stadium?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:16",
+    "en_train:43",
+    "en_train:48"
+   ],
+   "distances": [
+    1.1742038629184512,
+    1.1782932141507227,
+    1.179658929072304
+   ]
+  }
+ },
+ {
+  "question": "Which stadium has had a minimum of three times more singers than Glebe Park does?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:43",
+    "en_train:48",
+    "en_train:16"
+   ],
+   "distances": [
+    1.1523286496006389,
+    1.1723258316508636,
+    1.1754444932370267
+   ]
+  }
+ },
+ {
+  "question": "If all the singers who have performed at Somerset Park stadium also performed at Balmoor stadium, what is the name of the stadium with at least three times the number of singers who have sung at the Glebe Park stadium?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:16",
+    "en_train:18",
+    "en_train:19"
+   ],
+   "distances": [
+    1.0418126104861463,
+    1.048620941567749,
+    1.0614006777037022
+   ]
+  }
+ },
+ {
+  "question": "What is the name of the stadium that has a minimum of three times more singers than Glebe Park if the singers who have performed at Somerset Park also performed at the Balmoor stadium?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:16",
+    "en_train:17",
+    "en_train:18"
+   ],
+   "distances": [
+    1.0860147518621168,
+    1.091331499306434,
+    1.1020765132032115
+   ]
+  }
+ },
+ {
+  "question": "What is the name of the stadium that has a highest attendance rate more than twice the highest attendance rate of the Balmoor stadium?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:16",
+    "en_train:19",
+    "en_train:17"
+   ],
+   "distances": [
+    1.1294015141567428,
+    1.136451706780822,
+    1.149685036884808
+   ]
+  }
+ },
+ {
+  "question": "Which stadium's maximum attendance rate is more than double the Balmoor stadium's highest attendance rate? Give the the stadium names.",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:16",
+    "en_train:18",
+    "en_train:19"
+   ],
+   "distances": [
+    0.9675168019719532,
+    0.975748452359442,
+    1.0222033375815005
+   ]
+  }
+ },
+ {
+  "question": "If the capacity of the Balmoor stadium is 5600, what is the name of the stadium that has a highest attendance rate more than twice the highest attendance rate of the Balmoor stadium?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:18",
+    "en_train:16",
+    "en_train:19"
+   ],
+   "distances": [
+    0.9879449304148841,
+    1.0045589416435687,
+    1.027500322644569
+   ]
+  }
+ },
+ {
+  "question": "Which stadium's maximum attendance rate is more than double the Balmoor stadium's highest attendance rate, given its capacity of 5600? List the stadium names.",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:16",
+    "en_train:18",
+    "en_train:19"
+   ],
+   "distances": [
+    0.9923512539316572,
+    0.9969904785525978,
+    1.0266202403423865
+   ]
+  }
+ },
+ {
+  "question": "What are the IDs and names of the concerts held after 2012 and has more singers than the \"Happy Tonight\" themed concert, and how many times is it?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:39",
+    "en_train:170",
+    "en_train:17"
+   ],
+   "distances": [
+    1.1220401878092003,
+    1.1432983769928378,
+    1.1521211178295698
+   ]
+  }
+ },
+ {
+  "question": "What are the ID and name of the post-2012 concert features more singers than the \"Happy Tonight\" themed concert, what is the ratio of the number of singers in both concerts?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:172",
+    "en_train:16",
+    "en_train:170"
+   ],
+   "distances": [
+    1.1380639328137914,
+    1.1517018884147925,
+    1.1574348177966585
+   ]
+  }
+ },
+ {
+  "question": "If singer Joe Sharp performed in every concert, what are the IDs and names of concerts held after 2012 has more singers than the \"Happy Tonight\" themed concert, and and how many times is it?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:201",
+    "en_train:206",
+    "en_train:143"
+   ],
+   "distances": [
+    1.1346166621372054,
+    1.1362987985305262,
+    1.1395606100392792
+   ]
+  }
+ },
+ {
+  "question": "Assuming that Joe Sharp performed in all concerts, what are the ID and name of post-2012 concert features more singers than the \"Happy Tonight\" themed concert, and what is the ratio of the number of singers in both concerts?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:205",
+    "en_train:132",
+    "en_train:16"
+   ],
+   "distances": [
+    1.1357360403904264,
+    1.1481222508485893,
+    1.155795153221321
+   ]
+  }
+ },
+ {
+  "question": "At the time of the release of the song \"Love,\" what are the names of singers who were more than twice as old as the singer of the song?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:140",
+    "en_train:141",
+    "en_train:155"
+   ],
+   "distances": [
+    1.1639364252169102,
+    1.169330254868619,
+    1.1748846239718165
+   ]
+  }
+ },
+ {
+  "question": "Which singers, at the time when \"Love\" was released, had an age more than double that of the singer who performed the song? List their names.",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:141",
+    "en_train:140",
+    "en_train:152"
+   ],
+   "distances": [
+    1.1226290891023027,
+    1.136192343264352,
+    1.1554008610166295
+   ]
+  }
+ },
+ {
+  "question": "If \"Love\" was released in 2010, at the time of the release of the song \"Love,\" what are the names of singers who were more than twice as old as the singer of the song?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:141",
+    "en_train:140",
+    "en_train:161"
+   ],
+   "distances": [
+    1.0706451251640379,
+    1.0855745612714087,
+    1.1295433125774477
+   ]
+  }
+ },
+ {
+  "question": "Assuming \"Love\" was released in 2010, which singers, at that time, had an age that was more than twice the age of the singer who performed the song? List their names.",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:141",
+    "en_train:140",
+    "en_train:138"
+   ],
+   "distances": [
+    1.0479259682785829,
+    1.0605989699818419,
+    1.1278185801230436
+   ]
+  }
+ },
+ {
+  "question": "Which continent is the country with the highest GNP per capita located in?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:180",
+    "en_train:194",
+    "en_train:381"
+   ],
+   "distances": [
+    1.0451267633753654,
+    1.047509357972823,
+    1.0613198316622008
+   ]
+  }
+ },
+ {
+  "question": "In which continent can we find the country with the highest GNP per capita?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:195",
+    "en_train:180",
+    "en_train:194"
+   ],
+   "distances": [
+    1.11190841172337,
+    1.120534193389034,
+    1.1215345021672636
+   ]
+  }
+ },
+ {
+  "question": "If the gross national product of the country where Korla City is located is 1982268.0, which continent is the country with the highest GNP per capita located in?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:195",
+    "en_train:194",
+    "en_train:380"
+   ],
+   "distances": [
+    1.0616689345206922,
+    1.0789777714909987,
+    1.079707334995259
+   ]
+  }
+ },
+ {
+  "question": "In which continent can we find the country with the highest GNP per capita, if the GNP of the country containing Korla City is 1982268?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:195",
+    "en_train:194",
+    "en_train:381"
+   ],
+   "distances": [
+    1.076996280640157,
+    1.1044960712760215,
+    1.1155486469217213
+   ]
+  }
+ },
+ {
+  "question": "Among the countries that became independent after 1979, which country has the highest growth rate of GNP?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:180",
+    "en_train:362",
+    "en_train:381"
+   ],
+   "distances": [
+    1.1279435263636826,
+    1.1669718240900198,
+    1.1676938869654885
+   ]
+  }
+ },
+ {
+  "question": "Which country, among those that gained independence after 1979, has the highest gross national product growth rate?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:381",
+    "en_train:180",
+    "en_train:362"
+   ],
+   "distances": [
+    1.094064442024004,
+    1.1091078590841537,
+    1.1316063063014334
+   ]
+  }
+ },
+ {
+  "question": "Among the countries that became independent after 1979, which country has the highest growth rate in GNP if all countries in Oceania have an increase in curretn GNP of 1,000,000?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:195",
+    "en_train:381",
+    "en_train:180"
+   ],
+   "distances": [
+    1.1522615258021047,
+    1.1533900188165456,
+    1.1546293835969927
+   ]
+  }
+ },
+ {
+  "question": "Assuming all countries in Oceania have an increase of 1,000,000 in their current GNP, which country among those that gained independence after 1979 has the highest gross national product growth rate?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:332",
+    "en_train:97",
+    "en_train:412"
+   ],
+   "distances": [
+    1.1373192935294458,
+    1.1429917119646584,
+    1.1475605395636008
+   ]
+  }
+ },
+ {
+  "question": "Which country where the majority of people speak English has the highest population density, how many times larger than the country with the lowest population density?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:195",
+    "en_train:196",
+    "en_train:194"
+   ],
+   "distances": [
+    0.9736673444503164,
+    1.0049640475692452,
+    1.019257536296401
+   ]
+  }
+ },
+ {
+  "question": "Among the countries in which English is the most spoken language, which country has the highest population density? What is the ratio between the highest and lowest population density?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:195",
+    "en_train:196",
+    "en_train:92"
+   ],
+   "distances": [
+    1.0186706827633354,
+    1.0532211193141554,
+    1.069776523294603
+   ]
+  }
+ },
+ {
+  "question": "If no one in Ireland speaks English, which country where the majority of people speak English has the highest population density, how many times larger than the country with the lowest population density?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:412",
+    "en_train:196",
+    "en_train:195"
+   ],
+   "distances": [
+    1.0080493973327664,
+    1.0266162872718854,
+    1.0270524537051364
+   ]
+  }
+ },
+ {
+  "question": "If English is not spoken in Ireland, which country among those in which English is the most spoken language has the highest population density? What is the ratio between the highest and lowest population density?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:195",
+    "en_train:412",
+    "en_train:196"
+   ],
+   "distances": [
+    1.0521256645627206,
+    1.0636258438633752,
+    1.0787959471107578
+   ]
+  }
+ },
+ {
+  "question": "In countries where Arabic is not the official language, which country has the largest increase rate in GNP?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:180",
+    "en_train:183",
+    "en_train:182"
+   ],
+   "distances": [
+    1.1284078451897634,
+    1.165015674602355,
+    1.173565662576854
+   ]
+  }
+ },
+ {
+  "question": "Among countries with non-Arabic official languages, what is the name of the country that has experienced the greatest growth rate in GNP?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:180",
+    "en_train:182",
+    "en_train:183"
+   ],
+   "distances": [
+    1.086949939416988,
+    1.1231835673153303,
+    1.1266013602690366
+   ]
+  }
+ },
+ {
+  "question": "Among the countries where Arabic is not the official language, which country has the largest growth rate of GNP if the old GNP of all countries in South America increased by 9999.0?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:380",
+    "en_train:381",
+    "en_train:194"
+   ],
+   "distances": [
+    1.0796328313139627,
+    1.0998606724493105,
+    1.127615612658885
+   ]
+  }
+ },
+ {
+  "question": "If all South American countries have an increase of 9999.0 in their previous GNP, which country, among those with non-Arabic official languages, has the highest Gross National Product growth rate?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:380",
+    "en_train:381",
+    "en_train:368"
+   ],
+   "distances": [
+    1.0496134008120208,
+    1.0821053238589997,
+    1.1083732618037183
+   ]
+  }
+ },
+ {
+  "question": "Which city in North America has a population at least twice that of Kang-won?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:194",
+    "en_train:180",
+    "en_train:197"
+   ],
+   "distances": [
+    1.031050342510439,
+    1.0756295781561085,
+    1.0803801801010935
+   ]
+  }
+ },
+ {
+  "question": "What North American city has a population that is at least double the population of Kang-won?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:194",
+    "en_train:180",
+    "en_train:296"
+   ],
+   "distances": [
+    1.0517996222295012,
+    1.0773432263169582,
+    1.0935412360891301
+   ]
+  }
+ },
+ {
+  "question": "If the population of North American countries where English is the official language was increased by 1%, which city in North America has a population at least twice that of Kang-won?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:194",
+    "en_train:380",
+    "en_train:197"
+   ],
+   "distances": [
+    1.045698176171156,
+    1.056084901896718,
+    1.0645294014712432
+   ]
+  }
+ },
+ {
+  "question": "If all countries in North America with English as the official language experienced a population increase of 1%, what North American city would have a population that is at least double the population of Kang-won?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:194",
+    "en_train:43",
+    "en_train:197"
+   ],
+   "distances": [
+    1.0541325979671878,
+    1.0717242128324547,
+    1.0737329088956304
+   ]
+  }
+ },
+ {
+  "question": "Which continent has a GNP growth rate at least 1.5 times that of Africa?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:381",
+    "en_train:194",
+    "en_train:180"
+   ],
+   "distances": [
+    1.0725441016233879,
+    1.0751325810134675,
+    1.0867636380577754
+   ]
+  }
+ },
+ {
+  "question": "Name the continent whose rate of growth of GNP is no less than 1.5 times that of Africa?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:381",
+    "en_train:194",
+    "en_train:195"
+   ],
+   "distances": [
+    1.028120247570632,
+    1.0506062489365102,
+    1.0709933732021972
+   ]
+  }
+ },
+ {
+  "question": "If the current GNP of countries where the majority of people speak Czech was increased by 0.5%, which continent has a GNP growth rate at least 1.5 times that of Africa?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:380",
+    "en_train:388",
+    "en_train:32"
+   ],
+   "distances": [
+    1.087612827805579,
+    1.1165982537202408,
+    1.1205125146960049
+   ]
+  }
+ },
+ {
+  "question": "Which continent would have a GNP growth rate that is at least 1.5 times greater than Africa if the GNP of countries where Czech is the dominant language increased by 0.5%?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:380",
+    "en_train:381",
+    "en_train:195"
+   ],
+   "distances": [
+    1.072824155153963,
+    1.090637821099342,
+    1.0908995278172817
+   ]
+  }
+ },
+ {
+  "question": "Which country has a life expectancy no less than 1.5 times that of Zambia?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:381",
+    "en_train:180",
+    "en_train:194"
+   ],
+   "distances": [
+    1.1248906448290756,
+    1.1273077094361676,
+    1.1387559994764511
+   ]
+  }
+ },
+ {
+  "question": "What country has an average life expectancy that is at least 1.5 times that of Zambia?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:180",
+    "en_train:381",
+    "en_train:194"
+   ],
+   "distances": [
+    1.1188618881447934,
+    1.1280182851064195,
+    1.1294908024620707
+   ]
+  }
+ },
+ {
+  "question": "If the top 20 countries in terms of per capita GNP in the world has a life expectancy of 90, which country has a life expectancy no less than 1.5 times that of Zambia?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:268",
+    "en_train:140",
+    "en_train:380"
+   ],
+   "distances": [
+    1.1046261512147793,
+    1.1116178401054062,
+    1.1203199722641415
+   ]
+  }
+ },
+ {
+  "question": "Which country has a life expectancy that is at least 1.5 times that of Zambia, given that the top 20 countries in the world with the highest per capita GNP have a life expectancy of 90?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:140",
+    "en_train:152",
+    "en_train:268"
+   ],
+   "distances": [
+    1.1291270556729895,
+    1.1306410259180004,
+    1.1310009932161889
+   ]
+  }
+ },
+ {
+  "question": "In countries where Dutch is not the main language, which country has the largest reduction in GNP?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:180",
+    "en_train:182",
+    "en_train:183"
+   ],
+   "distances": [
+    1.1097806117435238,
+    1.1456100480903675,
+    1.1463687067950825
+   ]
+  }
+ },
+ {
+  "question": "Which country, among those where Dutch is not the primary language, has experienced the most significant decrease in Gross National Product (GNP)?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:410",
+    "en_train:180",
+    "en_train:362"
+   ],
+   "distances": [
+    1.1340435345004984,
+    1.1393340976922772,
+    1.1472633649288426
+   ]
+  }
+ },
+ {
+  "question": "If everyone in Aruba spoke Dutch, in countries where Dutch is not the main language, which country has the largest reduction in GNP?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:180",
+    "en_train:410",
+    "en_train:380"
+   ],
+   "distances": [
+    1.1221467737533448,
+    1.143875811212886,
+    1.1497177490140391
+   ]
+  }
+ },
+ {
+  "question": "Assuming every person in Aruba speaks Dutch, which country, among those where Dutch is not the primary language, has experienced the most significant decrease in Gross National Product (GNP)?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:380",
+    "en_train:189",
+    "en_train:410"
+   ],
+   "distances": [
+    1.110354124515359,
+    1.124086832204048,
+    1.1275540518485985
+   ]
+  }
+ },
+ {
+  "question": "How many more countries in North America than in South America have a declining GNP?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:194",
+    "en_train:180",
+    "en_train:381"
+   ],
+   "distances": [
+    1.0036431507632164,
+    1.0348736013326745,
+    1.0435449422950036
+   ]
+  }
+ },
+ {
+  "question": "What is the difference in the number of countries with a decreasing GNP in North America compared to South America?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:194",
+    "en_train:195",
+    "en_train:381"
+   ],
+   "distances": [
+    1.0522317397977279,
+    1.0622371145396667,
+    1.0913020102955078
+   ]
+  }
+ },
+ {
+  "question": "Suppose the current GNP of the top two most populous countries in North America increases by 2%, how many more countries in North America than in South America have a declining GNP?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:368",
+    "en_train:196",
+    "en_train:369"
+   ],
+   "distances": [
+    1.028988795552526,
+    1.0465563003601144,
+    1.0498263988637697
+   ]
+  }
+ },
+ {
+  "question": "If the two most populated North American countries experience a 2% increase in GNP, what is the difference in the number of countries with a decreasing GNP between North and South America?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:197",
+    "en_train:196",
+    "en_train:195"
+   ],
+   "distances": [
+    1.0287223356266446,
+    1.0413237057439777,
+    1.0446711658335892
+   ]
+  }
+ },
+ {
+  "question": "Which continent has a per capita GNP growth rate at least two percentage points higher than Europe?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:180",
+    "en_train:194",
+    "en_train:195"
+   ],
+   "distances": [
+    1.0773144165002906,
+    1.0786305539899066,
+    1.0838401631830938
+   ]
+  }
+ },
+ {
+  "question": "Name a continent whose per capita GNP growth rate exceeds Europe by at least two percentage points?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:194",
+    "en_train:180",
+    "en_train:381"
+   ],
+   "distances": [
+    1.0625355053745362,
+    1.0646934949540536,
+    1.072418939687187
+   ]
+  }
+ },
+ {
+  "question": "If the GNP of the top three countries with the longest life expectancy decreases by 2%, which continent has a per capita GNP growth rate at least two points higher than Europe?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:195",
+    "en_train:380",
+    "en_train:194"
+   ],
+   "distances": [
+    1.12366778710795,
+    1.1277393280565422,
+    1.129772818333058
+   ]
+  }
+ },
+ {
+  "question": "Assuming a 2% decrease in the GNP of the top three countries with the highest life expectancy, which continent has a per capita GNP growth rate that exceeds Europe by at least two points?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:195",
+    "en_train:194",
+    "en_train:380"
+   ],
+   "distances": [
+    1.1360012376386912,
+    1.1473738348709632,
+    1.1503084331656592
+   ]
+  }
+ },
+ {
+  "question": "List name, the past and current gross national product of each country in Asia, and estimate the future gross national product if the growth rate remains unchanged.",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:102",
+    "en_train:32",
+    "en_train:97"
+   ],
+   "distances": [
+    1.125307773347089,
+    1.1292322430701465,
+    1.1340160355924147
+   ]
+  }
+ },
+ {
+  "question": "For each country in Asia, provide a list of their name, the past and current GNP, and estimate their future Gross National Product assuming a constant growth rate.",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:181",
+    "en_train:32",
+    "en_train:195"
+   ],
+   "distances": [
+    1.1327035420903009,
+    1.1336333393459121,
+    1.1439348921436687
+   ]
+  }
+ },
+ {
+  "question": "If the current gross national product of a country with Chinese as its main language is 1000000.0, list name, the past and current gross national product of each country in Asia, and estimate the future gross national product if the growth rate remains unchanged.",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:96",
+    "en_train:97",
+    "en_train:95"
+   ],
+   "distances": [
+    1.068548651168171,
+    1.0688247294929276,
+    1.095943755055219
+   ]
+  }
+ },
+ {
+  "question": "Assuming that the country with Chinese as its primary language has a current GNP of 1000000.0, provide a list of their name, the past and current GNP for each Asian country, and estimate their future Gross National Product assuming a constant growth rate.",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:97",
+    "en_train:388",
+    "en_train:96"
+   ],
+   "distances": [
+    1.1078080400084769,
+    1.1232090007081226,
+    1.1251770090138187
+   ]
+  }
+ },
+ {
+  "question": "The annual population growth rate in the UK is 0.4%. What is the population size in the UK one year later?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:364",
+    "en_train:74",
+    "en_train:373"
+   ],
+   "distances": [
+    1.0298211460439222,
+    1.0331443421266755,
+    1.0363401134812362
+   ]
+  }
+ },
+ {
+  "question": "What will be the population size of UK after one year, given that the UK has an annual growth rate of 0.4%?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:74",
+    "en_train:59",
+    "en_train:373"
+   ],
+   "distances": [
+    1.0571562260469451,
+    1.092825140385001,
+    1.0930080497133345
+   ]
+  }
+ },
+ {
+  "question": "The annual population growth rate in the UK is 0.4%. If the population of countries with a life expectancy greater than 75 in Europe is 103000, what is the population size in the UK one year later?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:141",
+    "en_train:372",
+    "en_train:364"
+   ],
+   "distances": [
+    1.075980031441925,
+    1.0766435445293567,
+    1.0796249173043655
+   ]
+  }
+ },
+ {
+  "question": "What will be the population size of the UK after one year, given that the UK has an annual population growth rate of 0.4% and all European countries with a life expectancy greater than 75 have a population of 103000?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:74",
+    "en_train:364",
+    "en_train:373"
+   ],
+   "distances": [
+    1.0865140438604768,
+    1.097209575338768,
+    1.1014962874907364
+   ]
+  }
+ },
+ {
+  "question": "According to Zambia's life expectancy, what is the expected year of death for people born in the year of Zambia's independence?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:155",
+    "en_train:151",
+    "en_train:210"
+   ],
+   "distances": [
+    1.0994474978634903,
+    1.1232136274177849,
+    1.1328112983429324
+   ]
+  }
+ },
+ {
+  "question": "Based on Zambia's life expectancy, what is the predicted year of death for individuals born in the year of it's independence?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:155",
+    "en_train:210",
+    "en_train:140"
+   ],
+   "distances": [
+    1.0848755743042033,
+    1.1160060142818304,
+    1.1197683147805286
+   ]
+  }
+ },
+ {
+  "question": "If life expectancy increases by 10 years in countries with per capita GNP greater than the average per capita GNP of all European countries, what is the expected year of death for people born in the year of Zambia's independence asccording to Zambia's life expectancy?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:141",
+    "en_train:152",
+    "en_train:140"
+   ],
+   "distances": [
+    1.0843084530141627,
+    1.1078311136177696,
+    1.110204289813938
+   ]
+  }
+ },
+ {
+  "question": "What is the predicted year of death for individuals born during the year of Zambia's independence, according to the country's life expectancy, if countries with a per capita GNP higher than the average per capita GNP of all European countries experience a 10-year increase in life expectancy?",
+  "fewshot": {
+   "selection": "archer_en_dev_rsl_k3",
+   "corpus": "archer_en_train",
+   "corpus_sha256": "11695aabb75b2a907f376a43ae8f22addc648f4a2ad18f69294799928110e8eb",
+   "encoder": "data\\fewshot\\models\\all-mpnet-base-v2",
+   "k": 3,
+   "source_ids": [
+    "en_train:141",
+    "en_train:155",
+    "en_train:140"
+   ],
+   "distances": [
+    1.095203774894864,
+    1.1176452087080728,
+    1.126823044537017
+   ]
+  }
+ }
+]
