@@ -13,10 +13,18 @@
 
 from model.api import (DeepSeekFlash, DeepSeekFlashThinking, DeepSeekPro,
                        DeepSeekProThinking, DeepSeekProThinkingConv,
-                       DeepSeekProThinkingFewShot, DeepSeekProThinkingSFS)
+                       DeepSeekProThinkingFewShot, DeepSeekProThinkingSFS,
+                       DeepSeekProThinkingValueEvidence,
+                       DeepSeekProThinkingValueEvidenceRandom,
+                       DeepSeekProThinkingValueEvidenceV2,
+                       DeepSeekProThinkingValueEvidenceV2Random)
 from model.base import SQLGenerator
-from model.bird import (BirdDirect, BirdDirectFewShot, BirdProTDsl,
-                        BirdProTDslFewShot, BirdProTDslFewShot20240627)
+from model.bird import (
+    BirdDirect, BirdDirectFewShot, BirdDirectValueEvidence,
+    BirdDirectValueEvidenceRandom, BirdProTDsl, BirdProTDslFewShot,
+    BirdProTDslFewShot20240627, BirdProTDslValueEvidence,
+    BirdProTDslValueEvidenceRandom,
+)
 from model.example import FirstTableBaseline
 from model.pipeline.archive import (ProTPlanDslConv, ProTPlanDslConvCchk,
                                     ProTPlanDslProf, ProTPlanDslProfForce,
@@ -24,6 +32,8 @@ from model.pipeline.archive import (ProTPlanDslConv, ProTPlanDslConvCchk,
 from model.pipeline.models import (ProTDsl, ProTDslChk, ProTDslConv,
                                    ProTDslConvChk, ProTDslConvChkR0,
                                    ProTDslFewShot, ProTDslSFS,
+                                   ProTDslValueEvidence,
+                                   ProTDslValueEvidenceRandom,
                                    ProTDslKnowledge, ProTDslKnowledgeRules,
                                    ProTDslKnowledgeRulesSqlens,
                                    ProTPlan, ProTPlanDsl)
@@ -40,6 +50,10 @@ MODELS: dict[str, type[SQLGenerator]] = {
     DeepSeekProThinking.name: DeepSeekProThinking,      # pro-t-direct
     DeepSeekProThinkingFewShot.name: DeepSeekProThinkingFewShot,  # pro-t-direct-fs
     DeepSeekProThinkingSFS.name: DeepSeekProThinkingSFS,  # pro-t-direct-sfs
+    DeepSeekProThinkingValueEvidence.name: DeepSeekProThinkingValueEvidence,
+    DeepSeekProThinkingValueEvidenceRandom.name: DeepSeekProThinkingValueEvidenceRandom,
+    DeepSeekProThinkingValueEvidenceV2.name: DeepSeekProThinkingValueEvidenceV2,
+    DeepSeekProThinkingValueEvidenceV2Random.name: DeepSeekProThinkingValueEvidenceV2Random,
 
     # 主线加法阶梯：plan → plandsl → dsl(去plan) → +conv → +chk
     ProTPlan.name: ProTPlan,                # pro-t-plan
@@ -47,6 +61,8 @@ MODELS: dict[str, type[SQLGenerator]] = {
     ProTDsl.name: ProTDsl,                  # pro-t-dsl
     ProTDslFewShot.name: ProTDslFewShot,    # pro-t-dsl-fs
     ProTDslSFS.name: ProTDslSFS,            # pro-t-dsl-sfs
+    ProTDslValueEvidence.name: ProTDslValueEvidence,
+    ProTDslValueEvidenceRandom.name: ProTDslValueEvidenceRandom,
     ProTDslConv.name: ProTDslConv,          # pro-t-dsl-conv
     ProTDslConvChk.name: ProTDslConvChk,    # pro-t-dsl-conv-chk  ★满配·最终
 
@@ -59,8 +75,12 @@ MODELS: dict[str, type[SQLGenerator]] = {
     # 以及把 Archer 主线声明层原样搬过去的泛化臂（唯一差异 = evidence 开）
     BirdDirect.name: BirdDirect,            # bird-pro-t-direct   EX 57.37（官方脚本）
     BirdDirectFewShot.name: BirdDirectFewShot,  # bird-pro-t-direct-fs
+    BirdDirectValueEvidence.name: BirdDirectValueEvidence,
+    BirdDirectValueEvidenceRandom.name: BirdDirectValueEvidenceRandom,
     BirdProTDsl.name: BirdProTDsl,          # bird-pro-t-dsl
     BirdProTDslFewShot.name: BirdProTDslFewShot,  # bird-pro-t-dsl-fs
+    BirdProTDslValueEvidence.name: BirdProTDslValueEvidence,
+    BirdProTDslValueEvidenceRandom.name: BirdProTDslValueEvidenceRandom,
     BirdProTDslFewShot20240627.name: BirdProTDslFewShot20240627,
 
     # 存档：带 plan 注知识的探索支（已被 no-plan 线取代，多数判负，保留以可复现）

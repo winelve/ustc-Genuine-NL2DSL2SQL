@@ -29,6 +29,7 @@ docs
 # 只忽略 BIRD 数据集，不要连顶层的 bird/ 适配模块一起吞了
 data/bird/
 data/fewshot/
+data/value_evidence/
 
 CLAUDE.md
 !database.zip

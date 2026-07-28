@@ -66,7 +66,13 @@ def comment_block(question: str, evidence: str | None = None) -> str:
     )
 
 
-def official_prompt(sample: Sample, db_path: str | Path, *, evidence: bool = True) -> str:
+def official_prompt(
+    sample: Sample,
+    db_path: str | Path,
+    *,
+    evidence: bool = True,
+    schema: str | None = None,
+) -> str:
     """官方 baseline 的完整 user 消息。
 
     `evidence=False` 走官方的无知识分支（`--use_knowledge False`），供将来做
@@ -74,7 +80,7 @@ def official_prompt(sample: Sample, db_path: str | Path, *, evidence: bool = Tru
     """
     knowledge = sample.commonsense_knowledge if evidence else None
     return "\n\n".join([
-        schema_ddl_block(db_path),
+        schema if schema is not None else schema_ddl_block(db_path),
         comment_block(sample.question, knowledge),
         COT_BLOCK,
         INSTRUCTION_BLOCK,

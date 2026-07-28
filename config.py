@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent
 
 DATA_DIR = ROOT / "data"
 FEWSHOT_DIR = DATA_DIR / "fewshot"
+VALUE_EVIDENCE_DIR = DATA_DIR / "value_evidence"
 DB_DIR = ROOT / "database"
 PREDICTIONS_DIR = ROOT / "predictions"
 RESULTS_DIR = ROOT / "results"

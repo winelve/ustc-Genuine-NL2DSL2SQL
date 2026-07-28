@@ -323,6 +323,124 @@ selection trace 会额外记录 target/draft/语义 selection 的 SHA-256、语�
 结构名次、结构相似度与融合分数。SFS artifact 与其他 few-shot 数据一样位于
 `data/fewshot/`，不进入 git。
 
+### CHESS-IR：Value Evidence
+
+Value Evidence 按 CHESS 的离线流程准备：扫描 distinct TEXT values 并建立
+character 3-gram MinHash/LSH；DeepSeek Flash（关闭 thinking）用 CHESS 原提示词
+从 question + BIRD evidence 中抽关键词；LSH/edit similarity 召回后，由本地
+`all-mpnet-base-v2` 过滤和排序。BIRD 的列描述也使用同一个本地模型检索。
+生成阶段只读取固定 JSON，不加载 datasketch、Torch 或 SentenceTransformers。
+
+关键词抽取覆盖 Archer `en_dev` 和 BIRD `dev` 时，预估约 **115–118 万**
+DeepSeek token；建议账户至少预留 **140 万 token**。每题 usage 会写入关键词
+artifact，失败题保留在 `.partial.jsonl`，原命令重跑时只补失败项。
+
+先在独立 Python 3.11/3.12 环境准备 Archer artifact：
+
+```powershell
+# 1. 每个数据库离线建索引
+..\.venv-ustc-fewshot\Scripts\python.exe -m model.value_evidence.offline index `
+  --data en_dev
+
+# 2. DeepSeek 非思考关键词；需要 $env:DEEPSEEK_API_KEY
+..\.venv-ustc-fewshot\Scripts\python.exe -m model.value_evidence.offline keywords `
+  --data en_dev `
+  --chunk 50 `
+  --concurrency 10
+
+# 3. 本地 all-mpnet 检索并生成固定 selection
+..\.venv-ustc-fewshot\Scripts\python.exe -m model.value_evidence.offline select `
+  --data en_dev `
+  --encoder data\fewshot\models\all-mpnet-base-v2
+
+# 4. 严格审计
+python -m model.value_evidence.offline audit `
+  --data en_dev `
+  --path data\value_evidence\selections\archer_en_dev_chess_ir.json
+```
+
+BIRD 使用同一套命令，只把三处 `--data en_dev` 改成 `--data bird_dev`；
+审计命令的 `--data` 也改成 `bird_dev`，路径改为
+`data\value_evidence\selections\bird_dev_chess_ir.json`。BIRD
+官方 human evidence 始终保持开启；VE 插在 DDL 与官方 question/evidence 块之间。
+
+artifact 准备完成后，最少先跑两个 10 题 smoke：
+
+```powershell
+python -m model --model pro-t-direct-ve --data en_dev --limit 10 --eval
+python -m model --model bird-pro-t-direct-ve --data bird_dev --limit 10
+python -m bird eval --official `
+  --pred predictions\bird-pro-t-direct-ve_bird_dev.json `
+  --limit 10
+```
+
+smoke 正常后先只跑相关值 Direct 全量：
+
+```powershell
+python -m model --model pro-t-direct-ve --data en_dev --eval
+python -m model --model bird-pro-t-direct-ve --data bird_dev
+python -m bird eval --official `
+  --pred predictions\bird-pro-t-direct-ve_bird_dev.json
+```
+
+只有 `ve` 相对原 Direct baseline 有正向信号，才跑等数量、同列、
+近似长度随机值对照 `ve-r`；只有 Direct 信号成立，才继续支付 DSL 成本：
+
+```powershell
+# 相关性对照
+python -m model --model pro-t-direct-ve-r --data en_dev --eval
+python -m model --model bird-pro-t-direct-ve-r --data bird_dev
+python -m bird eval --official `
+  --pred predictions\bird-pro-t-direct-ve-r_bird_dev.json
+
+# DSL（条件实验）
+python -m model --model pro-t-dsl-ve --data en_dev --eval
+python -m model --model pro-t-dsl-ve-r --data en_dev --eval
+python -m model --model bird-pro-t-dsl-ve --data bird_dev
+python -m model --model bird-pro-t-dsl-ve-r --data bird_dev
+```
+
+`ve-r` 与 `ve` 共享同一 selection、列描述和 value 数量，只切换逐项
+`control_value`；trace 会记录 artifact/encoder/keyword SHA-256、阈值、关键词、
+相关值和实际注入值。全部 `data/value_evidence/` 产物均不进入 git。
+
+#### VE2：严格过滤 + 追加式 Value Evidence
+
+`pro-t-direct-ve` 的首次实验相对 baseline 下降 5 EX。复盘发现 v1 允许
+substring 命中绕过 embedding/列内相对阈值，并用 DDL + retrieved values
+替换了 baseline 的 CT-3 三行样例。VE2 保留 v1 结果不覆盖，并同时修正这两个
+混杂因素：
+
+- 所有候选都必须通过 embedding >= 0.6、列内 90% edit 和 90% embedding；
+- 完整保留 CT-3 DDL + 三行样例，只在其后追加 retrieved context。
+
+复用已有关键词和索引重建 VE2 selection，不调用 DeepSeek：
+
+```powershell
+..\.venv-ustc-fewshot\Scripts\python.exe -m model.value_evidence.offline select `
+  --data en_dev `
+  --encoder data\fewshot\models\all-mpnet-base-v2 `
+  --strategy chess-ir-mpnet-v2
+
+python -m model.value_evidence.offline audit `
+  --data en_dev `
+  --strategy chess-ir-mpnet-v2 `
+  --path data\value_evidence\selections\archer_en_dev_chess_ir_v2.json
+```
+
+只需跑两个全量实验：
+
+```powershell
+# 严格相关值
+python -m model --model pro-t-direct-ve2 --data en_dev --eval
+
+# 同列、等数量、近似长度的随机值对照
+python -m model --model pro-t-direct-ve2-r --data en_dev --eval
+```
+
+两者都以 `pro-t-direct` 为 baseline。先看 `ve2` 是否恢复/超过 baseline，
+再用 `ve2 - ve2-r` 判断收益是否来自值的相关性；Direct 没有正信号时不跑 DSL/BIRD。
+
 ---
 
 ## 5. 输出

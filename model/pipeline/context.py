@@ -30,6 +30,7 @@ class PipelineContext:
     evidence: str = ""           # 题目自带的外部知识（BIRD 有，Archer 官方设定不用）
     fewshot_block: str = ""       # 固定检索例的 prompt 前缀；仅显式 FS 档位非空
     fewshot_trace: dict | None = None
+    value_evidence_trace: dict | None = None
     plans: list[str] = field(default_factory=list)
     candidates: list[Candidate] = field(default_factory=list)
     winner: int | None = None    # 胜出候选的下标
@@ -40,6 +41,7 @@ class PipelineContext:
             "question": self.question,
             "evidence": self.evidence,
             "fewshot": self.fewshot_trace,
+            "value_evidence": self.value_evidence_trace,
             "plans": self.plans,
             "candidates": [asdict(c) for c in self.candidates],
             "winner": self.winner,

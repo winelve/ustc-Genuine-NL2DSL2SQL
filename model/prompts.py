@@ -64,13 +64,15 @@ def build_ct3_prompt(
     cot: bool = False,
     with_reasoning_type: bool = False,
     examples: str = "",
+    schema: str | None = None,
 ) -> str:
     question = sample.question
     if with_knowledge and sample.commonsense_knowledge:
         question = f"{sample.commonsense_knowledge} {question}"
 
+    schema_text = schema if schema is not None else schema_with_rows(db_path)
     prompt = (
-        f"{schema_with_rows(db_path)}\n\n"
+        f"{schema_text}\n\n"
         "-- Using valid SQLite, answer the following questions for the tables provided above.\n"
         f"-- {question}\n"
     )

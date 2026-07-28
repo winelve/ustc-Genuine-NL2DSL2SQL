@@ -25,6 +25,7 @@ from archer_eval.data import Sample
 from bird.official import official_prompt
 from model.api import APIModel, extract_sql
 from model.pipeline.models import ProTDsl
+from model.value_evidence.render import render_value_schema
 
 
 class BirdDirect(APIModel):
@@ -51,7 +52,20 @@ class BirdDirect(APIModel):
     use_evidence = True
 
     def predict(self, sample: Sample, db_path: Path) -> str:
-        prompt = official_prompt(sample, db_path, evidence=self.use_evidence)
+        value_record = self._value_evidence_record(sample)
+        schema = (
+            render_value_schema(
+                db_path, value_record, mode=self.value_evidence_mode
+            )
+            if value_record is not None
+            else None
+        )
+        prompt = official_prompt(
+            sample,
+            db_path,
+            evidence=self.use_evidence,
+            schema=schema,
+        )
         examples = self._fewshot_examples(sample)
         if examples:
             prompt = f"{examples}\n\n{prompt}"
@@ -62,6 +76,17 @@ class BirdDirect(APIModel):
 class BirdDirectFewShot(BirdDirect):
     name = "bird-pro-t-direct-fs"
     fewshot_selection = "bird_dev_rsl_k3"
+
+
+class BirdDirectValueEvidence(BirdDirect):
+    name = "bird-pro-t-direct-ve"
+    value_evidence_selection = "bird_dev_chess_ir"
+    value_evidence_mode = "relevant"
+
+
+class BirdDirectValueEvidenceRandom(BirdDirectValueEvidence):
+    name = "bird-pro-t-direct-ve-r"
+    value_evidence_mode = "random"
 
 
 class BirdProTDsl(ProTDsl):
@@ -98,6 +123,17 @@ class BirdProTDslFewShot(BirdProTDsl):
 
     name = "bird-pro-t-dsl-fs"
     fewshot_selection = "bird_dev_rsl_k3"
+
+
+class BirdProTDslValueEvidence(BirdProTDsl):
+    name = "bird-pro-t-dsl-ve"
+    value_evidence_selection = "bird_dev_chess_ir"
+    value_evidence_mode = "relevant"
+
+
+class BirdProTDslValueEvidenceRandom(BirdProTDslValueEvidence):
+    name = "bird-pro-t-dsl-ve-r"
+    value_evidence_mode = "random"
 
 
 class BirdProTDslFewShot20240627(BirdProTDslFewShot):

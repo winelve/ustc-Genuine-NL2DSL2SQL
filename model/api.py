@@ -29,6 +29,16 @@ from model.fewshot.trace import fewshot_trace
 from model.llm import ChatEndpoint
 from model.metrics import question_metrics
 from model.prompts import build_ct3_prompt
+from model.value_evidence.render import (
+    render_additive_value_schema,
+    render_value_schema,
+    value_evidence_trace,
+)
+from model.value_evidence.store import (
+    STRATEGY_V1,
+    STRATEGY_V2,
+    ValueEvidenceStore,
+)
 from config import API_CONCURRENCY
 
 # CT-3 prompt 是论文的 completion 式（以 "SELECT" 结尾）。发给 chat 接口时
@@ -61,6 +71,11 @@ class APIModel(SQLGenerator):
 
     # 只在显式 few-shot 变体上设置；None 是严格的零文件读取基线。
     fewshot_selection: str | None = None
+    # Fixed CHESS-IR artifact. None keeps the baseline on a strict no-read path.
+    value_evidence_selection: str | None = None
+    value_evidence_mode = "relevant"
+    value_evidence_schema_mode = "ddl-replacement"
+    value_evidence_strategy = STRATEGY_V1
 
     def __init__(self) -> None:
         # 客户端封装统一在 model/llm.py 的 ChatEndpoint，pipeline 与此共用
@@ -79,6 +94,24 @@ class APIModel(SQLGenerator):
                 / f"{self.fewshot_selection}.json"
             )
             self._fewshot_store = SelectionStore.from_path(path)
+        self._value_evidence_store = None
+        if self.value_evidence_selection is not None:
+            path = (
+                config.VALUE_EVIDENCE_DIR
+                / "selections"
+                / f"{self.value_evidence_selection}.json"
+            )
+            self._value_evidence_store = ValueEvidenceStore.from_path(path)
+            self._validate_value_evidence_store(self._value_evidence_store)
+
+    def _validate_value_evidence_store(
+        self, store: ValueEvidenceStore
+    ) -> None:
+        if store.strategy != self.value_evidence_strategy:
+            raise ValueError(
+                f"{self.name} requires value evidence strategy "
+                f"{self.value_evidence_strategy!r}, got {store.strategy!r}"
+            )
 
     def _system(self) -> str:
         """基线 system + 可选约定附录。附录是追加式的——基线消息逐字节不变。"""
@@ -109,27 +142,68 @@ class APIModel(SQLGenerator):
             return ""
         return render_reference_examples(record)
 
+    def _value_evidence_record(self, sample: Sample):
+        if self.value_evidence_selection is None:
+            return None
+        record = self._value_evidence_store.for_sample(
+            sample.db_id, sample.question
+        )
+        if record is None:
+            target_key = sample_key(sample.db_id, sample.question)
+            raise KeyError(
+                f"fixed value evidence selection "
+                f"{self.value_evidence_selection!r} has no record for "
+                f"db_id={sample.db_id!r}, sample_key={target_key}"
+            )
+        return record
+
     def trace_for_sample(self, sample: Sample) -> dict | None:
         """Build reproducibility metadata without making an API request."""
         record = self._fewshot_record(sample)
-        if record is None:
+        value_record = self._value_evidence_record(sample)
+        if record is None and value_record is None:
             return None
-        return {
-            "question": sample.question,
-            "fewshot": fewshot_trace(
+        trace = {"question": sample.question}
+        if record is not None:
+            trace["fewshot"] = fewshot_trace(
                 selection=self.fewshot_selection,
                 record=record,
                 store=self._fewshot_store,
-            ),
-        }
+            )
+        if value_record is not None:
+            trace["value_evidence"] = value_evidence_trace(
+                selection=self.value_evidence_selection,
+                record=value_record,
+                store=self._value_evidence_store,
+                mode=self.value_evidence_mode,
+                schema_mode=self.value_evidence_schema_mode,
+            )
+        return trace
 
     def predict(self, sample: Sample, db_path: Path) -> str:
         examples = self._fewshot_examples(sample)
-        prompt = (
-            build_ct3_prompt(sample, db_path, examples=examples)
-            if examples
-            else build_ct3_prompt(sample, db_path)
-        )
+        value_record = self._value_evidence_record(sample)
+        if value_record is not None:
+            if self.value_evidence_schema_mode == "ct3-additive":
+                schema = render_additive_value_schema(
+                    db_path, value_record, mode=self.value_evidence_mode
+                )
+            elif self.value_evidence_schema_mode == "ddl-replacement":
+                schema = render_value_schema(
+                    db_path, value_record, mode=self.value_evidence_mode
+                )
+            else:
+                raise ValueError(
+                    "value evidence schema mode must be "
+                    "'ddl-replacement' or 'ct3-additive'"
+                )
+            prompt = build_ct3_prompt(
+                sample, db_path, examples=examples, schema=schema
+            )
+        elif examples:
+            prompt = build_ct3_prompt(sample, db_path, examples=examples)
+        else:
+            prompt = build_ct3_prompt(sample, db_path)
         reply = self._endpoint.chat(self._system(), prompt)
         return extract_sql(reply)
 
@@ -223,6 +297,36 @@ class DeepSeekProThinkingFewShot(DeepSeekProThinking):
 class DeepSeekProThinkingSFS(DeepSeekProThinking):
     name = "pro-t-direct-sfs"
     fewshot_selection = "archer_en_dev_sfs_k3"
+
+
+class DeepSeekProThinkingValueEvidence(DeepSeekProThinking):
+    name = "pro-t-direct-ve"
+    value_evidence_selection = "archer_en_dev_chess_ir"
+    value_evidence_mode = "relevant"
+
+
+class DeepSeekProThinkingValueEvidenceRandom(
+    DeepSeekProThinkingValueEvidence
+):
+    name = "pro-t-direct-ve-r"
+    value_evidence_mode = "random"
+
+
+class DeepSeekProThinkingValueEvidenceV2(DeepSeekProThinking):
+    """Strict CHESS filtering appended to the unchanged CT-3 schema."""
+
+    name = "pro-t-direct-ve2"
+    value_evidence_selection = "archer_en_dev_chess_ir_v2"
+    value_evidence_mode = "relevant"
+    value_evidence_schema_mode = "ct3-additive"
+    value_evidence_strategy = STRATEGY_V2
+
+
+class DeepSeekProThinkingValueEvidenceV2Random(
+    DeepSeekProThinkingValueEvidenceV2
+):
+    name = "pro-t-direct-ve2-r"
+    value_evidence_mode = "random"
 
 
 class DeepSeekProThinkingConv(DeepSeekProThinking):

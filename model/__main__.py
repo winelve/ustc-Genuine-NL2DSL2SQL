@@ -29,7 +29,9 @@ from model import MODELS
 DEFAULT_CHUNK = 50
 TRACE_SCHEMA = "question-metrics-v1"
 
-SWITCH_COLUMNS = ("plan", "声明层", "知识", "evidence", "L2规则", "SQLens", "重试")
+SWITCH_COLUMNS = (
+    "plan", "声明层", "知识", "evidence", "值检索", "L2规则", "SQLens", "重试"
+)
 
 
 def switch_matrix() -> list[tuple[str, dict]]:
@@ -42,6 +44,11 @@ def switch_matrix() -> list[tuple[str, dict]]:
             "声明层": "✓" if has_dsl else "-",
             "知识": "✓" if getattr(cls, "knowledge", False) else "-",
             "evidence": "✓" if getattr(cls, "evidence", False) else "-",
+            "值检索": (
+                getattr(cls, "value_evidence_mode", "-")
+                if getattr(cls, "value_evidence_selection", None)
+                else "-"
+            ),
             "L2规则": "✓" if getattr(cls, "learned_rules", False) else "-",
             "SQLens": "✓" if getattr(cls, "sqlens_checks", False) else "-",
             "重试": str(getattr(cls, "max_repairs", "-")),

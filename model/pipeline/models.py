@@ -29,6 +29,11 @@ from model.pipeline.stages.generate import GenerateStage
 from model.pipeline.stages.plan import PlanStage
 from model.pipeline.stages.vote import VoteStage
 from model.prompts import schema_with_rows
+from model.value_evidence.render import (
+    render_value_schema,
+    value_evidence_trace,
+)
+from model.value_evidence.store import ValueEvidenceStore
 
 
 class PlanSQL(SQLGenerator):
@@ -42,11 +47,15 @@ class PlanSQL(SQLGenerator):
     use_plan = True
     # 仅显式 few-shot 档位设置。None 时严格不读选择文件、不改 prompt。
     fewshot_selection: str | None = None
+    # Only explicit VE arms read this fixed offline artifact.
+    value_evidence_selection: str | None = None
+    value_evidence_mode = "relevant"
 
     def __init__(self) -> None:
         self.endpoint = ChatEndpoint(**self.endpoint_spec)
         self.trace_records: list[dict] = []   # predict_all 后与预测同序的调试记录
         self._fewshot_store = self._load_fewshot_store()
+        self._value_evidence_store = self._load_value_evidence_store()
 
     @classmethod
     def _load_fewshot_store(cls) -> SelectionStore | None:
@@ -61,12 +70,24 @@ class PlanSQL(SQLGenerator):
         return SelectionStore.from_path(path)
 
     @classmethod
+    def _load_value_evidence_store(cls) -> ValueEvidenceStore | None:
+        if cls.value_evidence_selection is None:
+            return None
+        path = (
+            config.VALUE_EVIDENCE_DIR
+            / "selections"
+            / f"{cls.value_evidence_selection}.json"
+        )
+        return ValueEvidenceStore.from_path(path)
+
+    @classmethod
     def for_preview(cls) -> PlanSQL:
         """构造不含 API client 的模型实例，仅用于确定性消息预览。"""
         instance = cls.__new__(cls)
         instance.endpoint = None
         instance.trace_records = []
         instance._fewshot_store = cls._load_fewshot_store()
+        instance._value_evidence_store = cls._load_value_evidence_store()
         return instance
 
     def _prepare_context(
@@ -75,7 +96,28 @@ class PlanSQL(SQLGenerator):
         """准备正式生成和预览共同使用的确定性上下文。"""
         ctx = PipelineContext(question=sample.question, db_path=Path(db_path))
         ctx.evidence = sample.commonsense_knowledge or ""
-        ctx.schema = schema_with_rows(db_path)
+        if self.value_evidence_selection is not None:
+            record = self._value_evidence_store.for_sample(
+                sample.db_id, sample.question
+            )
+            if record is None:
+                target_key = sample_key(sample.db_id, sample.question)
+                raise KeyError(
+                    f"fixed value evidence selection "
+                    f"{self.value_evidence_selection!r} has no record for "
+                    f"db_id={sample.db_id!r}, sample_key={target_key}"
+                )
+            ctx.schema = render_value_schema(
+                db_path, record, mode=self.value_evidence_mode
+            )
+            ctx.value_evidence_trace = value_evidence_trace(
+                selection=self.value_evidence_selection,
+                store=self._value_evidence_store,
+                record=record,
+                mode=self.value_evidence_mode,
+            )
+        else:
+            ctx.schema = schema_with_rows(db_path)
         if self.fewshot_selection is not None:
             record = self._fewshot_store.for_sample(sample.db_id, sample.question)
             if record is None:
@@ -287,6 +329,17 @@ class ProTDslSFS(ProTDsl):
 
     name = "pro-t-dsl-sfs"
     fewshot_selection = "archer_en_dev_sfs_k3"
+
+
+class ProTDslValueEvidence(ProTDsl):
+    name = "pro-t-dsl-ve"
+    value_evidence_selection = "archer_en_dev_chess_ir"
+    value_evidence_mode = "relevant"
+
+
+class ProTDslValueEvidenceRandom(ProTDslValueEvidence):
+    name = "pro-t-dsl-ve-r"
+    value_evidence_mode = "random"
 
 
 class ProTDslConv(ProTDsl):

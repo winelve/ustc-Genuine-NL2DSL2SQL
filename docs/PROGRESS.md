@@ -24,6 +24,210 @@
 | M2 DSL 中间层 | planner 后加 DSL 结构化输出 → 规则校验循环 → sqlglot 编译 + LLM 降级通道 | 🔨 代码完成+测试全绿；待真实 API 冒烟与 dev 跑分 |
 | M3 增量迭代 | ASSUME 反事实算子 / 公式库 / 值链接强化 / 经验缓存 / 投票加宽 | 🔨 画像前置注入（m3a/b）判负收档；m3c 检查器族并入 M3-d 强制臂验证；M3-d 约定轴进行中 |
 
+## 2026-07-28 · CHESS-IR Value Evidence 实现
+
+- 开发前已把原工作区提交为 `d320430`，并在新分支 `codex/chess-ir`
+  完成设计、实现和验证；设计/计划分别位于
+  `docs/superpowers/specs/2026-07-28-chess-ir-value-evidence-design.md` 与
+  `docs/superpowers/plans/2026-07-28-chess-ir-value-evidence.md`。
+- 新增独立离线链路 `model.value_evidence.offline`：
+  - SQLite 只读扫描 distinct TEXT values，按 CHESS 规则过滤 PK、ID/URL/email/
+    date/address 等列和过长/过多取值；
+  - character 3-gram、100-permutation MinHashLSH，阈值 0.01；
+  - DeepSeek V4 Flash 关闭 thinking、temperature 0、max_tokens 256，沿用 CHESS
+    原版 question + hint 关键词提示词；逐题记录 usage，支持成功项 checkpoint/resume；
+  - LSH top-10 → edit threshold 0.3 → 本地 `all-mpnet-base-v2` cosine threshold
+    0.6；exact/substring hit 不被 embedding 阈值误杀；
+  - BIRD 列描述单独编码/检索；每列最多 3 个值、每题最多 12 个值和 8 列描述。
+- 相关值与随机对照写入同一个严格 artifact。`ve-r` 不随机换列或增加值：
+  在同一 table/column 内选择长度最接近的确定性 hash 候选；描述、值数量和所有
+  其他 prompt 内容保持一致。artifact 与 index 位于 `data/value_evidence/`，
+  默认 gitignored；线上生成不 import datasketch、NumPy、Torch 或
+  SentenceTransformers。
+- 注册 8 个实验档位：
+  - Archer：`pro-t-direct-ve` / `pro-t-direct-ve-r` /
+    `pro-t-dsl-ve` / `pro-t-dsl-ve-r`；
+  - BIRD：`bird-pro-t-direct-ve` / `bird-pro-t-direct-ve-r` /
+    `bird-pro-t-dsl-ve` / `bird-pro-t-dsl-ve-r`。
+- BIRD human evidence 始终开启；VE schema 插入纯 DDL 后、官方 question/evidence
+  block 前。Archer/BIRD baseline 均保持原路径：未启用 VE 时不读取 artifact，
+  仍使用原 schema 表示。缺少 selection 或逐题 record 会明确失败，不静默退回。
+- trace 新增 `value_evidence`，记录 selection/artifact/keyword/encoder SHA-256、
+  固定阈值、关键词、列描述、相关值、control value 和本次实际注入值；prediction
+  JSON 仍只含 SQL。
+- 关键词预算按 Archer `en_dev` + BIRD `dev` 估计 115–118 万 DeepSeek token，
+  建议预留 140 万；embedding 使用已存在的本地 `all-mpnet-base-v2`，不需要
+  OpenAI key。
+- README 已给出 index → keywords → select → audit、10 题 smoke、分阶段全量
+  命令与 stopping rule：先跑 `ve` Direct；只有正向信号才跑 `ve-r`，再决定
+  是否支付 DSL 全量成本。
+- 独立 Python 3.11 环境已补装 `datasketch==1.6.4`，Archer `en_dev` 的两库
+  index 已实际生成验证：`concert_singer` 52 values，`world_1` 9 values。
+- 代码审查发现并修复：BIRD 重复题 target 去重、多词关键词的 CHESS 前后缀
+  expansion、context evidence 组合查询、LSH 大小写统一、singleton control
+  同值污染、audit 缺少 dataset SHA/target 覆盖验证、DISTINCT 非确定排序和
+  ID/UUID/GUID 漏滤。复核后无 Critical/Important 阻断项。
+- 最终验证：`git diff --check`、`compileall` 均通过；
+  `.venv\Scripts\python.exe -m pytest -q` 为 **464 passed**。
+
+**当前缺口：**真实 index、keyword 和 selection 尚未生成（需要用户的
+DeepSeek key 与离线 Python 3.11/3.12 环境）；其中 Archer index 已完成，
+Archer/BIRD keyword、selection 及 BIRD index 尚未生成，因此尚无效果分数。
+
+**下一步：**按 README 先准备 Archer/BIRD artifact，各跑 10 题 Direct smoke；
+确认 trace 中检索值合理后跑 Direct `ve` 全量。若 BIRD 官方 evidence 覆盖了增益，
+按用户决策直接判该方法在本项目无效，不关闭 evidence 寻找虚假增益。
+
+## 2026-07-28 · CHESS-IR Archer 首轮结果与退化归因
+
+- `pro-t-direct-ve` 全量：VA 97.12%、EX **31.73%（33/104）**、SIM 38.01%；
+  对照 `pro-t-direct` 为 VA 99.04%、EX **36.54%（38/104）**、SIM 41.78%，
+  即净少 5 题、EX −4.81。
+- 退化全部来自 `concert_singer`：15/52 → 10/52（−9.62 EX）；
+  `world_1` 保持 23/52 → 23/52。配对翻转为 baseline 独对 8、VE 独对 3，
+  双侧精确检验 `p=0.227`，单次结果方向负但未达到显著。
+- thinking 波动仍很强：两臂只有 6/104 条 SQL 文本完全相同。26 道没有检索到
+  value 的题里仍有 25 道 SQL 改变，但 EX 恰好一得一失；因此不能把每个翻转都
+  归因于 value。
+- 与 value 的关联仍明确：有 value 的 78 题中 baseline 独对 7、VE 独对 2，
+  净 −5；无 value 的 26 题净 0。`concert_singer` 平均每题注入 3.37 个值，
+  `world_1` 仅 0.69 个，污染面与退化库一致。
+- 首要实现问题是 substring 强保留过宽：当前 211 个 value 中只有 94 个
+  exact，`stadium.Name` 占 85 个（其中 51 个 fuzzy），另有 23 个 fuzzy
+  `stadium.Location`。通用片段 `stadium` / `Park` 会让 Bayview Stadium、
+  Forthbank Stadium、Queen's Park 等与 Somerset/Glebe 查询无关的值绕过
+  embedding 与逐列 relative filtering；17 个最终候选甚至低于名义
+  embedding threshold 0.6。按 CHESS 原始逐列 relative 规则回放，可删除
+  51/211 个候选。
+- 其次，当前 baseline→VE 不是纯加法：VE 用 DDL + retrieved block 替换了
+  CT-3 的每表三行样本。`concert_singer` schema 在首题从 1560 字符降到 854，
+  并丢失 `Is_male` 实际编码为 `F/T` 等表示信息。翻转题 #29 的 baseline
+  正确使用 `Is_male='F'`，VE 改成 `Is_male=0` 且 JOIN 顺序产生语法错误，
+  是该混杂因素的直接实例。
+- 8 道 baseline→wrong 中，#23/#29/#34/#35 都带明显的额外错误值；#10/#11
+  只有正确的 `Wide Awake`，#92 只有正确的 `Asia`，#97 没有 value，后三类更像
+  thinking 波动或样本行表示变化。VE 还新增 3 条无效 SQL（baseline 仅 1 条）。
+
+**决策：**当前 artifact/实验设计不能用于否定 Value Evidence；先不跑
+VE-R、DSL 或 BIRD。若继续，应先单独修复为 CHESS 忠实的 threshold +
+逐列 relative filtering（不允许普通 substring 无条件绕过），再把
+“保留 CT-3 rows 并追加值”与“替换 rows”分开，避免同时改变两项变量。
+
+## 2026-07-28 · CHESS-IR VE2 修复完成
+
+- 保留 `chess-ir-mpnet-v1`、`pro-t-direct-ve` 及其负结果，不覆盖历史实验；
+  新增 `chess-ir-mpnet-v2`、`pro-t-direct-ve2` 和
+  `pro-t-direct-ve2-r`。
+- VE2 对所有候选统一执行 embedding >= 0.6，不再允许 exact/substring
+  绕过；随后按列执行 edit >= 0.9 × 列内最高 edit，再执行 embedding >=
+  0.9 × 剩余候选最高 embedding。v1 reader/renderer 行为保持兼容。
+- VE2 prompt 改为纯追加：先逐字保留 baseline 的 CT-3 DDL + 每表三行样本，
+  再追加 retrieved context；VE2-R 只替换同列 control value。trace 新增
+  `schema_mode=ct3-additive`，可以直接审计实验差异。
+- 模型加载时 fail closed 校验 artifact strategy；audit 同时校验期望 strategy、
+  v2 固定 embedding threshold=0.6 及每个保留值的实际分数，避免把误命名的
+  v1 artifact 静默用于 VE2。
+- 复用现有 DeepSeek keywords、数据库索引和本地 `all-mpnet-base-v2`，
+  已离线生成 `archer_en_dev_chess_ir_v2.json`，本次 **0 DeepSeek token**。
+  严格审计通过：104/104 records、155 values、26 题无 value、最低 embedding
+  0.626847、阈值以下候选为 0；相比 v1 的 211 values 删除 56 个候选。
+- README 已改为最小实验：只跑 `pro-t-direct-ve2` 和
+  `pro-t-direct-ve2-r`，都与 `pro-t-direct` baseline 配对比较；Direct
+  没有正信号时不继续跑 DSL/BIRD。
+- 最终验证：实际 prompt 的 CT-3 baseline 前缀逐字保留；`compileall` 通过，
+  `.venv\Scripts\python.exe -m pytest -q` 为 **469 passed**；独立代码复核
+  无剩余 Critical/Important。
+
+**下一步：**先跑 `pro-t-direct-ve2` 全量；若它恢复/超过 baseline，再跑
+`pro-t-direct-ve2-r` 判断提升是否来自相关值，而不是单纯增加 prompt 内容。
+
+## 2026-07-28 · CHESS-IR VE2 首轮结果与噪声分析
+
+- `pro-t-direct-ve2`：VA 99.04%、EX **38.46%（40/104）**、SIM 43.49%；
+  baseline `pro-t-direct` 为 EX 36.54%（38/104），表面提升 +2 题 /
+  +1.92 EX。
+- 配对翻转为 baseline 独对 6、VE2 独对 8、共同正确 32、共同错误 58；
+  McNemar exact `p=0.791`。question-level bootstrap 95% CI 为
+  **[−4.81, +8.65] EX**，不能排除退化，也不能证明正增益。
+- 104 题实际是 52 个 gold SQL、每个两个 paraphrase；按 gold SQL cluster
+  bootstrap 后区间仍为 [−4.81, +8.65]。SIM 的 +0.0171 配对变化区间
+  [−0.0524, +0.0876]，同样不稳定。
+- 最关键的内部噪声对照：
+  - 有 value 的 78 题：baseline 独对 4、VE2 独对 5，净 **+1**；
+  - 无 value 的 26 题：baseline 独对 2、VE2 独对 3，净 **+1**；
+  - 无 value 时 VE2 renderer 退回逐字相同的 CT-3 schema，但 26/26 的生成
+    SQL 都与 baseline 不同，说明 thinking 运行间波动足以制造当前量级的差值。
+  扣除无 value 组的变化后，粗略 difference-in-differences 为 −2.56 EX，
+  没有 value-specific 正信号。
+- 定性检查 9 道“有 value 且正确性翻转”的题：5 道 VE2 gain 的主值都已直接
+  出现在问题中；#50/#51 甚至同时注入了与假设 2010 冲突的 2013/2014，
+  #18 仍带无关的 `Queen's Park`。这些 gain 更像 prompt 扰动导致模型换了一条
+  推理路径，不能归因于新数据库证据。对应地，#10/#11 在只追加完全正确的
+  `Wide Awake` 后反而成对退化。
+- VE2 相对有缺陷的 v1 从 33→40（+7），配对 10 gain / 3 loss，
+  exact `p=0.092`：这支持“严格过滤 + 恢复 CT-3 rows 修复了 v1 的明显伤害”，
+  但仍不足以证明 Value Evidence 优于原 baseline。
+
+**当前判断：**VE2 已把工程缺陷修好并恢复到 baseline 附近，但首轮 +2 更应标为
+“方向为正、证据不足”，不能写成有效提升。等待正在运行的 `ve2-r`；完成后重点
+比较相关值与随机值在 78 道有 value 题上的 paired flips，并用 26 道无 value
+题估计同批运行噪声。若两臂差距也只有 1–2 题，则停止该 idea；只有相关值出现
+明显且语义一致的独占收益，才考虑重复运行确认。
+
+## 2026-07-28 · CHESS-IR VE2-R 相关性对照
+
+- `pro-t-direct-ve2-r`：VA 100%、EX **35.58%（37/104）**、SIM 41.00%。
+  三臂形成相关值 40 > baseline 38 > 随机值 37，但差距都很小。
+- artifact/control 完整性核验通过：VE2/VE2-R 使用相同 artifact、相同 155 个
+  slot 和列，VE2-R 的每个实际注入值均等于对应 `control_value`。
+- 相关值 vs 随机值：
+  - 全部 104 题为 relevant 独对 6、random 独对 3，净 +3，
+    McNemar exact `p=0.508`，bootstrap 95% CI [−2.88, +8.65] EX；
+  - 有 value 的 78 题为 relevant 独对 5、random 独对 2，净 +3 /
+    +3.85 EX，`p=0.453`，95% CI [−2.56, +10.26]；
+  - 无 value 的 26 题一边各独对 1，净 0。故相关/随机的全部分差确实发生在
+    treatment 组，方向上支持“值的相关性有作用”，但尚不显著。
+- 相对 baseline 分解后，78 道 treatment 题中：
+  - relevant 为 5 gain / 4 loss，净 **+1**；
+  - random 为 1 gain / 3 loss，净 **−2**。
+  因此 relevant-random 的 +3 并非三个净新增正确，约三分之二来自随机值伤害，
+  relevant 对 baseline 的独立净收益仍只有 1 题。
+- 三臂逐题模式中，真正满足 baseline 错、random 错、relevant 对的只有
+  #18/#43/#50/#51；其中 #50/#51 是同一 gold SQL 的两个 paraphrase，所以
+  只有 3 个独立意图。相反 relevant 使 baseline 正确题退化的有
+  #10/#11/#34/#92。按 52 个 gold SQL cluster bootstrap，relevant-random
+  区间仍为 [−1.92, +8.65] EX。
+
+**当前判断：**随机对照给出了一个弱的正向相关性信号，但证据强度不足以进入
+DSL/BIRD：有效样本只有 52 个独立意图、paired `p=0.508`，且 relevant 相对
+baseline 只净增 1/78。若要区分稳定收益与 thinking 波动，最低成本方案是再做
+一组独立的 VE2/VE2-R paired repeat，并检查 #18/#43/#50/#51 是否重复出现；
+重复性不成立则停止 Value Evidence，成立后才考虑扩大数据集。
+
+## 2026-07-28 · CHESS-IR VE2 重复实验：判负收档
+
+- 第二次 `pro-t-direct-ve2`：VA 97.12%、EX **35.58%（37/104）**、
+  SIM 40.02%；第一次为 40/104、SIM 43.49%。同一 relevant arm 自身波动
+  **3 题 / 2.88 EX**，恰好等于第一次 relevant-random 的全部分差。
+- 第二次 relevant 与固定 random 都为 37/104：
+  - 全部题 relevant 独对 9、random 独对 9，净 0、exact `p=1.0`；
+  - 有 value 的 78 题也是 8 vs 8，净 0，95% CI [−10.26, +10.26] EX；
+  - 无 value 的 26 题为 1 vs 1，净 0。
+- 第二次 relevant 相对 baseline 为 11 gain / 12 loss，净 −1；在 78 道
+  value 题为 8 gain / 10 loss，净 −2，而无 value 题仍净 +1。它没有重复
+  第一次的 value-specific 正方向。
+- 第一次相对 baseline 的 value gains 是 #18/#43/#50/#51/#58；第二次只有
+  #18/#43 重复，#50/#51/#58 全部消失，另外出现 6 个全新 gain。相反第一次
+  的四个 value losses #10/#11/#34/#92 在第二次全部重复，稳定部分偏负。
+- 因用相同 model name 重跑，第一次 prediction/result/trace 已被第二次覆盖；
+  首次汇总和逐题翻转仍保存在本进度记录中。后续若需要正式多次重复，应先增加
+  run-id/versioned output，不能继续覆盖。
+
+**最终决策：**当前 CHESS-lite Value Evidence 在 Archer `en_dev` 上判为
+**无稳定增益**。工程修复能消除 v1 的明显退化，但 relevant 两次为 40/37，
+random 为 37，相关性优势未复现；不再支付 DSL/BIRD 测试成本。本 idea 作为
+负结果保留，下一步转向新的、与值检索无关的改进方向。
+
 ## 2026-07-28 · BIRD C3 名称误报修复
 
 - C3 接地检查现在能正确解析 SQLite 引号列、物理表别名、CTE/子查询输出、
@@ -226,7 +430,7 @@
 先设计能区分“逻辑变换”而非 AST 外形的表示，并处理错误草案传播；RB-lite
 仍不因本次失败自动进入实现。
 
-## 2026-07-28 · Value Evidence 调研（待讨论，未实现）
+## 2026-07-28 · Value Evidence 调研（已转入 CHESS-IR 实现）
 
 - 对齐 CHESS、SEED、SQL-R1 的消融口径：
   - CHESS 在 subsampled BIRD dev 上，相关 entity/context retrieval 相对
@@ -249,8 +453,9 @@
 - 完整调研记录：
   `docs/analysis/2026-07-28-value-evidence-research.md`。
 
-**下一步：**停在研究阶段，与用户确认是否采用 CHESS-lite 以及实验对照后再写设计；
-当前没有实现新模型或运行 API。
+**后续：**用户确认采用完整离线 CHESS-IR 骨架、本地 all-mpnet、
+相关值/同列随机值对照和 BIRD evidence 常开；实现状态见本文顶部
+“CHESS-IR Value Evidence 实现”。
 
 ## 当前工作：RSL-SQL 风格 fixed few-shot 消融（2026-07-27）
 
