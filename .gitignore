@@ -33,12 +33,7 @@ Thumbs.db
 /analysis/
 
 # 文档默认可跟踪，只忽略原始论文、位图和生成的 HTML。
-docs/material/
-docs/*.pdf
-docs/*.png
-docs/figures/*.pdf
-docs/figures/*.png
-docs/analysis/*.html
+docs
 
 # 只忽略 BIRD 数据集，不要连顶层的 bird/ 适配模块一起吞了
 data/bird/
@@ -58,6 +53,9 @@ data/value_evidence/
 data/dpc/
 
 CLAUDE.md
+cost.md
+AGENTS.md
 README.bk.md
+README.bk2.md
 sentence_transformers/
 tmp/

@@ -19,3 +19,28 @@ func_timeout==4.3.5
 
 # Optional — only needed to run the test suite (python -m pytest -q):
 # pytest==9.1.1
+
+
+#####################################
+##### few shot ######################
+#####################################
+# Windows offline retrieval uses a separate Python 3.11/3.12 CPU environment;
+# do not install these dependencies into the project's Python 3.13 .venv.
+# --extra-index-url https://download.pytorch.org/whl/cpu
+# transformers==4.46.3
+# torch==2.5.1
+# numpy==2.1.3
+# pyarrow==18.0.0
+# sqlglot==30.13.0
+# datasketch==1.6.4
+
+################################
+##### dpc ######################
+################################
+
+# Optional low-cost DPC pilot dependencies. The official repository is not a
+# pip-installable package (its flat layout trips setuptools discovery), so
+# `python -m model.dpc_pilot bootstrap` checks out the pinned source separately.
+# chardet==7.4.0.post2
+# scipy==1.17.1
+# tabulate==0.10.0
