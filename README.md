@@ -203,8 +203,36 @@ database/
 如果 `data/bird/dev_databases/` 已存在，可以跳过数据库下载部分。
 
 ```powershell
+# 需要先去官网下载bird的数据库,并且放在 .\data\bird\dev_databases.zip  后解压
 .\.venv\Scripts\python.exe -m bird fetch
 .\.venv\Scripts\python.exe -m bird convert
+
+# 最终需要是这样的目录结构(忽略了文件)
+.\data\bird
+├───dev_databases
+│   ├───california_schools
+│   │   └───database_description
+│   ├───card_games
+│   │   └───database_description
+│   ├───codebase_community
+│   │   └───database_description
+│   ├───debit_card_specializing
+│   │   └───database_description
+│   ├───european_football_2
+│   │   └───database_description
+│   ├───financial
+│   │   └───database_description
+│   ├───formula_1
+│   │   └───database_description
+│   ├───student_club
+│   │   └───database_description
+│   ├───superhero
+│   │   └───database_description
+│   ├───thrombosis_prediction
+│   │   └───database_description
+│   └───toxicology
+│       └───database_description
+└───official
 ```
 
 转换后 `data/bird/dev.json` 对应 `--data bird_dev`。
