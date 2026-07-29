@@ -2,7 +2,7 @@
 
 ---
 
-## 项目定位
+## 关于项目
 
 本项目在 Archer 与 BIRD benchmark 上研究 NL2SQL。实验收尾后，最终只保留两个
 确定使用的 idea：
@@ -374,10 +374,4 @@ trace 记录每题的 DSL 声明、检查/修复过程、few-shot 示例 ID、�
 # 不调用 API，预览 BIRD DSL+FS 第 0 题
 .\.venv\Scripts\python.exe -m model.pipeline `
   --model bird-pro-t-dsl-fs --data bird_dev --preview 0
-
-# 检查 Git diff 格式
-git diff --check
 ```
-
-探索方案的状态与代码位置见 `experiments/README.md`；其运行命令和历史结论不再放入
-这份最终主线 README。
